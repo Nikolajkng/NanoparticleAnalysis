@@ -16,6 +16,12 @@ def crop(tensor: Tensor, target_size: tuple[int, int]) -> Tensor:
     start_w = (w-tw) // 2
     return tensor[:, :, start_h:start_h + th, start_w:start_w + tw]
 
+def normalize_tensor_to_pixels(tensor: Tensor) -> Tensor:
+    tensor = tensor - tensor.min()
+    tensor = tensor / tensor.max()
+    tensor = tensor * 255
+    return tensor
+
 
 class encoder_block(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -82,16 +88,7 @@ class UNet(nn.Module):
         return m
 
 
-def collect_data() -> list[Tensor]:
-    data_array = []
-    for filename in os.listdir("data/images/"):
-        img = Image.open("data/images/" + filename).convert("L")
-        tensor = TF.to_tensor(img)
-        data_array.append(tensor)
-    return data_array
-
-
-def train(model: UNet, dataloader: DataLoader, criterion: nn.CrossEntropyLoss, optimizer: torch.optim.SGD, epochs: int):
+def train(model: UNet, dataloader: DataLoader, criterion: nn.CrossEntropyLoss, optimizer: torch.optim.SGD, epochs: int) -> UNet:
     model.train()
     for epoch in range(epochs):  # loop over the dataset multiple times
         running_loss = 0.0
@@ -99,40 +96,27 @@ def train(model: UNet, dataloader: DataLoader, criterion: nn.CrossEntropyLoss, o
             # get the inputs; data is a list of [inputs, labels]
             inputs, labels = data
             labels = labels.long()
-            # print(inputs.shape)
-            # print(labels.shape)
+            labels = labels.squeeze(1)
             # zero the parameter gradients
             optimizer.zero_grad()
 
             # forward + backward + optimize
             outputs = model(inputs)
-            # outputs = torch.squeeze(outputs,0)
-            labels = torch.squeeze(labels,0)
-            print(outputs.shape)
-            print(labels.shape)
             
             
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            if epoch % 5 == 0:
+            if epoch % 10 == 9:
                 print(f'Output min: {outputs.min()}, max: {outputs.max()}')
                 probabilities = F.softmax(outputs, dim=1)  
                 #predicted_classes = torch.argmax(probabilities, dim=1)
                 probabilities = probabilities.squeeze(0)
                 
-                # print(y.shape)
-                pixels = probabilities[1, :, :]
-                pixels = pixels - pixels.min()
-                pixels = pixels / pixels.max()
-                pixels = pixels * 255
+                pixels = normalize_tensor_to_pixels(probabilities[1, :, :])
                 
-                print(pixels)
-                print(f'Pixel min: {pixels.min()}, max: {pixels.max()}')
                 img = TF.to_pil_image(pixels.byte())
                 img.show()
-                # print(y)
-                print(loss)
 
             # print statistics
             running_loss += loss.item()
@@ -147,23 +131,13 @@ def main():
     dataset = SegmentationDataset("data/images/", "data/masks/")
     dataloader = DataLoader(dataset)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(unet.parameters(), lr=0.01, momentum=0.99)
-    data = collect_data()
+    optimizer = torch.optim.SGD(unet.parameters(), lr=0.005, momentum=0.99)
     
     
     unet = train(unet, dataloader, criterion, optimizer, 100)
-    
+    torch.save(unet.state_dict(), "data/model/")
     unet.eval()
 
-    # y = unet()
-
-
-    # y = y - y.min()
-    # y = y / y.max()
-    # y = y * 255
-    # img = TF.to_pil_image(y.byte())
-    # img.show()
-    # print(y)
 
 
 
