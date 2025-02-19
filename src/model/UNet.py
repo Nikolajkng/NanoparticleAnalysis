@@ -1,19 +1,25 @@
+from PIL import Image
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+import torchvision.transforms.functional as TF
+import os
+from SegmentationDataset import SegmentationDataset
+from torch.utils.data import DataLoader
 
-def crop(tensor, target_size):
-    _, h, w = tensor.shape
+def crop(tensor: Tensor, target_size: tuple[int, int]) -> Tensor:
+    _, _, h, w = tensor.shape
     th, tw = target_size
 
     start_h = (h-th) // 2
     start_w = (w-tw) // 2
-    return tensor[:, start_h:start_h + th, start_w:start_w + tw]
+    return tensor[:, :, start_h:start_h + th, start_w:start_w + tw]
 
 
-class encoder_block():
+class encoder_block(nn.Module):
     def __init__(self, in_channels, out_channels):
+        super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3)
 
@@ -22,19 +28,18 @@ class encoder_block():
         x = F.relu(self.conv2(x))
         return x
 
-class decoder_block():
+class decoder_block(nn.Module):
     def __init__(self, in_channels, out_channels):
+        super().__init__()
         self.upconv = nn.ConvTranspose2d(in_channels, out_channels, 2, 2)
         self.conv1 = nn.Conv2d(in_channels, out_channels, 3)
         self.conv2 = nn.Conv2d(out_channels, out_channels, 3)
     
     def forward(self, input, concat_map):
         x: Tensor = self.upconv(input)
+        concat_map = crop(concat_map, (x.size(dim=2), x.size(dim=3)))
 
-      
-        concat_map = crop(concat_map, (x.size(dim=1), x.size(dim=2)))
-        
-        x = torch.cat((concat_map, x))
+        x = torch.cat((concat_map, x), dim=1)
 
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
@@ -57,31 +62,108 @@ class UNet(nn.Module):
         self.decoder3 = decoder_block(256, 128)
         self.decoder4 = decoder_block(128, 64)
 
-        self.mapping_conv = nn.Conv2d(64, 1, 1)
+        self.mapping_conv = nn.Conv2d(64, 2, 1)
     
     def forward(self, input):
-        e1 = self.encoder1.forward(input)
+        e1 = self.encoder1(input)
         pooled = nn.MaxPool2d(2,2)(e1)
-        e2 = self.encoder2.forward(pooled)
+        e2 = self.encoder2(pooled)
         pooled = nn.MaxPool2d(2,2)(e2)
-        e3 = self.encoder3.forward(pooled)
+        e3 = self.encoder3(pooled)
         pooled = nn.MaxPool2d(2,2)(e3)
-        e4 = self.encoder4.forward(pooled)
+        e4 = self.encoder4(pooled)
         pooled = nn.MaxPool2d(2,2)(e4)
-        b = self.bottleneck.forward(pooled)
-        print(b.size())
-        d1 = self.decoder1.forward(b, e4)
-        d2 = self.decoder2.forward(d1, e3)
-        d3 = self.decoder3.forward(d2, e2)
-        d4 = self.decoder4.forward(d3, e1)
+        b = self.bottleneck(pooled)
+        d1 = self.decoder1(b, e4)
+        d2 = self.decoder2(d1, e3)
+        d3 = self.decoder3(d2, e2)
+        d4 = self.decoder4(d3, e1)
         m = self.mapping_conv(d4)
         return m
 
+
+def collect_data() -> list[Tensor]:
+    data_array = []
+    for filename in os.listdir("data/images/"):
+        img = Image.open("data/images/" + filename).convert("L")
+        tensor = TF.to_tensor(img)
+        data_array.append(tensor)
+    return data_array
+
+
+def train(model: UNet, dataloader: DataLoader, criterion: nn.CrossEntropyLoss, optimizer: torch.optim.SGD, epochs: int):
+    model.train()
+    for epoch in range(epochs):  # loop over the dataset multiple times
+        running_loss = 0.0
+        for i, data in enumerate(dataloader, 0):
+            # get the inputs; data is a list of [inputs, labels]
+            inputs, labels = data
+            labels = labels.long()
+            # print(inputs.shape)
+            # print(labels.shape)
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            outputs = model(inputs)
+            # outputs = torch.squeeze(outputs,0)
+            labels = torch.squeeze(labels,0)
+            print(outputs.shape)
+            print(labels.shape)
+            
+            
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            if epoch % 5 == 0:
+                print(f'Output min: {outputs.min()}, max: {outputs.max()}')
+                probabilities = F.softmax(outputs, dim=1)  
+                #predicted_classes = torch.argmax(probabilities, dim=1)
+                probabilities = probabilities.squeeze(0)
+                
+                # print(y.shape)
+                pixels = probabilities[1, :, :]
+                pixels = pixels - pixels.min()
+                pixels = pixels / pixels.max()
+                pixels = pixels * 255
+                
+                print(pixels)
+                print(f'Pixel min: {pixels.min()}, max: {pixels.max()}')
+                img = TF.to_pil_image(pixels.byte())
+                img.show()
+                # print(y)
+                print(loss)
+
+            # print statistics
+            running_loss += loss.item()
+            print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss:.3f}')
+            running_loss = 0.0
+
+    print('Finished Training')
+    return model
+
 def main():
     unet = UNet()
-    x = torch.randn(1, 572, 572)
-    y = unet(x)
-    print(y)
+    dataset = SegmentationDataset("data/images/", "data/masks/")
+    dataloader = DataLoader(dataset)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(unet.parameters(), lr=0.01, momentum=0.99)
+    data = collect_data()
+    
+    
+    unet = train(unet, dataloader, criterion, optimizer, 100)
+    
+    unet.eval()
+
+    # y = unet()
+
+
+    # y = y - y.min()
+    # y = y / y.max()
+    # y = y * 255
+    # img = TF.to_pil_image(y.byte())
+    # img.show()
+    # print(y)
 
 
 
