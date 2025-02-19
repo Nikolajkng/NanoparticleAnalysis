@@ -26,8 +26,8 @@ def normalize_tensor_to_pixels(tensor: Tensor) -> Tensor:
 class encoder_block(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, 3)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, 3)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
 
     def forward(self, input):
         x = F.relu(self.conv1(input))
@@ -37,9 +37,9 @@ class encoder_block(nn.Module):
 class decoder_block(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.upconv = nn.ConvTranspose2d(in_channels, out_channels, 2, 2)
-        self.conv1 = nn.Conv2d(in_channels, out_channels, 3)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, 3)
+        self.upconv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
     
     def forward(self, input, concat_map):
         x: Tensor = self.upconv(input)
@@ -131,15 +131,25 @@ def main():
     dataset = SegmentationDataset("data/images/", "data/masks/")
     dataloader = DataLoader(dataset)
     criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(unet.parameters(), lr=0.005, momentum=0.99)
+    optimizer = torch.optim.SGD(unet.parameters(), lr=0.01, momentum=0.99)
     
     
-    unet = train(unet, dataloader, criterion, optimizer, 100)
-    torch.save(unet.state_dict(), "data/model/")
-    unet.eval()
+    #unet = train(unet, dataloader, criterion, optimizer, 100)
+    #torch.save(unet.state_dict(), "data/model/UNet_1902")
+    #unet.eval()
+    for i, data in enumerate(dataloader, 0):
+        inputs, labels = data
+        outputs = unet(inputs)
 
-
-
+        print(f'Output min: {outputs.min()}, max: {outputs.max()}')
+        probabilities = F.softmax(outputs, dim=1)  
+        #predicted_classes = torch.argmax(probabilities, dim=1)
+        probabilities = probabilities.squeeze(0)
+        
+        pixels = normalize_tensor_to_pixels(probabilities[1, :, :])
+        
+        img = TF.to_pil_image(pixels.byte())
+        img.show()
 
 
 if __name__ == '__main__':
