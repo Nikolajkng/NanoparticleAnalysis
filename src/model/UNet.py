@@ -7,6 +7,8 @@ import torchvision.transforms.functional as TF
 import os
 from SegmentationDataset import SegmentationDataset
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+import datetime
 
 def crop(tensor: Tensor, target_size: tuple[int, int]) -> Tensor:
     _, _, h, w = tensor.shape
@@ -23,7 +25,7 @@ def normalize_tensor_to_pixels(tensor: Tensor) -> Tensor:
     return tensor
 
 
-class encoder_block(nn.Module):
+class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
@@ -34,7 +36,7 @@ class encoder_block(nn.Module):
         x = F.relu(self.conv2(x))
         return x
 
-class decoder_block(nn.Module):
+class DecoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
         self.upconv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
@@ -56,19 +58,22 @@ class UNet(nn.Module):
     def __init__(self):
         super().__init__()
         
-        self.encoder1 = encoder_block(1, 64)
-        self.encoder2 = encoder_block(64, 128)
-        self.encoder3 = encoder_block(128, 256)
-        self.encoder4 = encoder_block(256, 512)
+        self.encoder1 = EncoderBlock(1, 64)
+        self.encoder2 = EncoderBlock(64, 128)
+        self.encoder3 = EncoderBlock(128, 256)
+        self.encoder4 = EncoderBlock(256, 512)
 
-        self.bottleneck = encoder_block(512, 1024)
+        self.bottleneck = EncoderBlock(512, 1024)
 
-        self.decoder1 = decoder_block(1024, 512)
-        self.decoder2 = decoder_block(512, 256)
-        self.decoder3 = decoder_block(256, 128)
-        self.decoder4 = decoder_block(128, 64)
+        self.decoder1 = DecoderBlock(1024, 512)
+        self.decoder2 = DecoderBlock(512, 256)
+        self.decoder3 = DecoderBlock(256, 128)
+        self.decoder4 = DecoderBlock(128, 64)
 
-        self.mapping_conv = nn.Conv2d(64, 2, 1)
+        self.mappingConvolution = nn.Conv2d(64, 2, 1)
+
+        self.optimizer = None
+        self.criterion = None
     
     def forward(self, input):
         e1 = self.encoder1(input)
@@ -84,59 +89,77 @@ class UNet(nn.Module):
         d2 = self.decoder2(d1, e3)
         d3 = self.decoder3(d2, e2)
         d4 = self.decoder4(d3, e1)
-        m = self.mapping_conv(d4)
+        m = self.mappingConvolution(d4)
         return m
 
+    def train_model(self, dataloader: DataLoader, epochs: int, learningRate: float):
+        self.train()
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
+        self.criterion = nn.CrossEntropyLoss()
 
-def train(model: UNet, dataloader: DataLoader, criterion: nn.CrossEntropyLoss, optimizer: torch.optim.SGD, epochs: int) -> UNet:
-    model.train()
-    for epoch in range(epochs):  # loop over the dataset multiple times
-        running_loss = 0.0
-        for i, data in enumerate(dataloader, 0):
-            # get the inputs; data is a list of [inputs, labels]
-            inputs, labels = data
-            labels = labels.long()
-            labels = labels.squeeze(1)
-            # zero the parameter gradients
-            optimizer.zero_grad()
-
-            # forward + backward + optimize
-            outputs = model(inputs)
-            
-            
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            if epoch % 10 == 9:
-                print(f'Output min: {outputs.min()}, max: {outputs.max()}')
-                probabilities = F.softmax(outputs, dim=1)  
-                #predicted_classes = torch.argmax(probabilities, dim=1)
-                probabilities = probabilities.squeeze(0)
-                
-                pixels = normalize_tensor_to_pixels(probabilities[1, :, :])
-                
-                img = TF.to_pil_image(pixels.byte())
-                img.show()
-
-            # print statistics
-            running_loss += loss.item()
-            print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss:.3f}')
+        loss_values = []
+        for epoch in range(epochs):
             running_loss = 0.0
+            for i, data in enumerate(dataloader, 0):
+                inputs, labels = data
+                labels = labels.long()
+                labels = labels.squeeze(1)
+                self.optimizer.zero_grad()
+                outputs = self(inputs)
+                
+                
+                loss = self.criterion(outputs, labels)
+                loss.backward()
 
-    print('Finished Training')
-    return model
+                torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
+
+                self.optimizer.step()
+                if epoch % 20 == 19:
+                    probabilities = F.softmax(outputs, dim=1)  
+                    probabilities = probabilities.squeeze(0)
+                    
+                    pixels = normalize_tensor_to_pixels(probabilities[1, :, :])
+                    
+                    img = TF.to_pil_image(pixels.byte())
+                    img.show()
+
+                # print statistics
+                running_loss += loss.item()
+                
+
+            epoch_loss = running_loss / len(dataloader)
+            print(f'Epoch {epoch + 1} loss: {epoch_loss:.3f}')
+            loss_values.append(epoch_loss)
+
+
+            plt.plot(loss_values, label='Training Loss')
+            plt.xlabel('Epochs')
+            plt.ylabel('Loss')
+            plt.title('Training Loss Over Time')
+            plt.pause(0.1)  # pause to update the plot
+
+        print('Finished Training')
+        plt.show() 
+
+
+    def save_model(self, fileName):
+        torch.save(self.state_dict(), "data/models/" + fileName)
+
+    def load_model(self, fileName):
+        state_dict = torch.load("data/models/" + fileName)
+        self.load_state_dict(state_dict)
+
 
 def main():
     unet = UNet()
     dataset = SegmentationDataset("data/images/", "data/masks/")
-    dataloader = DataLoader(dataset)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(unet.parameters(), lr=0.01, momentum=0.99)
-    
-    
-    #unet = train(unet, dataloader, criterion, optimizer, 100)
-    #torch.save(unet.state_dict(), "data/model/UNet_1902")
-    #unet.eval()
+    dataloader = DataLoader(dataset, batch_size=1)
+
+    unet.train_model(dataloader=dataloader, epochs=1000, learningRate=0.0005)
+    unet.save_model("UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+    unet.eval()
+
+
     for i, data in enumerate(dataloader, 0):
         inputs, labels = data
         outputs = unet(inputs)
