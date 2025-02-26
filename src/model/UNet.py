@@ -18,10 +18,11 @@ class EncoderBlock(nn.Module):
         super().__init__()
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.bn = nn.BatchNorm2d(out_channels)
 
     def forward(self, input):
-        x = F.relu(self.conv1(input))
-        x = F.relu(self.conv2(x))
+        x = F.relu(self.bn(self.conv1(input)))
+        x = F.relu(self.bn(self.conv2(x)))
         return x
 
 class DecoderBlock(nn.Module):
@@ -30,14 +31,15 @@ class DecoderBlock(nn.Module):
         self.upconv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.bn = nn.BatchNorm2d(out_channels)
     
     def forward(self, input, concat_map):
         x: Tensor = self.upconv(input)
 
         x = torch.cat((concat_map, x), dim=1)
-
-        x = F.relu(self.conv1(x))
-        x = F.relu(self.conv2(x))
+    
+        x = F.relu(self.bn(self.conv1(x)))
+        x = F.relu(self.bn(self.conv2(x)))
         return x
         
 
@@ -90,7 +92,7 @@ class UNet(nn.Module):
     def train_model(self, dataloader: DataLoader, epochs: int, learningRate: float):
         self.to(self.device)
         self.train()
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
+        self.optimizer = torch.optim.SGD(self.parameters(), lr=learningRate, momentum=0.9)
         self.criterion = nn.CrossEntropyLoss()
 
         lossValues = []
@@ -108,7 +110,7 @@ class UNet(nn.Module):
                 torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
 
                 self.optimizer.step()
-
+                
                 if epoch % 20 == 19:
                     showTensor(outputs)
                 running_loss += loss.item()
@@ -135,9 +137,9 @@ class UNet(nn.Module):
 def main():
     unet = UNet()
     dataset = SegmentationDataset("data/images/", "data/masks/")
-    dataloader = DataLoader(dataset, batch_size=1)
+    dataloader = DataLoader(dataset, batch_size=5, shuffle=True)
 
-    unet.train_model(dataloader=dataloader, epochs=1000, learningRate=0.0005)
+    unet.train_model(dataloader=dataloader, epochs=1000, learningRate=0.01)
     unet.save_model("UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
     unet.eval()
 

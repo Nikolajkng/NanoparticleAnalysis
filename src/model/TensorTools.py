@@ -18,9 +18,17 @@ def normalizeTensorToPixels(tensor: Tensor) -> Tensor:
 
 def showTensor(tensor: Tensor) -> None:
     probabilities = F.softmax(tensor, dim=1)  
-    probabilities = probabilities.squeeze(0)
+    if probabilities.size(0) == 1:
+        probabilities = probabilities.squeeze(0)
+        pixels = normalizeTensorToPixels(probabilities[1, :, :])
     
-    pixels = normalizeTensorToPixels(probabilities[1, :, :])
+        img = TF.to_pil_image(pixels.byte())
+        img.show()
+    else:
+        for p in probabilities:
+            pixels = normalizeTensorToPixels(p[1, :, :])
+            img = TF.to_pil_image(pixels.byte())
+            img.show()
+
     
-    img = TF.to_pil_image(pixels.byte())
-    img.show()
+    
