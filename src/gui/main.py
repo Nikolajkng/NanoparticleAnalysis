@@ -6,13 +6,13 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
+from AnalysisWindow import AnalysisWindow
+
 
 # Linux stuff - supresses error
 os.environ["XDG_SESSION_TYPE"] = "xcb"
 
 class MainWindow(QMainWindow):
-    
-    
     def __init__(self):
         super().__init__();
         self.setWindowTitle("NanoParticleAnalysis v.1")
@@ -78,14 +78,19 @@ class MainWindow(QMainWindow):
 
         # Create an 'Upload' action
         upload_action = QAction('Upload image', self)
+        temp1_action = QAction('temp1', self)
+        temp2_action = QAction('temp2', self)
+
+
         upload_action.triggered.connect(self.uploadFile) 
         
         # Add the action to the 'Menu Entry'
         file_menu.addAction(upload_action) 
-
+        edit_menu.addAction(temp1_action)
+        help_menu.addAction(temp2_action)
+       
         
     def centerWindow(self):
-        """Centers the window on the screen."""
         screen_geometry = QDesktopWidget().screenGeometry()
         window_geometry = self.frameGeometry()
         center_point = screen_geometry.center()
@@ -93,40 +98,13 @@ class MainWindow(QMainWindow):
         self.move(window_geometry.topLeft()) 
         
     def uploadFile(self):
-            # Open file dialog and get file path
             file_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
             
             if file_path: 
                 pixmap = QPixmap(file_path) 
                 self.image_label.setPixmap(pixmap.scaled(600, 600, aspectRatioMode=1))  
 
-     
-
-
-class AnalysisWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Analysing Window")
-        self.setGeometry(400, 200, 400, 300)
-        self.centerWindow()
-
-        layout = QVBoxLayout()
-        label = QLabel("Analysis in progress...")
-        label.setAlignment(Qt.AlignCenter)
-        
-        layout.addWidget(label)
-        self.setLayout(layout)
-        
-    
-    def centerWindow(self):
-        """Centers the window on the screen."""
-        screen_geometry = QDesktopWidget().screenGeometry()
-        window_geometry = self.frameGeometry()
-        center_point = screen_geometry.center()
-        window_geometry.moveCenter(center_point)
-        self.move(window_geometry.topLeft()) 
-    
-      
+           
 
 
 def main():
