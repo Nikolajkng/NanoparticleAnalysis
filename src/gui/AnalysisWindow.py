@@ -3,7 +3,8 @@ from PyQt5.QtWidgets import (
     QLabel, 
     QVBoxLayout, QWidget, QDesktopWidget
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QTimer
+from window_functions import centerWindow
 
 
 class AnalysisWindow(QWidget):
@@ -19,8 +20,8 @@ class AnalysisWindow(QWidget):
         layout.addWidget(label)
         self.setLayout(layout)
         
-        # TO DO - vis statistikker osv.
-        
+        # 'Loading time' for statistics and then open StatisticsWindow.py
+        QTimer.singleShot(5000, self.close) 
        
 
     def centerWindow(self):

@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 from AnalysisWindow import AnalysisWindow
+from window_functions import centerWindow
 
 
 # Linux stuff - supresses error
@@ -17,7 +18,7 @@ class MainWindow(QMainWindow):
         super().__init__();
         self.setWindowTitle("NanoParticleAnalysis v.1")
         self.setGeometry(0,0,1200,800)
-        self.centerWindow()
+        centerWindow(self)
         
  
         # Create main widget and layout
@@ -90,12 +91,6 @@ class MainWindow(QMainWindow):
         help_menu.addAction(temp2_action)
        
         
-    def centerWindow(self):
-        screen_geometry = QDesktopWidget().screenGeometry()
-        window_geometry = self.frameGeometry()
-        center_point = screen_geometry.center()
-        window_geometry.moveCenter(center_point)
-        self.move(window_geometry.topLeft()) 
         
     def uploadFile(self):
             file_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
