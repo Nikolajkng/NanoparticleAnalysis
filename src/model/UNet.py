@@ -9,20 +9,8 @@ from SegmentationDataset import SegmentationDataset
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import datetime
-
-def crop(tensor: Tensor, target_size: tuple[int, int]) -> Tensor:
-    _, _, h, w = tensor.shape
-    th, tw = target_size
-
-    start_h = (h-th) // 2
-    start_w = (w-tw) // 2
-    return tensor[:, :, start_h:start_h + th, start_w:start_w + tw]
-
-def normalize_tensor_to_pixels(tensor: Tensor) -> Tensor:
-    tensor = tensor - tensor.min()
-    tensor = tensor / tensor.max()
-    tensor = tensor * 255
-    return tensor
+from TensorTools import *
+from PlottingTools import *
 
 
 class EncoderBlock(nn.Module):
@@ -45,7 +33,6 @@ class DecoderBlock(nn.Module):
     
     def forward(self, input, concat_map):
         x: Tensor = self.upconv(input)
-        concat_map = crop(concat_map, (x.size(dim=2), x.size(dim=3)))
 
         x = torch.cat((concat_map, x), dim=1)
 
@@ -57,7 +44,7 @@ class DecoderBlock(nn.Module):
 class UNet(nn.Module):
     def __init__(self):
         super().__init__()
-        
+
         self.encoder1 = EncoderBlock(1, 64)
         self.encoder2 = EncoderBlock(64, 128)
         self.encoder3 = EncoderBlock(128, 256)
@@ -74,6 +61,14 @@ class UNet(nn.Module):
 
         self.optimizer = None
         self.criterion = None
+
+        self.device = None
+        if torch.cuda.is_available():
+            print("Using CUDA")
+            self.device = torch.device("cuda")
+        else:
+            print("Using CPU")
+            self.device = torch.device("cpu")
     
     def forward(self, input):
         e1 = self.encoder1(input)
@@ -93,20 +88,19 @@ class UNet(nn.Module):
         return m
 
     def train_model(self, dataloader: DataLoader, epochs: int, learningRate: float):
+        self.to(self.device)
         self.train()
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
         self.criterion = nn.CrossEntropyLoss()
 
-        loss_values = []
+        lossValues = []
         for epoch in range(epochs):
             running_loss = 0.0
             for i, data in enumerate(dataloader, 0):
                 inputs, labels = data
-                labels = labels.long()
-                labels = labels.squeeze(1)
+                labels = labels.long().squeeze(1)
                 self.optimizer.zero_grad()
                 outputs = self(inputs)
-                
                 
                 loss = self.criterion(outputs, labels)
                 loss.backward()
@@ -114,32 +108,20 @@ class UNet(nn.Module):
                 torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
 
                 self.optimizer.step()
-                if epoch % 20 == 19:
-                    probabilities = F.softmax(outputs, dim=1)  
-                    probabilities = probabilities.squeeze(0)
-                    
-                    pixels = normalize_tensor_to_pixels(probabilities[1, :, :])
-                    
-                    img = TF.to_pil_image(pixels.byte())
-                    img.show()
 
-                # print statistics
+                if epoch % 20 == 19:
+                    showTensor(outputs)
                 running_loss += loss.item()
                 
 
             epoch_loss = running_loss / len(dataloader)
             print(f'Epoch {epoch + 1} loss: {epoch_loss:.3f}')
-            loss_values.append(epoch_loss)
+            lossValues.append(epoch_loss)
 
-
-            plt.plot(loss_values, label='Training Loss')
-            plt.xlabel('Epochs')
-            plt.ylabel('Loss')
-            plt.title('Training Loss Over Time')
-            plt.pause(0.1)  # pause to update the plot
+            plotLoss(lossValues)
 
         print('Finished Training')
-        plt.show() 
+        plt.show()
 
 
     def save_model(self, fileName):
@@ -164,15 +146,7 @@ def main():
         inputs, labels = data
         outputs = unet(inputs)
 
-        print(f'Output min: {outputs.min()}, max: {outputs.max()}')
-        probabilities = F.softmax(outputs, dim=1)  
-        #predicted_classes = torch.argmax(probabilities, dim=1)
-        probabilities = probabilities.squeeze(0)
-        
-        pixels = normalize_tensor_to_pixels(probabilities[1, :, :])
-        
-        img = TF.to_pil_image(pixels.byte())
-        img.show()
+        showTensor(outputs)
 
 
 if __name__ == '__main__':
