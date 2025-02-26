@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1178</width>
+    <height>790</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>190</x>
+      <y>30</y>
+      <width>481</width>
+      <height>501</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+    <property name="pixmap">
+     <pixmap>../../../Pictures/Screenshots/Screenshot from 2025-02-26 12-03-03.png</pixmap>
+    </property>
+   </widget>
+   <widget class="QListWidget" name="listWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>171</width>
+      <height>521</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>Analyze</string>
+     </property>
+     <property name="textAlignment">
+      <set>AlignCenter</set>
+     </property>
+    </item>
+   </widget>
+   <widget class="QTableWidget" name="tableWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>540</y>
+      <width>1151</width>
+      <height>201</height>
+     </rect>
+    </property>
+    <row>
+     <property name="text">
+      <string>Count</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>Density</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>Diameter</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>Height</string>
+     </property>
+    </row>
+    <row>
+     <property name="text">
+      <string>Area</string>
+     </property>
+    </row>
+    <column>
+     <property name="text">
+      <string>Mean</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Minimum</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Maximum</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>Sigma</string>
+     </property>
+    </column>
+    <item row="0" column="0">
+     <property name="text">
+      <string>10000</string>
+     </property>
+    </item>
+    <item row="3" column="2">
+     <property name="text">
+      <string>1232</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="geometry">
+     <rect>
+      <x>690</x>
+      <y>10</y>
+      <width>471</width>
+      <height>531</height>
+     </rect>
+    </property>
+    <property name="currentIndex">
+     <number>2</number>
+    </property>
+    <widget class="QWidget" name="tab1">
+     <attribute name="title">
+      <string>???</string>
+     </attribute>
+     <widget class="QLabel" name="label1">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>451</width>
+        <height>481</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="pixmap">
+       <pixmap>../../../Pictures/Screenshots/Screenshot from 2025-02-26 11-56-07.png</pixmap>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab2">
+     <attribute name="title">
+      <string>Graph</string>
+     </attribute>
+     <widget class="QLabel" name="label2">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>461</width>
+        <height>491</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="pixmap">
+       <pixmap>../../../Pictures/Screenshots/Screenshot from 2025-02-26 11-51-50.png</pixmap>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="tab3">
+     <attribute name="title">
+      <string>Labeled</string>
+     </attribute>
+     <widget class="QLabel" name="label3">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>451</width>
+        <height>481</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="pixmap">
+       <pixmap>../../../Pictures/Screenshots/Screenshot from 2025-02-26 11-44-39.png</pixmap>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1178</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuModel">
+    <property name="title">
+     <string>Model</string>
+    </property>
+    <addaction name="actionTrain_model"/>
+    <addaction name="actionLoad_model"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuModel"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionTrain_model">
+   <property name="text">
+    <string>Train model</string>
+   </property>
+  </action>
+  <action name="actionLoad_model">
+   <property name="text">
+    <string>Load model</string>
+   </property>
+  </action>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
