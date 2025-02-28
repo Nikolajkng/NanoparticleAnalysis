@@ -6,13 +6,14 @@ from torch import Tensor
 import torchvision.transforms.functional as TF
 import os
 from SegmentationDataset import SegmentationDataset
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 import matplotlib.pyplot as plt
 import datetime
 from TensorTools import *
 from PlottingTools import *
-
-
+from sklearn.model_selection import KFold
+from DataTools import get_dataloaders
+import numpy as np
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -89,21 +90,27 @@ class UNet(nn.Module):
         m = self.mappingConvolution(d4)
         return m
 
-    def train_model(self, dataloader: DataLoader, epochs: int, learningRate: float):
+    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str):
         self.to(self.device)
-        self.train()
+        
         self.optimizer = torch.optim.SGD(self.parameters(), lr=learningRate, momentum=0.9)
         self.criterion = nn.CrossEntropyLoss()
 
-        lossValues = []
+        
+
+        training_loss_values = []
+        validation_loss_values = []
+        best_loss = np.inf
+        no_improvement_epochs = 0
         for epoch in range(epochs):
+            self.train()
             running_loss = 0.0
-            for i, data in enumerate(dataloader, 0):
+            for i, data in enumerate(training_dataloader):
                 inputs, labels = data
                 labels = labels.long().squeeze(1)
-                self.optimizer.zero_grad()
                 outputs = self(inputs)
                 
+                self.optimizer.zero_grad()
                 loss = self.criterion(outputs, labels)
                 loss.backward()
 
@@ -116,15 +123,41 @@ class UNet(nn.Module):
                 running_loss += loss.item()
                 
 
-            epoch_loss = running_loss / len(dataloader)
-            print(f'Epoch {epoch + 1} loss: {epoch_loss:.3f}')
-            lossValues.append(epoch_loss)
+            epoch_training_loss = running_loss / len(training_dataloader)
+            training_loss_values.append(epoch_training_loss)
 
-            plotLoss(lossValues)
+            epoch_validation_loss = self.get_validation_loss(validation_dataloader)
+            validation_loss_values.append(epoch_validation_loss)
+
+            plot_loss(training_loss_values, validation_loss_values)
+            print(f'Epoch {epoch + 1}: \nTraining loss: {epoch_training_loss:.5f}\nValidation loss: {epoch_validation_loss:.5f}\n')
+            
+            if epoch_validation_loss < best_loss:
+                self.save_model(model_name)
+                no_improvement_epochs = 0
+                best_loss = epoch_validation_loss
+            else:
+                no_improvement_epochs += 1
+                if no_improvement_epochs >= 20:
+                    break
 
         print('Finished Training')
+        self.load_model(model_name)
         plt.show()
 
+    def get_validation_loss(self, validation_dataloader: DataLoader) -> float:
+        self.eval()
+
+        running_loss = 0
+        for i, data in enumerate(validation_dataloader):
+            inputs, labels = data
+            labels = labels.long().squeeze(1)
+            outputs = self(inputs)
+
+            loss = self.criterion(outputs, labels)
+            running_loss += loss.item()
+        validation_loss = running_loss / len(validation_dataloader)
+        return validation_loss
 
     def save_model(self, fileName):
         torch.save(self.state_dict(), "data/models/" + fileName)
@@ -137,15 +170,12 @@ class UNet(nn.Module):
 def main():
     unet = UNet()
     dataset = SegmentationDataset("data/images/", "data/masks/")
-    dataloader = DataLoader(dataset, batch_size=5, shuffle=True)
-
-    unet.train_model(dataloader=dataloader, epochs=1000, learningRate=0.01)
-    unet.save_model("UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+    train_dataloader, validation_dataloader = get_dataloaders(dataset, 0.75)
+    unet.train_model(training_dataloader=train_dataloader, validation_dataloader=validation_dataloader, epochs=200, learningRate=0.01, model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
     unet.eval()
 
-
-    for i, data in enumerate(dataloader, 0):
-        inputs, labels = data
+    for i, data in enumerate(validation_dataloader):
+        inputs, _ = data
         outputs = unet(inputs)
 
         showTensor(outputs)
