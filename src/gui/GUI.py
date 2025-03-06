@@ -1,14 +1,7 @@
+from PyQt5.QtGui import QPixmap  
+from PyQt5.QtWidgets import QFileDialog, QMainWindow  
 from gui.MainWindow import Ui_MainWindow
-import sys
-import os
-
 from controller.Controller import Controller
-
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
-from PyQt5.QtGui import QPixmap  # QPixmap belongs to QtGui
-from PyQt5.QtWidgets import QFileDialog, QMainWindow  # QFileDialog belongs to QtWidgets
 from shared.Commands import Command
 class GUI(QMainWindow, Ui_MainWindow):
     def __init__(self):
