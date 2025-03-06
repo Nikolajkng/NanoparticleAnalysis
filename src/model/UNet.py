@@ -5,14 +5,17 @@ import torch.nn.functional as F
 from torch import Tensor
 import torchvision.transforms.functional as TF
 import os
-from SegmentationDataset import SegmentationDataset
 from torch.utils.data import DataLoader, Subset
 import matplotlib.pyplot as plt
 import datetime
-from TensorTools import *
-from PlottingTools import *
+
+
+from model.SegmentationDataset import SegmentationDataset
+from model.TensorTools import *
+from model.PlottingTools import *
+from model.DataTools import get_dataloaders
+
 from sklearn.model_selection import KFold
-from DataTools import get_dataloaders
 import numpy as np
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -166,6 +169,14 @@ class UNet(nn.Module):
         state_dict = torch.load("data/models/" + fileName)
         self.load_state_dict(state_dict)
 
+    def process_request_train(self, images_path, masks_path):
+        try:
+            dataset = SegmentationDataset("data/images/", "data/masks/")
+            train_dataloader, validation_dataloader = get_dataloaders(dataset, 0.75)
+            self.train_model(training_dataloader=train_dataloader, validation_dataloader=validation_dataloader, epochs=200, learningRate=0.01, model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+            return 0
+        except Exception:
+            return 1
 
 def main():
     unet = UNet()
