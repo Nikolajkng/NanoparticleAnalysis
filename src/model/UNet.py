@@ -169,9 +169,10 @@ class UNet(nn.Module):
         state_dict = torch.load("data/models/" + fileName)
         self.load_state_dict(state_dict)
 
+    # This should be in another communicator class
     def process_request_train(self, images_path, masks_path):
         try:
-            dataset = SegmentationDataset("data/images/", "data/masks/")
+            dataset = SegmentationDataset(images_path, masks_path)
             train_dataloader, validation_dataloader = get_dataloaders(dataset, 0.75)
             self.train_model(training_dataloader=train_dataloader, validation_dataloader=validation_dataloader, epochs=200, learningRate=0.01, model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
             return 0
