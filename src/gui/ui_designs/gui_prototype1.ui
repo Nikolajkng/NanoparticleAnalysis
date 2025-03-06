@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="label">
+   <widget class="QLabel" name="image_view">
     <property name="geometry">
      <rect>
       <x>190</x>
@@ -26,11 +26,8 @@
     <property name="text">
      <string/>
     </property>
-    <property name="pixmap">
-     <pixmap>../../../Pictures/Screenshots/Screenshot from 2025-02-26 12-03-03.png</pixmap>
-    </property>
    </widget>
-   <widget class="QListWidget" name="listWidget">
+   <widget class="QListWidget" name="options_widget">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -48,7 +45,7 @@
      </property>
     </item>
    </widget>
-   <widget class="QTableWidget" name="tableWidget">
+   <widget class="QTableWidget" name="table_widget">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -113,7 +110,7 @@
      </property>
     </item>
    </widget>
-   <widget class="QTabWidget" name="tabWidget">
+   <widget class="QTabWidget" name="plots_tab_view">
     <property name="geometry">
      <rect>
       <x>690</x>
@@ -129,7 +126,7 @@
      <attribute name="title">
       <string>???</string>
      </attribute>
-     <widget class="QLabel" name="label1">
+     <widget class="QLabel" name="plot1">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -150,7 +147,7 @@
      <attribute name="title">
       <string>Graph</string>
      </attribute>
-     <widget class="QLabel" name="label2">
+     <widget class="QLabel" name="plot2">
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -171,7 +168,7 @@
      <attribute name="title">
       <string>Labeled</string>
      </attribute>
-     <widget class="QLabel" name="label3">
+     <widget class="QLabel" name="plot3">
       <property name="geometry">
        <rect>
         <x>10</x>
@@ -196,39 +193,95 @@
      <x>0</x>
      <y>0</y>
      <width>1178</width>
-     <height>24</height>
+     <height>26</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
+   <widget class="QMenu" name="menu_file">
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="action_open_image"/>
    </widget>
-   <widget class="QMenu" name="menuEdit">
+   <widget class="QMenu" name="menu_edit">
     <property name="title">
      <string>Edit</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menuModel">
+   <widget class="QMenu" name="menu_model">
     <property name="title">
      <string>Model</string>
     </property>
-    <addaction name="actionTrain_model"/>
-    <addaction name="actionLoad_model"/>
+    <addaction name="action_train_model"/>
+    <addaction name="action_load_model"/>
    </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuEdit"/>
-   <addaction name="menuModel"/>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Export</string>
+    </property>
+    <addaction name="actionExport_Segmentation_2"/>
+    <addaction name="actionExport_Data_as_csv"/>
+   </widget>
+   <widget class="QMenu" name="menuRun">
+    <property name="title">
+     <string>Analyze</string>
+    </property>
+    <addaction name="actionRun_Segmentation_on_Current_Image"/>
+   </widget>
+   <widget class="QMenu" name="menuAbout">
+    <property name="title">
+     <string>About</string>
+    </property>
+   </widget>
+   <addaction name="menu_file"/>
+   <addaction name="menu_edit"/>
+   <addaction name="menuRun"/>
+   <addaction name="menu_model"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuAbout"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionTrain_model">
+  <widget class="QStatusBar" name="statusbar">
+   <property name="font">
+    <font>
+     <pointsize>9</pointsize>
+    </font>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <action name="action_train_model">
    <property name="text">
     <string>Train model</string>
    </property>
   </action>
-  <action name="actionLoad_model">
+  <action name="action_load_model">
    <property name="text">
     <string>Load model</string>
+   </property>
+  </action>
+  <action name="action_open_image">
+   <property name="text">
+    <string>Open Image</string>
+   </property>
+  </action>
+  <action name="actionExport_Segmentation">
+   <property name="text">
+    <string>Export Segmentation</string>
+   </property>
+  </action>
+  <action name="actionExport_Segmentation_2">
+   <property name="text">
+    <string>Export Segmentation</string>
+   </property>
+  </action>
+  <action name="actionExport_Data_as_csv">
+   <property name="text">
+    <string>Export Data as csv</string>
+   </property>
+  </action>
+  <action name="actionRun_Segmentation_on_Current_Image">
+   <property name="text">
+    <string>Run Segmentation on Current Image</string>
    </property>
   </action>
  </widget>
