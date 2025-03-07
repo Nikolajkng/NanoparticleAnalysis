@@ -66,10 +66,7 @@ class GUI(QMainWindow, Ui_MainWindow):
                 else:
                     file_path += ".png" 
             
-            self.segmented_image.save(file_path)
-            
-            
-             # Show success message
+            self.segmented_image.save(file_path)            
             self.messageBox("success")
         else:
             self.messageBox("Error: File path is not selected.")
@@ -102,7 +99,6 @@ class GUI(QMainWindow, Ui_MainWindow):
         if not self.csv_file.lower().endswith(".csv"):
             self.csv_file += ".csv"
 
-        # Iterates through table content
         try:
             with open(self.csv_file, mode='w', newline='', encoding='utf-8') as file:
                 writer = csv.writer(file)
@@ -121,16 +117,13 @@ class GUI(QMainWindow, Ui_MainWindow):
 
             self.messageBox("success")
         except Exception as error:
-            # Create the error message box
             self.messageBox(f"Failed to export data: {str(error)}")
     
 
     def messageBox(self, result):
-        # Create the message box
-        msg_box = QMessageBox(self)  # Pass self as the parent
+        msg_box = QMessageBox(self)  
 
         if result == "success":
-            # Success message
             msg_box.setIcon(QMessageBox.Information)
             msg_box.setWindowTitle("Success")
             msg_box.setText("Data exported successfully!")
@@ -144,6 +137,4 @@ class GUI(QMainWindow, Ui_MainWindow):
         screen_geometry = QApplication.desktop().screenGeometry()  
         screen_center = screen_geometry.center()
         msg_box.move(screen_center - msg_box.rect().center()) 
-
-        # Show the message box
         msg_box.exec_()
