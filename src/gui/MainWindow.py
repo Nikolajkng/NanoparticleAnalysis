@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'src/gui/ui_designs/gui_prototype1.ui'
+# Form implementation generated from reading ui file 'gui_prototype1.2.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -29,6 +29,7 @@ class Ui_MainWindow(object):
         self.options_widget.addItem(item)
         self.table_widget = QtWidgets.QTableWidget(self.centralwidget)
         self.table_widget.setGeometry(QtCore.QRect(10, 540, 1151, 201))
+        self.table_widget.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
         self.table_widget.setObjectName("table_widget")
         self.table_widget.setColumnCount(4)
         self.table_widget.setRowCount(5)
@@ -62,7 +63,7 @@ class Ui_MainWindow(object):
         self.plot1 = QtWidgets.QLabel(self.tab1)
         self.plot1.setGeometry(QtCore.QRect(10, 10, 451, 481))
         self.plot1.setText("")
-        self.plot1.setPixmap(QtGui.QPixmap("src/gui/ui_designs\\../../../Pictures/Screenshots/Screenshot from 2025-02-26 11-56-07.png"))
+        self.plot1.setPixmap(QtGui.QPixmap("../../../Pictures/Screenshots/Screenshot from 2025-02-26 11-56-07.png"))
         self.plot1.setObjectName("plot1")
         self.plots_tab_view.addTab(self.tab1, "")
         self.tab2 = QtWidgets.QWidget()
@@ -70,7 +71,7 @@ class Ui_MainWindow(object):
         self.plot2 = QtWidgets.QLabel(self.tab2)
         self.plot2.setGeometry(QtCore.QRect(0, 0, 461, 491))
         self.plot2.setText("")
-        self.plot2.setPixmap(QtGui.QPixmap("src/gui/ui_designs\\../../../Pictures/Screenshots/Screenshot from 2025-02-26 11-51-50.png"))
+        self.plot2.setPixmap(QtGui.QPixmap("../../../Pictures/Screenshots/Screenshot from 2025-02-26 11-51-50.png"))
         self.plot2.setObjectName("plot2")
         self.plots_tab_view.addTab(self.tab2, "")
         self.tab3 = QtWidgets.QWidget()
@@ -78,12 +79,12 @@ class Ui_MainWindow(object):
         self.plot3 = QtWidgets.QLabel(self.tab3)
         self.plot3.setGeometry(QtCore.QRect(10, 10, 451, 481))
         self.plot3.setText("")
-        self.plot3.setPixmap(QtGui.QPixmap("src/gui/ui_designs\\../../../Pictures/Screenshots/Screenshot from 2025-02-26 11-44-39.png"))
+        self.plot3.setPixmap(QtGui.QPixmap("../../../Pictures/Screenshots/Screenshot from 2025-02-26 11-44-39.png"))
         self.plot3.setObjectName("plot3")
         self.plots_tab_view.addTab(self.tab3, "")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1178, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1178, 24))
         self.menubar.setObjectName("menubar")
         self.menu_file = QtWidgets.QMenu(self.menubar)
         self.menu_file.setObjectName("menu_file")
@@ -185,13 +186,3 @@ class Ui_MainWindow(object):
         self.actionExport_Segmentation_2.setText(_translate("MainWindow", "Export Segmentation"))
         self.actionExport_Data_as_csv.setText(_translate("MainWindow", "Export Data as csv"))
         self.actionRun_Segmentation_on_Current_Image.setText(_translate("MainWindow", "Run Segmentation on Current Image"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
