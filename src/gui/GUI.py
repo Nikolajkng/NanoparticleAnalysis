@@ -12,18 +12,19 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.controller = Controller()
         self.image_path = None
 
-        self.action_train_model.triggered.connect(self.onTrainModelClicked)
-        self.action_open_image.triggered.connect(self.onOpenImageClicked)
-        self.actionRun_Segmentation_on_Current_Image.triggered.connect(self.onSegmentImageClicked)
+        self.action_train_model.triggered.connect(self.on_train_model_clicked)
+        self.action_open_image.triggered.connect(self.on_open_image_clicked)
+        self.actionRun_Segmentation_on_Current_Image.triggered.connect(self.on_segment_image_clicked)
+        self.action_load_model.triggered.connect(self.on_load_model_clicked)
 
-    def onOpenImageClicked(self):
+    def on_open_image_clicked(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
         self.image_path = file_path
         if file_path: 
             pixmap = QPixmap(file_path) 
             self.image_view.setPixmap(pixmap.scaled(600, 600, aspectRatioMode=1))  
 
-    def onSegmentImageClicked(self):
+    def on_segment_image_clicked(self):
         if (self.image_path == None):
             raise FileNotFoundError("You must open a file first.")
         
@@ -32,8 +33,13 @@ class GUI(QMainWindow, Ui_MainWindow):
         pixmap = QPixmap.fromImage(segmented_image_temp)
         self.plot3.setPixmap(pixmap.scaled(600, 600, aspectRatioMode=1))
 
-    def onTrainModelClicked(self):
+    def on_train_model_clicked(self):
         self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")
 
+    def on_load_model_clicked(self):
+        model_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
+        if model_path: 
+            self.controller.process_command(Command.LOAD_MODEL, model_path)
+        
 
 
