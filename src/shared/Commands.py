@@ -5,3 +5,4 @@ class Command(Enum):
     RETRAIN = auto()
     ANALYZE = auto()
     EXPORT = auto()
+    LOAD_MODEL = auto()

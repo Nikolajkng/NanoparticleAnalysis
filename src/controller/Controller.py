@@ -7,6 +7,7 @@ class Controller():
         self.commands = {
             Command.SEGMENT: self.unet.process_request_segment,
             Command.RETRAIN: self.unet.process_request_train,
+            Command.LOAD_MODEL: self.unet.process_request_load_model,
             # Command.ANALYZE: self.backend.analyze_segmentation,
             # Command.EXPORT: self.backend.export_results
         }

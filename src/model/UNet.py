@@ -137,7 +137,7 @@ class UNet(nn.Module):
             print(f'Epoch {epoch + 1}: \nTraining loss: {epoch_training_loss:.5f}\nValidation loss: {epoch_validation_loss:.5f}\n')
             
             if epoch_validation_loss < best_loss:
-                self.save_model(model_name)
+                self.save_model("data/models/" + model_name)
                 no_improvement_epochs = 0
                 best_loss = epoch_validation_loss
             else:
@@ -146,7 +146,7 @@ class UNet(nn.Module):
                     break
 
         print('Finished Training')
-        self.load_model(model_name)
+        self.load_model("data/models/" + model_name)
         plt.show()
 
     def get_validation_loss(self, validation_dataloader: DataLoader) -> float:
@@ -163,11 +163,11 @@ class UNet(nn.Module):
         validation_loss = running_loss / len(validation_dataloader)
         return validation_loss
 
-    def save_model(self, fileName):
-        torch.save(self.state_dict(), "data/models/" + fileName)
+    def save_model(self, path):
+        torch.save(self.state_dict(), path)
 
-    def load_model(self, fileName):
-        state_dict = torch.load("data/models/" + fileName)
+    def load_model(self, path):
+        state_dict = torch.load(path)
         self.load_state_dict(state_dict)
 
     # This should be in another communicator class
@@ -188,6 +188,13 @@ class UNet(nn.Module):
         output = self(image)
         segmentation = segmentation_to_image(output)
         return (segmentation, 0)
+    
+    def process_request_load_model(self, model_path):
+        try:
+            self.load_model(model_path)
+            return (None, 0)
+        except Exception as e:
+            return (e, 1)
 
 
 def main():
