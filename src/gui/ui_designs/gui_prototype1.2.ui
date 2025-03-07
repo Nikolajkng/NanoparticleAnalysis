@@ -104,12 +104,102 @@
     </column>
     <item row="0" column="0">
      <property name="text">
-      <string>10000</string>
+      <string>387</string>
+     </property>
+    </item>
+    <item row="0" column="1">
+     <property name="text">
+      <string>387</string>
+     </property>
+    </item>
+    <item row="0" column="2">
+     <property name="text">
+      <string>387</string>
+     </property>
+    </item>
+    <item row="0" column="3">
+     <property name="text">
+      <string>1</string>
+     </property>
+    </item>
+    <item row="1" column="0">
+     <property name="text">
+      <string>23</string>
+     </property>
+    </item>
+    <item row="1" column="1">
+     <property name="text">
+      <string>23</string>
+     </property>
+    </item>
+    <item row="1" column="2">
+     <property name="text">
+      <string>42</string>
+     </property>
+    </item>
+    <item row="1" column="3">
+     <property name="text">
+      <string>2</string>
+     </property>
+    </item>
+    <item row="2" column="0">
+     <property name="text">
+      <string>30</string>
+     </property>
+    </item>
+    <item row="2" column="1">
+     <property name="text">
+      <string>40</string>
+     </property>
+    </item>
+    <item row="2" column="2">
+     <property name="text">
+      <string>50</string>
+     </property>
+    </item>
+    <item row="2" column="3">
+     <property name="text">
+      <string>3</string>
+     </property>
+    </item>
+    <item row="3" column="0">
+     <property name="text">
+      <string>701</string>
+     </property>
+    </item>
+    <item row="3" column="1">
+     <property name="text">
+      <string>670</string>
      </property>
     </item>
     <item row="3" column="2">
      <property name="text">
       <string>1232</string>
+     </property>
+    </item>
+    <item row="3" column="3">
+     <property name="text">
+      <string>4</string>
+     </property>
+    </item>
+    <item row="4" column="0">
+     <property name="text">
+      <string>2043</string>
+     </property>
+    </item>
+    <item row="4" column="1">
+     <property name="text">
+      <string>2001</string>
+     </property>
+    </item>
+    <item row="4" column="2">
+     <property name="text">
+      <string>3012</string>
+     </property>
+    </item>
+    <item row="4" column="3">
+     <property name="text">
+      <string>5</string>
      </property>
     </item>
    </widget>
@@ -123,7 +213,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab1">
      <attribute name="title">
