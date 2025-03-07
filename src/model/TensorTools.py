@@ -1,7 +1,7 @@
 from torch import Tensor
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
-
+from PIL import Image
 def crop(tensor: Tensor, target_size: tuple[int, int]) -> Tensor:
     _, _, h, w = tensor.shape
     th, tw = target_size
@@ -30,5 +30,12 @@ def showTensor(tensor: Tensor) -> None:
             img = TF.to_pil_image(pixels.byte())
             img.show()
 
+def segmentation_to_image(tensor: Tensor) -> Image:
+    probabilities = F.softmax(tensor, dim=1)  
+    probabilities = probabilities.squeeze(0)
+    pixels = normalizeTensorToPixels(probabilities[1, :, :])
+
+    img = TF.to_pil_image(pixels.byte())
+    return img
     
     

@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QFileDialog, QMainWindow
 from gui.MainWindow import Ui_MainWindow
 from controller.Controller import Controller
 from shared.Commands import Command
+from PIL import ImageQt
 class GUI(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -26,11 +27,10 @@ class GUI(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             raise FileNotFoundError("You must open a file first.")
         
-        segmented_image_file_path = self.controller.segment_image(file_path=self.image_path)
-
-        if (segmented_image_file_path):
-            pixmap = QPixmap(segmented_image_file_path)
-            self.plot3.setPixmap(pixmap.scaled(600, 600, aspectRatioMode=1))
+        segmented_image = self.controller.process_command(Command.SEGMENT,self.image_path)
+        segmented_image_temp = ImageQt.ImageQt(segmented_image)
+        pixmap = QPixmap.fromImage(segmented_image_temp)
+        self.plot3.setPixmap(pixmap.scaled(600, 600, aspectRatioMode=1))
 
     def onTrainModelClicked(self):
         self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")

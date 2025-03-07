@@ -111,6 +111,7 @@ class UNet(nn.Module):
             for i, data in enumerate(training_dataloader):
                 inputs, labels = data
                 labels = labels.long().squeeze(1)
+                print(inputs.shape)
                 outputs = self(inputs)
                 
                 self.optimizer.zero_grad()
@@ -175,9 +176,19 @@ class UNet(nn.Module):
             dataset = SegmentationDataset(images_path, masks_path)
             train_dataloader, validation_dataloader = get_dataloaders(dataset, 0.75)
             self.train_model(training_dataloader=train_dataloader, validation_dataloader=validation_dataloader, epochs=200, learningRate=0.01, model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-            return 0
-        except Exception:
-            return 1
+            return (None, 0)
+        except Exception as e:
+            return (e, 1)
+        
+    def process_request_segment(self, image_path):
+        
+        image = Image.open(image_path).convert("L")
+        image = TF.to_tensor(image).unsqueeze(0)
+       
+        output = self(image)
+        segmentation = segmentation_to_image(output)
+        return (segmentation, 0)
+
 
 def main():
     unet = UNet()

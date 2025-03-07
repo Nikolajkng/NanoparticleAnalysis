@@ -5,7 +5,7 @@ class Controller():
         self.unet = UNet()
 
         self.commands = {
-            Command.SEGMENT: self.unet.forward,
+            Command.SEGMENT: self.unet.process_request_segment,
             Command.RETRAIN: self.unet.process_request_train,
             # Command.ANALYZE: self.backend.analyze_segmentation,
             # Command.EXPORT: self.backend.export_results
@@ -14,10 +14,11 @@ class Controller():
     def process_command(self, command, *args, **kwargs):
         """Routes the command to the appropriate backend method."""
         if command in self.commands:
-            return_code = self.commands[command](*args, **kwargs)
+            data, return_code = self.commands[command](*args, **kwargs)
             if return_code == 0:
-                return "We good"
+                return data
             else:
-                return "Something went wrong"
+                print(data)
+                return None
         else:
             print(f"Unknown command: {command}")
