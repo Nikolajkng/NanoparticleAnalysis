@@ -9,14 +9,15 @@ from model.PlottingTools import *
 from model.DataTools import get_dataloaders
 
 
-def train_model_holdout(self, images_path, masks_path):
+def cv_holdout(self, images_path, masks_path):
     from model.UNet import UNet  # Her -> Undgå circle import
     
     # Set parameters:
     train_subset_size = 0.75  # 3/4
     epochs = 10
     learning_rate = 0.01
-    print(f"Training model using [train_split_size={train_subset_size}, epochs={epochs}, learnRate={learning_rate}]...")
+    print(f"Training model using holdout [train_split_size={train_subset_size}, epochs={epochs}, learnRate={learning_rate}]...")
+    print("---------------------------------------------------------------------------------------")
 
     unet = UNet()
     dataset = SegmentationDataset(images_path, masks_path)
@@ -34,7 +35,7 @@ def train_model_holdout(self, images_path, masks_path):
 
 
 
-def train_model_kfold(self, images_path, masks_path):
+def cv_kfold(self, images_path, masks_path):
         from model.UNet import UNet  # Her -> Undgå circle import
                 
         # Set parameters:
@@ -42,8 +43,8 @@ def train_model_kfold(self, images_path, masks_path):
         epochs = 3
         learning_rate = 0.01
      
-        print(f"Training model using [{k_folds}-fold, epochs={epochs}, learnRate={learning_rate}]...")
-
+        print(f"Training model using {k_folds}-fold [k={k_folds}, epochs={epochs}, learnRate={learning_rate}]...")
+        print("---------------------------------------------------------------------------------------")
      
         dataset = SegmentationDataset(images_path, masks_path)
         datasetSize = np.arange(len(dataset))
