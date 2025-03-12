@@ -1,7 +1,7 @@
 from torch import Tensor
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
-from PIL import Image
+from PIL.Image import Image
 def crop(tensor: Tensor, target_size: tuple[int, int]) -> Tensor:
     _, _, h, w = tensor.shape
     th, tw = target_size

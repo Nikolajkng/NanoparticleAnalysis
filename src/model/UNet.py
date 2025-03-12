@@ -4,20 +4,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 import torchvision.transforms.functional as TF
-import os
-from torch.utils.data import DataLoader, Subset
-import matplotlib.pyplot as plt
-import datetime
+from torch.utils.data import DataLoader
+import numpy as np
 
-
-from model.SegmentationDataset import SegmentationDataset
+# Model-related imports
 from model.TensorTools import *
 from model.PlottingTools import *
 from model.DataTools import get_dataloaders
 from model.DataAugmenter import DataAugmenter
+from model.CrossValidation import *
 
-from sklearn.model_selection import KFold
-import numpy as np
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -67,16 +63,11 @@ class UNet(nn.Module):
         self.mappingConvolution = nn.Conv2d(64, 2, 1)
 
         self.optimizer = None
-        self.criterion = None
+        # self.criterion = None
 
-        self.device = None
-        if torch.cuda.is_available():
-            print("Using CUDA")
-            self.device = torch.device("cuda")
-        else:
-            print("Using CPU")
-            self.device = torch.device("cpu")
-    
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Using {self.device}")
+
     def forward(self, input):
         e1 = self.encoder1(input)
         pooled = nn.MaxPool2d(2,2)(e1)
@@ -94,23 +85,23 @@ class UNet(nn.Module):
         m = self.mappingConvolution(d4)
         return m
 
-    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str):
+    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str):
         self.to(self.device)
-        
         self.optimizer = torch.optim.SGD(self.parameters(), lr=learningRate, momentum=0.9)
         self.criterion = nn.CrossEntropyLoss()
-
-        
 
         training_loss_values = []
         validation_loss_values = []
         best_loss = np.inf
         no_improvement_epochs = 0
+
         for epoch in range(epochs):
             self.train()
             running_loss = 0.0
+
             for i, data in enumerate(training_dataloader):
                 inputs, labels = data
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.long().squeeze(1)
                 outputs = self(inputs)
                 
@@ -119,13 +110,9 @@ class UNet(nn.Module):
                 loss.backward()
 
                 torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
-
                 self.optimizer.step()
                 
-                if epoch % 20 == 19:
-                    showTensor(outputs)
                 running_loss += loss.item()
-                
 
             epoch_training_loss = running_loss / len(training_dataloader)
             training_loss_values.append(epoch_training_loss)
@@ -133,41 +120,48 @@ class UNet(nn.Module):
             epoch_validation_loss = self.get_validation_loss(validation_dataloader)
             validation_loss_values.append(epoch_validation_loss)
 
-            plot_loss(training_loss_values, validation_loss_values)
-            print(f'Epoch {epoch + 1}: \nTraining loss: {epoch_training_loss:.5f}\nValidation loss: {epoch_validation_loss:.5f}\n')
             
+            # Undgå plot alle k-fold modeller
+            if cross_validation == "holdout":
+                plot_loss(training_loss_values, validation_loss_values)
+            
+            
+            print(f'Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}')
+
             if epoch_validation_loss < best_loss:
                 self.save_model("data/models/" + model_name)
-                no_improvement_epochs = 0
                 best_loss = epoch_validation_loss
+                no_improvement_epochs = 0
             else:
                 no_improvement_epochs += 1
                 if no_improvement_epochs >= 40:
                     break
-
+        
         print('Finished Training')
         self.load_model("data/models/" + model_name)
-        plt.show()
+        return training_loss_values, validation_loss_values
+
 
     def get_validation_loss(self, validation_dataloader: DataLoader) -> float:
         self.eval()
-
         running_loss = 0
-        for i, data in enumerate(validation_dataloader):
-            inputs, labels = data
-            labels = labels.long().squeeze(1)
-            outputs = self(inputs)
+        with torch.no_grad():
+            for i, data in enumerate(validation_dataloader):
+                inputs, labels = data
+                inputs, labels = inputs.to(self.device), labels.to(self.device)
+                labels = labels.long().squeeze(1)
 
-            loss = self.criterion(outputs, labels)
-            running_loss += loss.item()
-        validation_loss = running_loss / len(validation_dataloader)
-        return validation_loss
+                outputs = self(inputs)
+                loss = self.criterion(outputs, labels)
+                running_loss += loss.item()
+
+        return running_loss / len(validation_dataloader)
 
     def save_model(self, path):
         torch.save(self.state_dict(), path)
 
     def load_model(self, path):
-        state_dict = torch.load(path)
+        state_dict = torch.load(path, map_location=self.device)
         self.load_state_dict(state_dict)
 
     def segment(self, tensor: Tensor):
@@ -176,52 +170,3 @@ class UNet(nn.Module):
         print(output.shape)
         print(arg.shape)
         return arg
-
-    # This should be in another communicator class
-    def process_request_train(self, images_path, masks_path):
-        try:
-            dataset = SegmentationDataset(images_path, masks_path)
-            print(len(dataset))
-            data_augmenter = DataAugmenter()
-            dataset = data_augmenter.augment_dataset(dataset)
-            print(len(dataset))
-            train_dataloader, validation_dataloader = get_dataloaders(dataset, 0.75)
-            self.train_model(training_dataloader=train_dataloader, validation_dataloader=validation_dataloader, epochs=200, learningRate=0.01, model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-            return (None, 0)
-        except Exception as e:
-            return (e, 1)
-        
-    def process_request_segment(self, image_path):
-        
-        image = Image.open(image_path).convert("L")
-        image = image.resize((256,256), Image.NEAREST)
-        image = TF.to_tensor(image).unsqueeze(0)
-       
-        output = self.segment(image)
-        segmentation = segmentation_to_image(output)
-        return (segmentation, 0)
-    
-    def process_request_load_model(self, model_path):
-        try:
-            self.load_model(model_path)
-            return (None, 0)
-        except Exception as e:
-            return (e, 1)
-
-
-def main():
-    unet = UNet()
-    dataset = SegmentationDataset("data/images/", "data/masks/")
-    train_dataloader, validation_dataloader = get_dataloaders(dataset, 0.75)
-    unet.train_model(training_dataloader=train_dataloader, validation_dataloader=validation_dataloader, epochs=200, learningRate=0.01, model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
-    unet.eval()
-
-    for i, data in enumerate(validation_dataloader):
-        inputs, _ = data
-        outputs = unet(inputs)
-
-        showTensor(outputs)
-
-
-if __name__ == '__main__':
-    main()

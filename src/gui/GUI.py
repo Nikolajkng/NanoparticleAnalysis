@@ -1,4 +1,5 @@
 import csv
+import threading
 from PyQt5.QtGui import QPixmap  
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
 from gui.MainWindow import Ui_MainWindow
@@ -7,6 +8,8 @@ from shared.Commands import Command
 from PIL import ImageQt
 import os
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication
+from functools import partial 
+
 class GUI(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -41,8 +44,22 @@ class GUI(QMainWindow, Ui_MainWindow):
         pixmap = QPixmap.fromImage(segmented_image_temp)
         self.plot3.setPixmap(pixmap.scaled(600, 600, aspectRatioMode=1))
 
+
     def on_train_model_clicked(self):
-        self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")
+        try:
+            self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")
+        
+        # TODO: Separat thread fucker live-plot op for hold-out op.
+        # try:
+        #     train_thread = threading.Thread(
+        #         target=partial(self.controller.process_command, Command.RETRAIN, "data/images", "data/masks"),
+        #         daemon=True)
+        #     train_thread.start()
+            
+            self.messageBoxTraining("success")
+        except:
+            self.messageBoxTraining("")
+
 
     def on_load_model_clicked(self):
         model_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
@@ -132,6 +149,25 @@ class GUI(QMainWindow, Ui_MainWindow):
             msg_box.setIcon(QMessageBox.Critical)
             msg_box.setWindowTitle("Error")
             msg_box.setText(result)
+            msg_box.setStandardButtons(QMessageBox.Ok)
+
+        screen_geometry = QApplication.desktop().screenGeometry()  
+        screen_center = screen_geometry.center()
+        msg_box.move(screen_center - msg_box.rect().center()) 
+        msg_box.exec_()
+        
+    def messageBoxTraining(self, result):
+        msg_box = QMessageBox(self)  
+        if result == "success":
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setWindowTitle("Success")
+            msg_box.setText("Training in progress ...")
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            
+        else:
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setWindowTitle("Error")
+            msg_box.setText("Failed to train model...")
             msg_box.setStandardButtons(QMessageBox.Ok)
 
         screen_geometry = QApplication.desktop().screenGeometry()  
