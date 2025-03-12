@@ -1,25 +1,22 @@
-import datetime
-from functools import partial
 from PIL import Image
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 import torchvision.transforms.functional as TF
+import os
 from torch.utils.data import DataLoader, Subset
 import matplotlib.pyplot as plt
-import numpy as np
-from sklearn.model_selection import KFold
-import threading
+import datetime
 
-# Model-related imports
+
 from model.SegmentationDataset import SegmentationDataset
 from model.TensorTools import *
 from model.PlottingTools import *
 from model.DataTools import get_dataloaders
 
-
-
+from sklearn.model_selection import KFold
+import numpy as np
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -71,9 +68,14 @@ class UNet(nn.Module):
         self.optimizer = None
         # self.criterion = None
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Using {self.device}")
-
+        self.device = None
+        if torch.cuda.is_available():
+            print("Using CUDA")
+            self.device = torch.device("cuda")
+        else:
+            print("Using CPU")
+            self.device = torch.device("cpu")
+    
     def forward(self, input):
         e1 = self.encoder1(input)
         pooled = nn.MaxPool2d(2,2)(e1)
@@ -97,20 +99,19 @@ class UNet(nn.Module):
         self.optimizer = torch.optim.SGD(self.parameters(), lr=learningRate, momentum=0.9)
         self.criterion = nn.CrossEntropyLoss()
 
+        
+
         training_loss_values = []
         validation_loss_values = []
         best_loss = np.inf
         no_improvement_epochs = 0
-
         for epoch in range(epochs):
             self.train()
             running_loss = 0.0
-
             for i, data in enumerate(training_dataloader):
                 inputs, labels = data
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.long().squeeze(1)
-
+                print(inputs.shape)
                 outputs = self(inputs)
                 
                 self.optimizer.zero_grad()
@@ -118,9 +119,13 @@ class UNet(nn.Module):
                 loss.backward()
 
                 torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
+
                 self.optimizer.step()
                 
+                if epoch % 20 == 19:
+                    showTensor(outputs)
                 running_loss += loss.item()
+                
 
             epoch_training_loss = running_loss / len(training_dataloader)
             training_loss_values.append(epoch_training_loss)
@@ -128,108 +133,53 @@ class UNet(nn.Module):
             epoch_validation_loss = self.get_validation_loss(validation_dataloader)
             validation_loss_values.append(epoch_validation_loss)
 
-            print(f'Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}')
-
+            plot_loss(training_loss_values, validation_loss_values)
+            print(f'Epoch {epoch + 1}: \nTraining loss: {epoch_training_loss:.5f}\nValidation loss: {epoch_validation_loss:.5f}\n')
+            
             if epoch_validation_loss < best_loss:
                 self.save_model("data/models/" + model_name)
-                best_loss = epoch_validation_loss
                 no_improvement_epochs = 0
-                
-                
+                best_loss = epoch_validation_loss
             else:
                 no_improvement_epochs += 1
                 if no_improvement_epochs >= 20:
                     break
-        
+
         print('Finished Training')
         self.load_model("data/models/" + model_name)
-        return training_loss_values, validation_loss_values
-
+        plt.show()
 
     def get_validation_loss(self, validation_dataloader: DataLoader) -> float:
         self.eval()
+
         running_loss = 0
-        with torch.no_grad():
-            for i, data in enumerate(validation_dataloader):
-                inputs, labels = data
-                inputs, labels = inputs.to(self.device), labels.to(self.device)
-                labels = labels.long().squeeze(1)
+        for i, data in enumerate(validation_dataloader):
+            inputs, labels = data
+            labels = labels.long().squeeze(1)
+            outputs = self(inputs)
 
-                outputs = self(inputs)
-                loss = self.criterion(outputs, labels)
-                running_loss += loss.item()
-
-        return running_loss / len(validation_dataloader)
+            loss = self.criterion(outputs, labels)
+            running_loss += loss.item()
+        validation_loss = running_loss / len(validation_dataloader)
+        return validation_loss
 
     def save_model(self, path):
         torch.save(self.state_dict(), path)
 
     def load_model(self, path):
-        state_dict = torch.load(path, map_location=self.device)
+        state_dict = torch.load(path)
         self.load_state_dict(state_dict)
-        
+
     # This should be in another communicator class
     def process_request_train(self, images_path, masks_path):
         try:
-            k_folds = 5
-            
             dataset = SegmentationDataset(images_path, masks_path)
-            datasetSize = np.arange(len(dataset))
-            
-            kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
-            
-            fold_train_loss = []
-            fold_val_loss = []
-            fold_results = []
-
-            for fold, (train_idx, val_idx) in enumerate(kfold.split(datasetSize)):
-            
-                print(f"############## Fold {fold+1}/{k_folds} ##############") 
-                train_subset = Subset(dataset, train_idx.tolist())
-                val_subset = Subset(dataset, val_idx.tolist())
-                print(f"Training-split: {train_subset.indices}")
-                print(f"Validation-split: {val_subset.indices}")
-
-                train_dataloader = DataLoader(train_subset, batch_size=4, shuffle=True)
-                val_dataloader = DataLoader(val_subset, batch_size=1, shuffle=False)
-
-                unet = UNet()
-                model_name = f"UNet_Fold{fold+1}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-                # Train model
-                train_loss, val_loss = unet.train_model(
-                    training_dataloader=train_dataloader,
-                    validation_dataloader=val_dataloader,
-                    epochs=3,
-                    learningRate=0.01,
-                    model_name=model_name
-                )
-
-                # Evaluate fold performance
-                validation_loss = unet.get_validation_loss(val_dataloader)
-                fold_results.append(validation_loss)
-                
-                # For plotting later
-                fold_train_loss.append(train_loss)
-                fold_val_loss.append(val_loss)
-                
-                print(f"Fold {fold+1} Validation Loss: {validation_loss:.5f}")
-
-
-            # Final results:
-            print(f"\nK-Fold Cross Validation Results:\n--------------------------------")
-            for i, loss in enumerate(fold_results):
-                print(f"Fold {i+1}: Validation Loss = {loss:.5f}")
-                
-            avg_loss = np.mean(fold_results)
-            print(f"\nAverage Validation Loss: {avg_loss:.5f}")
-
+            train_dataloader, validation_dataloader = get_dataloaders(dataset, 0.75)
+            self.train_model(training_dataloader=train_dataloader, validation_dataloader=validation_dataloader, epochs=10, learningRate=0.01, model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
             return (None, 0)
         except Exception as e:
             return (e, 1)
-
-    
-
+        
     def process_request_segment(self, image_path):
         
         image = Image.open(image_path).convert("L")
@@ -246,8 +196,20 @@ class UNet(nn.Module):
         except Exception as e:
             return (e, 1)
 
-def main():
-   
 
-    if __name__ == '__main__':
-        main()
+def main():
+    unet = UNet()
+    dataset = SegmentationDataset("data/images/", "data/masks/")
+    train_dataloader, validation_dataloader = get_dataloaders(dataset, 0.75)
+    unet.train_model(training_dataloader=train_dataloader, validation_dataloader=validation_dataloader, epochs=10, learningRate=0.01, model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
+    unet.eval()
+
+    for i, data in enumerate(validation_dataloader):
+        inputs, _ = data
+        outputs = unet(inputs)
+
+        showTensor(outputs)
+
+
+if __name__ == '__main__':
+    main()
