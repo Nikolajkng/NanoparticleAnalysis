@@ -7,8 +7,9 @@ python -m model.UNet_old
 
 
 # Flow
-GUI (on_train_model_clicked) 
--> controller (command: retrain) 
--> user_request (process_request_train)
--> cross-validation (train_model_kfold)
--> UNet ()
+= FILE              FUNCTION 
+-> GUI              (on_train_model_clicked) 
+-> Controller       (process_command: RETRAIN) 
+-> RequstHandler    (process_request_train)
+-> CrossValidation  (cv_kfold || cv_holdout)
+-> UNet             (train_model)
