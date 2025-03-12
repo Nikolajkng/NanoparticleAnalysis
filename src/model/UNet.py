@@ -111,7 +111,6 @@ class UNet(nn.Module):
             for i, data in enumerate(training_dataloader):
                 inputs, labels = data
                 labels = labels.long().squeeze(1)
-                print(inputs.shape)
                 outputs = self(inputs)
                 
                 self.optimizer.zero_grad()
