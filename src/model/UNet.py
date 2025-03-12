@@ -110,7 +110,6 @@ class UNet(nn.Module):
                 inputs, labels = data
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.long().squeeze(1)
-
                 outputs = self(inputs)
                 
                 self.optimizer.zero_grad()
