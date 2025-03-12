@@ -10,7 +10,7 @@ import numpy as np
 # Model-related imports
 from model.TensorTools import *
 from model.PlottingTools import *
-from src.model.CrossValidation import *
+from model.CrossValidation import *
 
 
 

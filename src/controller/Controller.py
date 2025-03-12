@@ -1,5 +1,5 @@
 from shared.Commands import Command
-from src.model.RequestHandler import request_handler
+from model.RequestHandler import request_handler
 from model.UNet import UNet
 
 class Controller():

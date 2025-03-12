@@ -2,7 +2,7 @@ from PIL import Image
 import torchvision.transforms.functional as TF
 from model.TensorTools import *
 from model.PlottingTools import *
-from src.model.CrossValidation import *
+from model.CrossValidation import *
 
 class request_handler:
     def __init__(self, unet):
