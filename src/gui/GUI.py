@@ -47,10 +47,15 @@ class GUI(QMainWindow, Ui_MainWindow):
 
     def on_train_model_clicked(self):
         try:
-            train_thread = threading.Thread(
-                target=partial(self.controller.process_command, Command.RETRAIN, "data/images", "data/masks"),
-                daemon=True)
-            train_thread.start()
+            self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")
+        
+        # TODO: Separat thread fucker live-plot op for hold-out op.
+        # try:
+        #     train_thread = threading.Thread(
+        #         target=partial(self.controller.process_command, Command.RETRAIN, "data/images", "data/masks"),
+        #         daemon=True)
+        #     train_thread.start()
+            
             self.messageBoxTraining("success")
         except:
             self.messageBoxTraining("")

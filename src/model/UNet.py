@@ -1,22 +1,16 @@
-import datetime
-from functools import partial
 from PIL import Image
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 import torchvision.transforms.functional as TF
-from torch.utils.data import DataLoader, Subset
-import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader
 import numpy as np
-from sklearn.model_selection import KFold
-import threading
 
 # Model-related imports
-from model.SegmentationDataset import SegmentationDataset
 from model.TensorTools import *
 from model.PlottingTools import *
-from model.DataTools import get_dataloaders
+from src.model.CrossValidation import *
 
 
 
@@ -91,9 +85,8 @@ class UNet(nn.Module):
         m = self.mappingConvolution(d4)
         return m
 
-    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str):
+    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str):
         self.to(self.device)
-        
         self.optimizer = torch.optim.SGD(self.parameters(), lr=learningRate, momentum=0.9)
         self.criterion = nn.CrossEntropyLoss()
 
@@ -127,14 +120,13 @@ class UNet(nn.Module):
             epoch_validation_loss = self.get_validation_loss(validation_dataloader)
             validation_loss_values.append(epoch_validation_loss)
 
+            plot_loss(training_loss_values, validation_loss_values)
             print(f'Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}')
 
             if epoch_validation_loss < best_loss:
                 self.save_model("data/models/" + model_name)
                 best_loss = epoch_validation_loss
                 no_improvement_epochs = 0
-                
-                
             else:
                 no_improvement_epochs += 1
                 if no_improvement_epochs >= 20:
@@ -167,86 +159,10 @@ class UNet(nn.Module):
         state_dict = torch.load(path, map_location=self.device)
         self.load_state_dict(state_dict)
         
-    # This should be in another communicator class
-    def process_request_train(self, images_path, masks_path):
-        try:
-            k_folds = 5
-            
-            dataset = SegmentationDataset(images_path, masks_path)
-            datasetSize = np.arange(len(dataset))
-            
-            kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
-            
-            fold_train_loss = []
-            fold_val_loss = []
-            fold_results = []
-
-            for fold, (train_idx, val_idx) in enumerate(kfold.split(datasetSize)):
-            
-                print(f"############## Fold {fold+1}/{k_folds} ##############") 
-                train_subset = Subset(dataset, train_idx.tolist())
-                val_subset = Subset(dataset, val_idx.tolist())
-                print(f"Training-split: {train_subset.indices}")
-                print(f"Validation-split: {val_subset.indices}")
-
-                train_dataloader = DataLoader(train_subset, batch_size=4, shuffle=True)
-                val_dataloader = DataLoader(val_subset, batch_size=1, shuffle=False)
-
-                unet = UNet()
-                model_name = f"UNet_Fold{fold+1}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
-
-                # Train model
-                train_loss, val_loss = unet.train_model(
-                    training_dataloader=train_dataloader,
-                    validation_dataloader=val_dataloader,
-                    epochs=3,
-                    learningRate=0.01,
-                    model_name=model_name
-                )
-
-                # Evaluate fold performance
-                validation_loss = unet.get_validation_loss(val_dataloader)
-                fold_results.append(validation_loss)
-                
-                # For plotting later
-                fold_train_loss.append(train_loss)
-                fold_val_loss.append(val_loss)
-                
-                print(f"Fold {fold+1} Validation Loss: {validation_loss:.5f}")
-
-
-            # Final results:
-            print(f"\nK-Fold Cross Validation Results:\n--------------------------------")
-            for i, loss in enumerate(fold_results):
-                print(f"Fold {i+1}: Validation Loss = {loss:.5f}")
-                
-            avg_loss = np.mean(fold_results)
-            print(f"\nAverage Validation Loss: {avg_loss:.5f}")
-
-            return (None, 0)
-        except Exception as e:
-            return (e, 1)
-
-    
-
-    def process_request_segment(self, image_path):
         
-        image = Image.open(image_path).convert("L")
-        image = TF.to_tensor(image).unsqueeze(0)
-       
-        output = self(image)
-        segmentation = segmentation_to_image(output)
-        return (segmentation, 0)
-    
-    def process_request_load_model(self, model_path):
-        try:
-            self.load_model(model_path)
-            return (None, 0)
-        except Exception as e:
-            return (e, 1)
-
 def main():
    
 
     if __name__ == '__main__':
         main()
+        
