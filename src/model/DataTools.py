@@ -11,7 +11,7 @@ def get_dataloaders(dataset: Dataset, train_data_size: float) -> tuple[DataLoade
 
     return (train_dataloader, val_dataloader)
 
-def resize_images(folder_path, output_size=(256, 256), is_masks=False):
+def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
     for filename in os.listdir(folder_path):
         if filename.endswith(('.tif')):
             image_path = os.path.join(folder_path, filename)
@@ -25,4 +25,4 @@ def resize_images(folder_path, output_size=(256, 256), is_masks=False):
 
 if __name__ == '__main__':
     folder_path = 'data/masks'
-    resize_images(folder_path, is_masks=True)
+    resize_and_save_images(folder_path, is_masks=True)

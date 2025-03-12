@@ -1,8 +1,8 @@
 from torch import Tensor
 import torchvision.transforms.functional as TF
 from torchvision.transforms.functional import rotate, hflip
-from SegmentationDataset import SegmentationDataset
-from TensorTools import normalizeTensorToPixels
+from model.SegmentationDataset import SegmentationDataset
+from model.TensorTools import normalizeTensorToPixels
 class DataAugmenter():
     def __init__(self):
         return
@@ -23,6 +23,19 @@ class DataAugmenter():
             final_flipped_images.extend([image, hflip(image)])
             final_flipped_masks.extend([mask, hflip(mask)])
         return (final_flipped_images, final_flipped_masks)
+    
+    def augment_dataset(self, dataset: SegmentationDataset) -> SegmentationDataset:
+        new_images = []
+        new_masks = []
+        for image, mask in zip(dataset.images, dataset.masks):
+            rotated_images, rotated_masks = self.create_rotated_tensors(image, mask)
+            augmented_images, augmented_masks = self.create_hflipped_tensors(rotated_images, rotated_masks)
+            new_images.extend(augmented_images)
+            new_masks.extend(augmented_masks)
+        dataset.images = new_images
+        dataset.masks = new_masks
+        return dataset
+
 
 
 if __name__ == '__main__':

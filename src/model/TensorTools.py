@@ -31,9 +31,7 @@ def showTensor(tensor: Tensor) -> None:
             img.show()
 
 def segmentation_to_image(tensor: Tensor) -> Image:
-    probabilities = F.softmax(tensor, dim=1)  
-    probabilities = probabilities.squeeze(0)
-    pixels = normalizeTensorToPixels(probabilities[1, :, :])
+    pixels = normalizeTensorToPixels(tensor[0, :, :])
 
     img = TF.to_pil_image(pixels.byte())
     return img

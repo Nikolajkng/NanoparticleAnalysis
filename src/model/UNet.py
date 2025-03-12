@@ -14,6 +14,7 @@ from model.SegmentationDataset import SegmentationDataset
 from model.TensorTools import *
 from model.PlottingTools import *
 from model.DataTools import get_dataloaders
+from model.DataAugmenter import DataAugmenter
 
 from sklearn.model_selection import KFold
 import numpy as np
@@ -141,7 +142,7 @@ class UNet(nn.Module):
                 best_loss = epoch_validation_loss
             else:
                 no_improvement_epochs += 1
-                if no_improvement_epochs >= 20:
+                if no_improvement_epochs >= 40:
                     break
 
         print('Finished Training')
@@ -169,10 +170,21 @@ class UNet(nn.Module):
         state_dict = torch.load(path)
         self.load_state_dict(state_dict)
 
+    def segment(self, tensor: Tensor):
+        output = self(tensor)
+        arg = output.argmax(dim=1)
+        print(output.shape)
+        print(arg.shape)
+        return arg
+
     # This should be in another communicator class
     def process_request_train(self, images_path, masks_path):
         try:
             dataset = SegmentationDataset(images_path, masks_path)
+            print(len(dataset))
+            data_augmenter = DataAugmenter()
+            dataset = data_augmenter.augment_dataset(dataset)
+            print(len(dataset))
             train_dataloader, validation_dataloader = get_dataloaders(dataset, 0.75)
             self.train_model(training_dataloader=train_dataloader, validation_dataloader=validation_dataloader, epochs=200, learningRate=0.01, model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'))
             return (None, 0)
@@ -182,9 +194,10 @@ class UNet(nn.Module):
     def process_request_segment(self, image_path):
         
         image = Image.open(image_path).convert("L")
+        image = image.resize((256,256), Image.NEAREST)
         image = TF.to_tensor(image).unsqueeze(0)
        
-        output = self(image)
+        output = self.segment(image)
         segmentation = segmentation_to_image(output)
         return (segmentation, 0)
     
