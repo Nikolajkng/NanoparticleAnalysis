@@ -63,8 +63,8 @@ def cv_kfold(self, images_path, masks_path):
             print(f"############## Fold {fold+1}/{k_folds} ##############") 
             train_subset = Subset(dataset, train_idx.tolist())
             val_subset = Subset(dataset, val_idx.tolist())
-            print(f"Training-split: {train_subset.indices}")
-            print(f"Validation-split: {val_subset.indices}")
+            print(f"Training-split ({len(train_subset.indices)}/{len(dataset)}): {train_subset.indices}")
+            print(f"Validation-split ({len(val_subset.indices)}/{len(dataset)}): {val_subset.indices}")
 
             train_dataloader = DataLoader(train_subset, batch_size=4, shuffle=True)
             val_dataloader = DataLoader(val_subset, batch_size=1, shuffle=False)
