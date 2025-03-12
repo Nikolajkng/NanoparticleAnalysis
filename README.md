@@ -6,7 +6,7 @@ Bachelor Project 2025
 python -m model.UNet_old
 
 
-# Flow
+# Flow for when user clicks "Train model"
 = FILE              FUNCTION 
 -> GUI              (on_train_model_clicked) 
 -> Controller       (process_command: RETRAIN) 
