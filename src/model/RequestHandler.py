@@ -12,8 +12,8 @@ class request_handler:
         try:
             
             # CHANGE CROSS VALIDATION HERE (uncomment):
-            #cv_holdout(self.unet, images_path, masks_path)
-            cv_kfold(self.unet, images_path, masks_path)
+            cv_holdout(self.unet, images_path, masks_path)
+            # cv_kfold(self.unet, images_path, masks_path)
             
             return (None, 0)
         except Exception as e:
