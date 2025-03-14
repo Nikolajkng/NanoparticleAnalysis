@@ -66,7 +66,7 @@ def cv_kfold(unet, images_path, masks_path):
         print(f"Training-split ({len(train_split.indices)}/{len(dataset)}): {train_split.indices}")
         print(f"Validation-split ({len(val_split.indices)}/{len(dataset)}): {val_split.indices}")
 
-        # Inner K-Fold Cross Validation on the training data of the outer fold
+        # Inner K-Fold Cross Validation 
         inner_fold_results = []
         inner_kfold = KFold(n_splits=inner_k, shuffle=True, random_state=42)
         
@@ -80,11 +80,9 @@ def cv_kfold(unet, images_path, masks_path):
             train_dataloader = DataLoader(inner_train_split, batch_size=4, shuffle=True)
             val_dataloader = DataLoader(inner_val_split, batch_size=1, shuffle=False)
             
-            # Initialize a fresh model for each fold
             model_name = f"UNet_Fold{outerfold+1}_InnerFold{innerfold+1}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
             unet = UNet()
             
-            # Train the model on the inner fold
             unet.train_model(
                 training_dataloader=train_dataloader,
                 validation_dataloader=val_dataloader,
@@ -94,24 +92,20 @@ def cv_kfold(unet, images_path, masks_path):
                 cross_validation="k-fold"
             )
             
-            # Evaluate inner fold performance
+            
             validation_loss = unet.get_validation_loss(val_dataloader)
             print(f"Inner Fold {innerfold+1} Validation Loss: {validation_loss:.5f}")
             inner_fold_results.append(validation_loss)
         
-        # After inner loop, evaluate the outer fold performance (average of inner folds)
         avg_inner_loss = np.mean(inner_fold_results)
         print(f"\nAverage Inner Fold Validation Loss for Outer Fold {outerfold+1}: {avg_inner_loss:.5f}")
         
-        # Now train on the entire training split of the outer fold
         train_dataloader = DataLoader(train_split, batch_size=4, shuffle=True)
         val_dataloader = DataLoader(val_split, batch_size=1, shuffle=False)
         
-        # Initialize a fresh model for the outer fold
         model_name = f"UNet_OuterFold{outerfold+1}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
         unet = UNet()
         
-        # Train the model on the outer fold
         unet.train_model(
             training_dataloader=train_dataloader,
             validation_dataloader=val_dataloader,
@@ -121,16 +115,15 @@ def cv_kfold(unet, images_path, masks_path):
             cross_validation="k-fold"
         )
         
-        # Evaluate outer fold performance
         validation_loss = unet.get_validation_loss(val_dataloader)
         print(f"Outer Fold {outerfold+1} Validation Loss: {validation_loss:.5f}")
         fold_results.append(validation_loss)
         
-        # Track the best validation result across all folds
         if validation_loss < best_val_loss:
             best_val_loss = validation_loss
-            best_split_subset = (train_split, val_split)                    # Store best data split
-            best_split_indices = (train_split.indices, val_split.indices)   # For tracking the split indices
+            best_split_subset = (train_split, val_split)                   
+            best_split_indices = (train_split.indices, val_split.indices)   
+        
         
     # Summary of results:
     print(f"\n############## K-Fold Cross Validation Summary ##############")
@@ -143,4 +136,4 @@ def cv_kfold(unet, images_path, masks_path):
     # Summary of the best fold
     print(f"\n############## Best split found: ##############")
     best_results.append((best_val_loss, best_split_indices, best_split_subset))   
-    print(f"Lowest Validation Loss = {best_val_loss} with split = {best_split_indices}")
+    print(f"Lowest Validation Loss = {best_val_loss} ")
