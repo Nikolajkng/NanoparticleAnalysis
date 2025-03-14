@@ -11,6 +11,7 @@ class Controller():
             Command.SEGMENT: self.request_handler.process_request_segment,
             Command.RETRAIN: self.request_handler.process_request_train,
             Command.LOAD_MODEL: self.request_handler.process_request_load_model,
+            Command.CALCULATE_REAL_IMAGE_WIDTH: self.request_handler.process_request_calculate_image_width,
             # Command.ANALYZE: self.request_handler.analyze_segmentation,
             # Command.EXPORT: self.request_handler.export_results
         }

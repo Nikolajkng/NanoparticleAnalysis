@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, 
 from functools import partial 
 from gui.SelectScaleUI import SelectScaleUI
 import numpy as np
+from shared.ScaleInfo import ScaleInfo
 class GUI(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -21,7 +22,7 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.image_path = None
         self.segmented_image = None
         self.csv_file = None
-        self.select_scale_window = SelectScaleUI()
+        self.select_scale_window = None
         self.scale_start_x = 0
         self.scale_end_x = 0
         self.graphicsView_scene = QGraphicsScene(self)
@@ -55,14 +56,15 @@ class GUI(QMainWindow, Ui_MainWindow):
         print(f"{self.scale_start_x}, {self.scale_end_x}")
 
     def on_calculate_input_image_size_clicked(self):
-        scaled_length = float(np.abs(self.scale_end_x - self.scale_start_x))
-        real_length = float(self.barScaleInputField.text())
-        image_width = self.graphicsView.size().width()
-        self.input_image_real_width = real_length / scaled_length * image_width
+        scale_info = ScaleInfo(self.scale_start_x, 
+                               self.scale_end_x, 
+                               self.barScaleInputField.text(), 
+                               self.graphicsView.size().width())
 
-        print(self.input_image_real_width)
+        self.input_image_real_width = self.controller.process_command(Command.CALCULATE_REAL_IMAGE_WIDTH, scale_info)
 
     def on_select_bar_scale_clicked(self):
+        self.select_scale_window = SelectScaleUI()
         pixmap = QPixmap(self.image_path) 
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
         self.select_scale_window.image_scene.addItem(pixmap_item)

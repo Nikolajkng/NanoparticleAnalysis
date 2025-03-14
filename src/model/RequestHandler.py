@@ -5,6 +5,7 @@ from model.CrossValidation import *
 from PIL import Image
 import numpy as np
 from model.SegmentationAnalyzer import SegmentationAnalyzer
+from shared.ScaleInfo import ScaleInfo
 
 class request_handler:
     def __init__(self, unet):
@@ -44,5 +45,14 @@ class request_handler:
         try:
             self.unet.load_model(model_path)
             return (None, 0)
+        except Exception as e:
+            return (e, 1)
+        
+    def process_request_calculate_image_width(self, scale_info: ScaleInfo):
+        try:
+            scaled_length = float(np.abs(scale_info.end_x- scale_info.start_x))
+            real_length = float(scale_info.real_scale_length)
+            input_image_real_width = real_length / scaled_length * scale_info.image_width
+            return (input_image_real_width, 1)
         except Exception as e:
             return (e, 1)
