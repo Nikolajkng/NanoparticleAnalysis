@@ -7,7 +7,7 @@ from controller.Controller import Controller
 from shared.Commands import Command
 from PIL import ImageQt
 import os
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QGraphicsPixmapItem
 from functools import partial 
 
 class GUI(QMainWindow, Ui_MainWindow):
@@ -19,6 +19,17 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.image_path = None
         self.segmented_image = None
         self.csv_file = None
+
+        self.graphicsView_scene = QGraphicsScene(self)
+        self.graphicsView.setScene(self.graphicsView_scene)
+
+        self.plot1_scene = QGraphicsScene(self)
+        self.plot1.setScene(self.plot1_scene)
+        self.plot2_scene = QGraphicsScene(self)
+        self.plot2.setScene(self.plot2_scene)
+        self.plot3_scene = QGraphicsScene(self)
+        self.plot3.setScene(self.plot3_scene)
+
 
 
         self.action_train_model.triggered.connect(self.on_train_model_clicked)
@@ -34,7 +45,8 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.image_path = file_path
         if file_path: 
             pixmap = QPixmap(file_path) 
-            self.image_view.setPixmap(pixmap.scaled(600, 600, aspectRatioMode=1))  
+            pixmap_item = QGraphicsPixmapItem(pixmap.scaled(480, 480, aspectRatioMode=1))
+            self.graphicsView_scene.addItem(pixmap_item)
 
     def on_segment_image_clicked(self):
         if (self.image_path == None):
@@ -42,7 +54,8 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.segmented_image = self.controller.process_command(Command.SEGMENT,self.image_path)
         segmented_image_temp = ImageQt.ImageQt(self.segmented_image)
         pixmap = QPixmap.fromImage(segmented_image_temp)
-        self.plot3.setPixmap(pixmap.scaled(600, 600, aspectRatioMode=1))
+        pixmap_item = QGraphicsPixmapItem(pixmap.scaled(480, 480, aspectRatioMode=1))
+        self.plot3_scene.addItem(pixmap_item)
 
 
     def on_train_model_clicked(self):
