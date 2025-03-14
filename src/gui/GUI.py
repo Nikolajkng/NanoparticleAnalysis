@@ -1,15 +1,17 @@
 import csv
 import threading
-from PyQt5.QtGui import QPixmap  
+from PyQt5.QtGui import QPixmap, QPen
+from PyQt5.QtCore import QRect, Qt, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
 from gui.MainWindow import Ui_MainWindow
 from controller.Controller import Controller
 from shared.Commands import Command
 from PIL import ImageQt
 import os
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QGraphicsPixmapItem, QRubberBand, QGraphicsLineItem, QGraphicsView
 from functools import partial 
-
+from gui.SelectScaleUI import SelectScaleUI
+import numpy as np
 class GUI(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -19,9 +21,13 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.image_path = None
         self.segmented_image = None
         self.csv_file = None
-
+        self.select_scale_window = SelectScaleUI()
+        self.scale_start_x = 0
+        self.scale_end_x = 0
         self.graphicsView_scene = QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsView_scene)
+        self.input_image_real_width = 0
+        
 
         self.plot1_scene = QGraphicsScene(self)
         self.plot1.setScene(self.plot1_scene)
@@ -30,22 +36,47 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.plot3_scene = QGraphicsScene(self)
         self.plot3.setScene(self.plot3_scene)
 
-
-
         self.action_train_model.triggered.connect(self.on_train_model_clicked)
         self.action_open_image.triggered.connect(self.on_open_image_clicked)
         self.actionRun_Segmentation_on_Current_Image.triggered.connect(self.on_segment_image_clicked)
         self.action_load_model.triggered.connect(self.on_load_model_clicked)
         self.actionExport_Segmentation_2.triggered.connect(self.on_export_segmented_clicked)
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
+        self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
+        
 
+    def scale_bar_set_event(self, xcoords: list[int]):
+        print(f"Recieved xcoords: [{xcoords[0]}, {xcoords[1]}]")
+        scale_window_width = self.select_scale_window.size().width()
+        graphics_view_width = self.graphicsView.size().width()
+        self.scale_start_x, self.scale_end_x = xcoords[0] / (scale_window_width/graphics_view_width), xcoords[1] / (scale_window_width/graphics_view_width)
+
+        self.on_calculate_input_image_size_clicked()
+        print(f"{self.scale_start_x}, {self.scale_end_x}")
+
+    def on_calculate_input_image_size_clicked(self):
+        scaled_length = float(np.abs(self.scale_end_x - self.scale_start_x))
+        real_length = float(self.barScaleInputField.text())
+        image_width = self.graphicsView.size().width()
+        self.input_image_real_width = real_length / scaled_length * image_width
+
+        print(self.input_image_real_width)
+
+    def on_select_bar_scale_clicked(self):
+        pixmap = QPixmap(self.image_path) 
+        pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
+        self.select_scale_window.image_scene.addItem(pixmap_item)
+
+        self.select_scale_window.scale_bar_set_signal.connect(self.scale_bar_set_event)
+
+        self.select_scale_window.show()
 
     def on_open_image_clicked(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
         self.image_path = file_path
         if file_path: 
             pixmap = QPixmap(file_path) 
-            pixmap_item = QGraphicsPixmapItem(pixmap.scaled(480, 480, aspectRatioMode=1))
+            pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.addItem(pixmap_item)
 
     def on_segment_image_clicked(self):
@@ -54,7 +85,7 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.segmented_image = self.controller.process_command(Command.SEGMENT,self.image_path)
         segmented_image_temp = ImageQt.ImageQt(self.segmented_image)
         pixmap = QPixmap.fromImage(segmented_image_temp)
-        pixmap_item = QGraphicsPixmapItem(pixmap.scaled(480, 480, aspectRatioMode=1))
+        pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
         self.plot3_scene.addItem(pixmap_item)
 
 
