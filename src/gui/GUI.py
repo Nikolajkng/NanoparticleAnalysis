@@ -109,7 +109,21 @@ class GUI(QMainWindow, Ui_MainWindow):
         model_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
         if model_path: 
             self.controller.process_command(Command.LOAD_MODEL, model_path)
+        segmented_image_file_path = self.controller.segment_image(file_path=self.image_path)
+
+        if (segmented_image_file_path):
+            pixmap = QPixmap(segmented_image_file_path)
+            self.plot3.setPixmap(pixmap.scaled(600, 600, aspectRatioMode=1))
+
+    def onTrainModelClicked(self):
+        self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")
         
+        
+        
+        
+        
+        
+
 
     def on_export_segmented_clicked(self):
         if(self.segmented_image == None):
