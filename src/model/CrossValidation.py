@@ -34,14 +34,19 @@ def cv_holdout(self, images_path, masks_path):
         )
     
 
-
-
 def cv_kfold(self, images_path, masks_path):
         from model.UNet import UNet  # Her -> Undgå circle import
-                
+
+        fold_results = []   
+        train_split = None
+        val_split = None
+        best_val_loss = np.inf  
+        best_split = () 
+        best_results = []
+        
         # Set parameters:
-        k_folds = 5
-        epochs = 3
+        k_folds = 3
+        epochs = 2
         learning_rate = 0.01
      
         print(f"Training model using {k_folds}-fold [k={k_folds}, epochs={epochs}, learnRate={learning_rate}]...")
@@ -54,49 +59,51 @@ def cv_kfold(self, images_path, masks_path):
         
         kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
         
-        fold_train_loss = []
-        fold_val_loss = []
-        fold_results = []
 
         for fold, (train_idx, val_idx) in enumerate(kfold.split(datasetSize)):
-        
-            print(f"############## Fold {fold+1}/{k_folds} ##############") 
-            train_subset = Subset(dataset, train_idx.tolist())
-            val_subset = Subset(dataset, val_idx.tolist())
-            print(f"Training-split ({len(train_subset.indices)}/{len(dataset)}): {train_subset.indices}")
-            print(f"Validation-split ({len(val_subset.indices)}/{len(dataset)}): {val_subset.indices}")
+            curr_fold = fold+1    
+            print(f"############## Fold {curr_fold}/{k_folds} ##############") 
+            
+            train_split = Subset(dataset, train_idx.tolist())
+            val_split = Subset(dataset, val_idx.tolist())
+            print(f"Training-split ({len(train_split.indices)}/{len(dataset)}): {train_split.indices}")
+            print(f"Validation-split ({len(val_split.indices)}/{len(dataset)}): {val_split.indices}")
 
-            train_dataloader = DataLoader(train_subset, batch_size=4, shuffle=True)
-            val_dataloader = DataLoader(val_subset, batch_size=1, shuffle=False)
+            train_dataloader = DataLoader(train_split, batch_size=4, shuffle=True)
+            val_dataloader = DataLoader(val_split, batch_size=1, shuffle=False)
 
             unet = UNet()
             model_name = f"UNet_Fold{fold+1}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
 
             # Train model
-            train_loss, val_loss = unet.train_model(
+            training_loss, validation_loss = unet.train_model(
                 training_dataloader=train_dataloader,
                 validation_dataloader=val_dataloader,
                 epochs=epochs,
                 learningRate=learning_rate,
                 model_name=model_name,
-                cross_validation=""
+                cross_validation="k-fold"
             )
 
-            # Evaluate fold performance
+            # Evaluate fold performance and store the best
             validation_loss = unet.get_validation_loss(val_dataloader)
+            if(validation_loss < best_val_loss or best_val_loss == None):
+                best_val_loss = validation_loss
+                best_split = (train_split.indices, val_split.indices)
+
+            print(f"Fold {curr_fold} Validation Loss: {validation_loss:.5f}")
+            
             fold_results.append(validation_loss)
-            
-            # For plotting later
-            fold_train_loss.append(train_loss)
-            fold_val_loss.append(val_loss)
-            
-            print(f"Fold {fold+1} Validation Loss: {validation_loss:.5f}")
-
-
-        # Final results:
+          
+        # Summary of results:
         print(f"\nK-Fold Cross Validation Results:\n--------------------------------")
         for i, loss in enumerate(fold_results):
             print(f"Fold {i+1}: Validation Loss = {loss:.5f}")
             
         avg_loss = np.mean(fold_results)
         print(f"\nAverage Validation Loss: {avg_loss:.5f}")
+        
+        
+        best_results.append((best_val_loss, best_split))   #Type: [float, (Subset, Subset)]
+        print(f"\nBest split with lowest validation loss saved: {best_results}")
+      

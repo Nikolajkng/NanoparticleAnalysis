@@ -59,15 +59,13 @@ class GUI(QMainWindow, Ui_MainWindow):
 
 
     def on_train_model_clicked(self):
-        try:
-            self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")
         
-        # TODO: Separat thread fucker live-plot op for hold-out op.
-        # try:
-        #     train_thread = threading.Thread(
-        #         target=partial(self.controller.process_command, Command.RETRAIN, "data/images", "data/masks"),
-        #         daemon=True)
-        #     train_thread.start()
+        # OBS: multi-threading, men fjern plot_loss() funktionen i train_model() UNET.py
+        try:
+            train_thread = threading.Thread(
+                target=partial(self.controller.process_command, Command.RETRAIN, "data/images", "data/masks"),
+                daemon=True)
+            train_thread.start()
             
             self.messageBoxTraining("success")
         except:
