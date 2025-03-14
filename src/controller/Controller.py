@@ -18,14 +18,15 @@ class Controller():
     
     def process_command(self, command, *args, **kwargs):
         """Routes the command to the appropriate backend method."""
-        if command in self.commands:
-            data, return_code = self.commands[command](*args, **kwargs)
-            if return_code == 0:
-                return data
-            else:
-                print(data)
-                return None
-        else:
+        if command not in self.commands:
             print(f"Unknown command: {command}")
+            return
+        
+        try:
+            data = self.commands[command](*args, **kwargs)
+            return data
+        except Exception as e:
+            print(e)
+            return None
             
             
