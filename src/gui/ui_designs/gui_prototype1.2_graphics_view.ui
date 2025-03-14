@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1178</width>
-    <height>790</height>
+    <width>1263</width>
+    <height>787</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -25,7 +25,7 @@
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>131</width>
+      <width>221</width>
       <height>521</height>
      </rect>
     </property>
@@ -43,7 +43,7 @@
      <rect>
       <x>10</x>
       <y>540</y>
-      <width>1151</width>
+      <width>1241</width>
       <height>201</height>
      </rect>
     </property>
@@ -199,14 +199,14 @@
    <widget class="QTabWidget" name="plots_tab_view">
     <property name="geometry">
      <rect>
-      <x>660</x>
-      <y>0</y>
+      <x>750</x>
+      <y>10</y>
       <width>511</width>
       <height>531</height>
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab1">
      <attribute name="title">
@@ -220,6 +220,15 @@
         <width>500</width>
         <height>500</height>
        </rect>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="sizeAdjustPolicy">
+       <enum>QAbstractScrollArea::AdjustToContents</enum>
       </property>
      </widget>
     </widget>
@@ -236,6 +245,15 @@
         <height>500</height>
        </rect>
       </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="sizeAdjustPolicy">
+       <enum>QAbstractScrollArea::AdjustToContents</enum>
+      </property>
      </widget>
     </widget>
     <widget class="QWidget" name="tab3">
@@ -251,17 +269,94 @@
         <height>500</height>
        </rect>
       </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="sizeAdjustPolicy">
+       <enum>QAbstractScrollArea::AdjustToContents</enum>
+      </property>
      </widget>
     </widget>
    </widget>
    <widget class="QGraphicsView" name="graphicsView">
     <property name="geometry">
      <rect>
-      <x>150</x>
-      <y>20</y>
+      <x>240</x>
+      <y>30</y>
       <width>500</width>
       <height>500</height>
      </rect>
+    </property>
+    <property name="verticalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOff</enum>
+    </property>
+    <property name="horizontalScrollBarPolicy">
+     <enum>Qt::ScrollBarAlwaysOff</enum>
+    </property>
+    <property name="sizeAdjustPolicy">
+     <enum>QAbstractScrollArea::AdjustToContents</enum>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="barScaleInputField">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>70</y>
+      <width>181</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Enter length of bar scale</string>
+    </property>
+   </widget>
+   <widget class="QComboBox" name="comboBox">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>120</y>
+      <width>69</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string>nm</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>μm</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>100</y>
+      <width>111</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Select unit:</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="selectBarScaleButton">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>40</y>
+      <width>181</width>
+      <height>24</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Select scale bar on image</string>
     </property>
    </widget>
   </widget>
@@ -270,8 +365,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1178</width>
-     <height>21</height>
+     <width>1263</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">

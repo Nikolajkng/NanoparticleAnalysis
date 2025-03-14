@@ -6,3 +6,4 @@ class Command(Enum):
     ANALYZE = auto()
     EXPORT = auto()
     LOAD_MODEL = auto()
+    CALCULATE_REAL_IMAGE_WIDTH = auto()
