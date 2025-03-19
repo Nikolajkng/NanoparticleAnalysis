@@ -13,6 +13,7 @@ from functools import partial
 from gui.SelectScaleUI import SelectScaleUI
 import numpy as np
 from shared.ScaleInfo import ScaleInfo
+from gui.TableData import TableData
 class GUI(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -46,6 +47,9 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
         self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
         
+    def set_table_data(self, table_data: np.ndarray):
+        data = TableData(table_data)
+        data.insertIn(self.table_widget)
 
     def scale_bar_set_event(self, xcoords: list[int]):
         print(f"Recieved xcoords: [{xcoords[0]}, {xcoords[1]}]")
@@ -93,7 +97,8 @@ class GUI(QMainWindow, Ui_MainWindow):
     def on_segment_image_clicked(self):
         if (self.image_path == None):
             self.messageBox("Segmentation failed: No image found")
-        self.segmented_image = self.controller.process_command(Command.SEGMENT,self.image_path)
+        self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT,self.image_path)
+        self.set_table_data(table_data)
         segmented_image_temp = ImageQt.ImageQt(self.segmented_image)
         pixmap = QPixmap.fromImage(segmented_image_temp)
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
