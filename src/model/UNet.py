@@ -118,7 +118,7 @@ class UNet(nn.Module):
 
             epoch_training_loss = running_loss / len(training_dataloader)
             training_loss_values.append(epoch_training_loss)
-
+            
             epoch_validation_loss = self.get_validation_loss(validation_dataloader)
             validation_loss_values.append(epoch_validation_loss)
 
