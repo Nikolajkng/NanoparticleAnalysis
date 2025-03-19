@@ -14,10 +14,10 @@ class request_handler:
 
     def process_request_train(self, images_path, masks_path):  
         # CHANGE CROSS VALIDATION HERE (uncomment):
-        #cv_holdout(self.unet, images_path, masks_path)
-        cv_kfold(self.unet, images_path, masks_path)
+        iou, pixel_accuracy = cv_holdout(self.unet, images_path, masks_path)
+        #cv_kfold(self.unet, images_path, masks_path)
         
-        return None
+        return iou, pixel_accuracy
 
 
     def process_request_segment(self, image_path):

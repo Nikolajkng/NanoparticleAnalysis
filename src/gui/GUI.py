@@ -38,6 +38,7 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.plot3.setScene(self.plot3_scene)
 
         self.action_train_model.triggered.connect(self.on_train_model_clicked)
+        self.action_test_model.triggered.connect(self.on_test_model_clicked)
         self.action_open_image.triggered.connect(self.on_open_image_clicked)
         self.actionRun_Segmentation_on_Current_Image.triggered.connect(self.on_segment_image_clicked)
         self.action_load_model.triggered.connect(self.on_load_model_clicked)
@@ -81,6 +82,14 @@ class GUI(QMainWindow, Ui_MainWindow):
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.addItem(pixmap_item)
 
+    def on_test_model_clicked(self):
+        image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")
+        mask_folder_path = QFileDialog.getExistingDirectory(None, "Select test masks folder", "")
+
+        if image_folder_path and mask_folder_path:
+            iou, pixel_accuracy = self.controller.process_command(Command.TEST_MODEL, image_folder_path, mask_folder_path)
+            print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
+
     def on_segment_image_clicked(self):
         if (self.image_path == None):
             self.messageBox("Segmentation failed: No image found")
@@ -93,8 +102,8 @@ class GUI(QMainWindow, Ui_MainWindow):
 
     def on_train_model_clicked(self):
         try:
-            self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")
-        
+            iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")
+            print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
         # TODO: Separat thread fucker live-plot op for hold-out op.
         # try:
         #     train_thread = threading.Thread(
