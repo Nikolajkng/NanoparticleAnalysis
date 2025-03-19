@@ -1,5 +1,6 @@
 import torchvision.transforms.functional as TF
 from model.TensorTools import *
+from model.DataTools import *
 from model.PlottingTools import *
 from model.CrossValidation import *
 from PIL import Image
@@ -21,16 +22,10 @@ class request_handler:
 
 
     def process_request_segment(self, image_path):
-        image = Image.open(image_path).convert("L")
-        image = image.resize((256,256), Image.NEAREST)
-        image = TF.to_tensor(image).unsqueeze(0)
-        segmentation = self.unet.segment(image)
-        from model.TensorTools import segmentation_to_image
-        segmentation_image = segmentation_to_image(segmentation)
-        
-        segmentation_numpy = (segmentation.squeeze(0).numpy() * 255).astype(np.uint8)
-        print(segmentation_numpy.shape)
         analyzer = SegmentationAnalyzer()
+        input = tensor_from_image(image_path)
+        segmentation = self.unet.segment(input)
+        segmentation_numpy = segmentation_tensor_to_numpy(segmentation)
         num_labels, labels, stats, centroids = analyzer.get_connected_components(segmentation_numpy)
         table_data = analyzer.format_table_data(stats)
         annotated_image = analyzer.add_annotations(segmentation_numpy, centroids)

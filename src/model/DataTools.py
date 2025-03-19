@@ -2,6 +2,9 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader, random_split
 import os
 from PIL import Image
+from torch import Tensor
+import torchvision.transforms.functional as TF
+import numpy as np
 
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float) -> tuple[DataLoader, DataLoader, DataLoader]:
     
@@ -24,6 +27,15 @@ def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
             else:    
                 img_resized.save(image_path)  # You can change this line to save it elsewhere
             print(image_path)
+
+def tensor_from_image(image_path: str, tensor_size=(256,256)) -> Tensor:
+    image = Image.open(image_path).convert("L")
+    image = image.resize(tensor_size, Image.NEAREST)
+    image = TF.to_tensor(image).unsqueeze(0)
+
+def segmentation_tensor_to_numpy(tensor: Tensor) -> np.ndarray:
+        return (tensor.squeeze(0).numpy() * 255).astype(np.uint8)
+
 
 if __name__ == '__main__':
     folder_path = 'data/images/'

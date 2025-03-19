@@ -3,7 +3,6 @@ import numpy as np
 
 class SegmentationAnalyzer():
 
-
     def get_connected_components(self, image):
         num_labels, labels, area_stats, centroids= cv2.connectedComponentsWithStats(image)
         return num_labels, labels, area_stats, centroids
