@@ -32,9 +32,10 @@ class request_handler:
         print(segmentation_numpy.shape)
         analyzer = SegmentationAnalyzer()
         num_labels, labels, stats, centroids = analyzer.get_connected_components(segmentation_numpy)
+        table_data = analyzer.format_table_data(stats)
         annotated_image = analyzer.add_annotations(segmentation_numpy, centroids)
         image_pil = Image.fromarray(annotated_image)
-        return image_pil
+        return image_pil, table_data
     
     def process_request_load_model(self, model_path):
         self.unet.load_model(model_path)
