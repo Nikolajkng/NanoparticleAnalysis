@@ -6,6 +6,7 @@ from PIL import Image
 import numpy as np
 from model.SegmentationAnalyzer import SegmentationAnalyzer
 from shared.ScaleInfo import ScaleInfo
+from model.ModelEvaluator import ModelEvaluator
 
 class request_handler:
     def __init__(self, unet):
@@ -44,3 +45,11 @@ class request_handler:
         real_length = float(scale_info.real_scale_length)
         input_image_real_width = real_length / scaled_length * scale_info.image_width
         return input_image_real_width
+    
+    def process_request_test_model(self, test_data_image_dir, test_data_mask_dir):
+        dataset = SegmentationDataset(test_data_image_dir, test_data_mask_dir)
+        test_dataloader = DataLoader(dataset, batch_size=1)
+        iou, pixel_accuracy = ModelEvaluator.evaluate_model(self.unet, test_dataloader)
+        print(iou)
+        print(pixel_accuracy)
+        return iou, pixel_accuracy
