@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'gui_prototype1.2_graphics_view.ui'
+# Form implementation generated from reading ui file '.\src\gui\ui_designs\gui_prototype1.2_graphics_view.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -144,7 +144,7 @@ class Ui_MainWindow(object):
         self.selectBarScaleButton.setObjectName("selectBarScaleButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1263, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1263, 21))
         self.menubar.setObjectName("menubar")
         self.menu_file = QtWidgets.QMenu(self.menubar)
         self.menu_file.setObjectName("menu_file")
@@ -180,9 +180,12 @@ class Ui_MainWindow(object):
         self.actionExport_Data_as_csv.setObjectName("actionExport_Data_as_csv")
         self.actionRun_Segmentation_on_Current_Image = QtWidgets.QAction(MainWindow)
         self.actionRun_Segmentation_on_Current_Image.setObjectName("actionRun_Segmentation_on_Current_Image")
+        self.action_test_model = QtWidgets.QAction(MainWindow)
+        self.action_test_model.setObjectName("action_test_model")
         self.menu_file.addAction(self.action_open_image)
         self.menu_model.addAction(self.action_train_model)
         self.menu_model.addAction(self.action_load_model)
+        self.menu_model.addAction(self.action_test_model)
         self.menuTools.addAction(self.actionExport_Segmentation_2)
         self.menuTools.addAction(self.actionExport_Data_as_csv)
         self.menuRun.addAction(self.actionRun_Segmentation_on_Current_Image)
@@ -287,3 +290,14 @@ class Ui_MainWindow(object):
         self.actionExport_Segmentation_2.setText(_translate("MainWindow", "Export Segmentation"))
         self.actionExport_Data_as_csv.setText(_translate("MainWindow", "Export Data as csv"))
         self.actionRun_Segmentation_on_Current_Image.setText(_translate("MainWindow", "Run Segmentation on Current Image"))
+        self.action_test_model.setText(_translate("MainWindow", "Test model"))
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())
