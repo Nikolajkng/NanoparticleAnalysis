@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from model.SegmentationDataset import SegmentationDataset
 from model.TensorTools import *
 from model.PlottingTools import *
-from model.DataTools import get_dataloaders
+from model.DataTools import get_dataloaders, get_dataloaders_without_testset
 from model.DataAugmenter import DataAugmenter
 from model.UNet import UNet
 from model.ModelEvaluator import ModelEvaluator
@@ -40,67 +40,97 @@ def cv_holdout(unet: UNet, images_path, masks_path):
 
 
 
-def cv_kfold(self, images_path, masks_path):
-        from model.UNet import UNet  # Her -> Undgå circle import
-                
-        # Set parameters:
-        k_folds = 5
-        epochs = 3
-        learning_rate = 0.01
-     
-        print(f"Training model using {k_folds}-fold [k={k_folds}, epochs={epochs}, learnRate={learning_rate}]...")
-        print("---------------------------------------------------------------------------------------")
-     
-        dataset = SegmentationDataset(images_path, masks_path)
-        data_augmenter = DataAugmenter()
-        dataset = data_augmenter.augment_dataset(dataset)
-        datasetSize = np.arange(len(dataset))
-        
-        kfold = KFold(n_splits=k_folds, shuffle=True, random_state=42)
-        
-        fold_train_loss = []
-        fold_val_loss = []
-        fold_results = []
 
-        for fold, (train_idx, val_idx) in enumerate(kfold.split(datasetSize)):
-        
-            print(f"############## Fold {fold+1}/{k_folds} ##############") 
-            train_subset = Subset(dataset, train_idx.tolist())
-            val_subset = Subset(dataset, val_idx.tolist())
-            print(f"Training-split ({len(train_subset.indices)}/{len(dataset)}): {train_subset.indices}")
-            print(f"Validation-split ({len(val_subset.indices)}/{len(dataset)}): {val_subset.indices}")
+def cv_kfold(unet, images_path, masks_path):
+    fold_results = []   
+    
+    # Set parameters:
+    K1 = 2  
+    K2 = 2 
+    learning_rates = [0.001, 0.0001, 0.00001]  
+    S = len(learning_rates)
+    epochs = 2  
+    print(f"\nTraining model using two-level cross-validation with K1={K1} and K2={K2}")
 
-            train_dataloader = DataLoader(train_subset, batch_size=4, shuffle=True)
-            val_dataloader = DataLoader(val_subset, batch_size=1, shuffle=False)
+    # Load data
+    dataset = SegmentationDataset(images_path, masks_path)
+    data_augmenter = DataAugmenter()
+    dataset = data_augmenter.augment_dataset(dataset)
+    dataset_size = len(dataset)  # FIXED
 
-            unet = UNet()
-            model_name = f"UNet_Fold{fold+1}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+    cv = KFold(n_splits=K1, shuffle=True, random_state=42)
+    
+    fold_results = []
 
-            # Train model
-            train_loss, val_loss = unet.train_model(
-                training_dataloader=train_dataloader,
-                validation_dataloader=val_dataloader,
-                epochs=epochs,
-                learningRate=learning_rate,
-                model_name=model_name,
-                cross_validation=""
-            )
+    for outerfold, (par_idx, test_idx) in enumerate(cv.split(np.arange(dataset_size))): 
+        print(f"\n ---------------- Outer Fold {outerfold+1}/{K1} ----------------") 
 
-            # Evaluate fold performance
-            validation_loss = unet.get_validation_loss(val_dataloader)
-            fold_results.append(validation_loss)
-            
-            # For plotting later
-            fold_train_loss.append(train_loss)
-            fold_val_loss.append(val_loss)
-            
-            print(f"Fold {fold+1} Validation Loss: {validation_loss:.5f}")
+        # Outer split: partition & test set
+        par_split = Subset(dataset, par_idx.tolist())
+        test_split = Subset(dataset, test_idx.tolist())
 
+        outer_train_dataloader, outer_val_dataloader = get_dataloaders_without_testset(par_split, 0.7)
+        outer_test_dataloader = DataLoader(test_split, batch_size=1, shuffle=False)
 
-        # Final results:
-        print(f"\nK-Fold Cross Validation Results:\n--------------------------------")
-        for i, loss in enumerate(fold_results):
-            print(f"Fold {i+1}: Validation Loss = {loss:.5f}")
-            
-        avg_loss = np.mean(fold_results)
-        print(f"\nAverage Validation Loss: {avg_loss:.5f}")
+        # Inner CV: Find the best learning rate
+        best_val_loss = np.inf
+        best_s = None
+        val_results = {s: [] for s in range(1, S+1)}
+
+        for innerfold, (train_idx, val_idx) in enumerate(cv.split(par_idx)): 
+            print(f"\n ------------ Inner Fold {innerfold+1}/{K2} -------------") 
+
+            train_split = Subset(par_split, train_idx.tolist())
+            inner_test_data = Subset(par_split, val_idx.tolist())
+
+            inner_train_dataloader, inner_validation_dataloader = get_dataloaders_without_testset(train_split, 0.7)
+            inner_test_dataloader = DataLoader(inner_test_data, batch_size=1, shuffle=False)
+
+            for s in range(1, S+1):
+                unet = UNet()
+                model_name = f"UNet{s}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+                learning_rate = learning_rates[s-1]  
+
+                print(f"\nTraining model {s} with name: {model_name} and learning rate: {learning_rate}")
+                unet.train_model(
+                    training_dataloader=inner_train_dataloader,
+                    validation_dataloader=inner_validation_dataloader,
+                    epochs=epochs,
+                    learningRate=learning_rate,
+                    model_name=model_name,
+                    cross_validation="kfold"
+                )
+
+                validation_loss = unet.get_validation_loss(inner_test_dataloader)
+                val_results[s].append(validation_loss)
+
+        # Compute weighted validation loss
+        weighted_val_loss = {s: sum(val_results[s]) / len(val_results[s]) for s in range(1, S+1)}
+        best_s = min(weighted_val_loss, key=weighted_val_loss.get)
+        best_learning_rate = learning_rates[best_s-1]
+        print(f"\nSelected best model: UNet{best_s} with weighted validation loss: {weighted_val_loss[best_s]:.5f} and learning rate {best_learning_rate}")
+
+        # Train best model on the full partitioned dataset
+        best_model = UNet()
+        best_model.train_model(
+            training_dataloader=outer_train_dataloader,
+            validation_dataloader=outer_val_dataloader, 
+            epochs=epochs,
+            learningRate=best_learning_rate,
+            model_name=f"Best_UNet_Outer{outerfold+1}",
+            cross_validation="kfold"
+        )
+
+        # **NEW STEP: Evaluate best model on the test set**
+        test_loss = best_model.get_validation_loss(outer_test_dataloader)
+        fold_results.append((len(test_split), test_loss))  # Store test errors
+
+    # **Final Generalization Error Computation**
+    gen_error_estimate = sum(test_size * test_loss for test_size, test_loss in fold_results) / dataset_size
+
+    print(f"\n############## K-Fold Cross Validation Summary ##############")
+    for i, (size, loss) in enumerate(fold_results):
+        print(f"Outer Fold {i+1}: Test Loss = {loss:.5f}")
+
+    print(f"\n############## Estimated Generalization Error: {gen_error_estimate:.5f} ##############")
+

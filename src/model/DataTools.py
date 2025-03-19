@@ -14,6 +14,16 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     test_dataloader = DataLoader(test_data, batch_size=1)
     return (train_dataloader, val_dataloader, test_dataloader)
 
+
+def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float) -> tuple[DataLoader, DataLoader]:
+    
+    train_data, val_data = random_split(dataset, [train_data_size, 1-train_data_size])
+    train_dataloader = DataLoader(train_data, batch_size=1, shuffle=True)
+    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=False)
+
+    return (train_dataloader, val_dataloader)
+
+
 def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
     for filename in os.listdir(folder_path):
         if filename.endswith(('.tif')):
