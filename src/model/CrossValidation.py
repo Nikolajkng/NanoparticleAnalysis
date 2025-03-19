@@ -9,19 +9,21 @@ from model.PlottingTools import *
 from model.DataTools import get_dataloaders
 from model.DataAugmenter import DataAugmenter
 from model.UNet import UNet
+from model.ModelEvaluator import ModelEvaluator
 
-
-def cv_holdout(unet, images_path, masks_path):
+def cv_holdout(unet: UNet, images_path, masks_path):
     
     # Set parameters:
-    train_subset_size = 0.75  # 3/4
-    epochs = 10
-    learning_rate = 0.01
-    print("-----------------------------------------------------------------------")
+    train_subset_size = 0.7
+    validation_subset_size = 0.2
+    epochs = 1
+    learning_rate = 0.0005
     print(f"Training model using holdout [train_split_size={train_subset_size}, epochs={epochs}, learnRate={learning_rate}]...")
 
     dataset = SegmentationDataset(images_path, masks_path)
-    train_dataloader, validation_dataloader = get_dataloaders(dataset, train_subset_size)
+    data_augmenter = DataAugmenter()
+    dataset = data_augmenter.augment_dataset(dataset)
+    train_dataloader, validation_dataloader, test_dataloder = get_dataloaders(dataset, train_subset_size, validation_subset_size)
     
     unet.train_model(
         training_dataloader=train_dataloader, 

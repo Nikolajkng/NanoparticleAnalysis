@@ -13,11 +13,9 @@ class SelectScaleUI(QtWidgets.QWidget, Ui_SelectScaleWindow):
         self.coordinates = []
 
     def mousePressEvent(self, event):
-        # Get the position of the mouse click
         mouse_pos = event.pos()
-        x, y = mouse_pos.x(), mouse_pos.y()
-        
-        # Store the coordinates
+        x = mouse_pos.x()
+
         self.coordinates.append(x)
         if len(self.coordinates) == 2:
             self.scale_bar_set_signal.emit(self.coordinates)

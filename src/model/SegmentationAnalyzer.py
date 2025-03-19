@@ -12,5 +12,5 @@ class SegmentationAnalyzer():
         for i in range(1, len(centroids)):
             x, y = int(centroids[i][0]), int(centroids[i][1])
 
-            cv2.circle(image_rgb, (x, y), radius=2, color=(0, 0, 255), thickness=-1)
+            cv2.circle(image_rgb, (x, y), radius=1, color=(0, 0, 255), thickness=-1)
         return image_rgb
