@@ -8,20 +8,20 @@ from model.TensorTools import *
 from model.PlottingTools import *
 from model.DataTools import get_dataloaders
 from model.DataAugmenter import DataAugmenter
+from model.UNet import UNet
 
-
-def cv_holdout(self, images_path, masks_path):
-    from model.UNet import UNet  # Her -> Undgå circle import
+def cv_holdout(unet: UNet, images_path, masks_path):
     
     # Set parameters:
-    train_subset_size = 0.75  # 3/4
-    epochs = 10
-    learning_rate = 0.01
+    train_subset_size = 0.75
+    epochs = 300
+    learning_rate = 0.0005
     print(f"Training model using holdout [train_split_size={train_subset_size}, epochs={epochs}, learnRate={learning_rate}]...")
     print("---------------------------------------------------------------------------------------")
 
-    unet = UNet()
     dataset = SegmentationDataset(images_path, masks_path)
+    data_augmenter = DataAugmenter()
+    dataset = data_augmenter.augment_dataset(dataset)
     train_dataloader, validation_dataloader = get_dataloaders(dataset, train_subset_size)
     
     unet.train_model(
