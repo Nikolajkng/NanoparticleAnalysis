@@ -20,10 +20,11 @@ class EncoderBlock(nn.Module):
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
         self.bn = nn.BatchNorm2d(out_channels)
+        self.bn2 = nn.BatchNorm2d(out_channels)
 
     def forward(self, input):
         x = F.relu(self.bn(self.conv1(input)))
-        x = F.relu(self.bn(self.conv2(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
         return x
 
 class DecoderBlock(nn.Module):
@@ -33,6 +34,7 @@ class DecoderBlock(nn.Module):
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
         self.bn = nn.BatchNorm2d(out_channels)
+        self.bn2 = nn.BatchNorm2d(out_channels)
     
     def forward(self, input, concat_map):
         x: Tensor = self.upconv(input)
@@ -40,7 +42,7 @@ class DecoderBlock(nn.Module):
         x = torch.cat((concat_map, x), dim=1)
     
         x = F.relu(self.bn(self.conv1(x)))
-        x = F.relu(self.bn(self.conv2(x)))
+        x = F.relu(self.bn2(self.conv2(x)))
         return x
         
 
@@ -87,7 +89,7 @@ class UNet(nn.Module):
 
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str):
         self.to(self.device)
-        self.optimizer = torch.optim.SGD(self.parameters(), lr=learningRate, momentum=0.9)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
         self.criterion = nn.CrossEntropyLoss()
 
         training_loss_values = []
@@ -134,7 +136,7 @@ class UNet(nn.Module):
                 no_improvement_epochs = 0
             else:
                 no_improvement_epochs += 1
-                if no_improvement_epochs >= 40:
+                if no_improvement_epochs >= 50:
                     break
         
         print('Finished Training')
@@ -167,6 +169,4 @@ class UNet(nn.Module):
     def segment(self, tensor: Tensor):
         output = self(tensor)
         arg = output.argmax(dim=1)
-        print(output.shape)
-        print(arg.shape)
         return arg
