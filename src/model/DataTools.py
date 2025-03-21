@@ -32,6 +32,7 @@ def tensor_from_image(image_path: str, tensor_size=(256,256)) -> Tensor:
     image = Image.open(image_path).convert("L")
     image = image.resize(tensor_size, Image.NEAREST)
     image = TF.to_tensor(image).unsqueeze(0)
+    return image
 
 def segmentation_tensor_to_numpy(tensor: Tensor) -> np.ndarray:
         return (tensor.squeeze(0).numpy() * 255).astype(np.uint8)

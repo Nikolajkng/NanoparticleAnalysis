@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+from shared.ScaleInfo import ScaleInfo
 class SegmentationAnalyzer():
 
     def get_connected_components(self, image):
@@ -16,29 +17,31 @@ class SegmentationAnalyzer():
         return image_rgb
     
     def __get_diameters(self, stats: np.ndarray):
-        diameters = []
+        diameters = np.empty(stats.shape[0]-1)
         for label_idx in range(1, stats.shape[0]):
             width, height = stats[label_idx, cv2.CC_STAT_WIDTH], stats[label_idx, cv2.CC_STAT_HEIGHT]
             diameter = np.mean([width, height])  # TODO: Find better approximation of diameter
-            diameters.append(diameter)
+            diameters[label_idx-1] = diameter
         return diameters
     
     def __get_pixel_areas(self, stats: np.ndarray):
         return stats[1:, cv2.CC_STAT_AREA] 
+    
 
-    def format_table_data(self, stats: np.ndarray):
-        areas = self.__get_pixel_areas(stats)
-        diameters = self.__get_diameters(stats)
+    def format_table_data(self, stats: np.ndarray, scale_info: ScaleInfo):
+        scale_factor = scale_info.real_scale_length / scale_info.image_width
+        scaled_areas = self.__get_pixel_areas(stats) * scale_factor
+        scaled_diameters = self.__get_diameters(stats) * scale_factor
         
-        area_mean = np.mean(areas).round(2)
-        area_max = np.max(areas).round(2)
-        area_min = np.min(areas).round(2)
-        area_std = np.std(areas).round(2)
+        area_mean = np.mean(scaled_areas).round(2)
+        area_max = np.max(scaled_areas).round(2)
+        area_min = np.min(scaled_areas).round(2)
+        area_std = np.std(scaled_areas).round(2)
         
-        diameter_mean = np.mean(diameters).round(2)
-        diameter_max = np.max(diameters).round(2)
-        diameter_min = np.min(diameters).round(2)
-        diameter_std = np.std(diameters).round(2)
+        diameter_mean = np.mean(scaled_diameters).round(2)
+        diameter_max = np.max(scaled_diameters).round(2)
+        diameter_min = np.min(scaled_diameters).round(2)
+        diameter_std = np.std(scaled_diameters).round(2)
 
         table_data = {
         "Area":    [area_mean, area_min, area_max, area_std],  

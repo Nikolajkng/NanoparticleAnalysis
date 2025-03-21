@@ -29,6 +29,7 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.graphicsView_scene = QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsView_scene)
         self.input_image_real_width = 0
+        self.scale_info = None
         
 
         self.plot1_scene = QGraphicsScene(self)
@@ -61,12 +62,12 @@ class GUI(QMainWindow, Ui_MainWindow):
         print(f"{self.scale_start_x}, {self.scale_end_x}")
 
     def on_calculate_input_image_size_clicked(self):
-        scale_info = ScaleInfo(self.scale_start_x, 
+        selected_scale_info = ScaleInfo(self.scale_start_x, 
                                self.scale_end_x, 
                                self.barScaleInputField.text(), 
                                self.graphicsView.size().width())
 
-        self.input_image_real_width = self.controller.process_command(Command.CALCULATE_REAL_IMAGE_WIDTH, scale_info)
+        self.scale_info = self.controller.process_command(Command.CALCULATE_REAL_IMAGE_WIDTH, selected_scale_info)
 
     def on_select_bar_scale_clicked(self):
         self.select_scale_window = SelectScaleUI()
@@ -97,7 +98,7 @@ class GUI(QMainWindow, Ui_MainWindow):
     def on_segment_image_clicked(self):
         if (self.image_path == None):
             self.messageBox("Segmentation failed: No image found")
-        self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT,self.image_path)
+        self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
         segmented_image_temp = ImageQt.ImageQt(self.segmented_image)
         pixmap = QPixmap.fromImage(segmented_image_temp)
