@@ -16,7 +16,7 @@ def cv_holdout(unet: UNet, images_path, masks_path):
     # Set parameters:
     train_subset_size = 0.7
     validation_subset_size = 0.2
-    epochs = 1
+    epochs = 300
     learning_rate = 0.0005
     print(f"Training model using holdout [train_split_size={train_subset_size}, epochs={epochs}, learnRate={learning_rate}]...")
     print("---------------------------------------------------------------------------------------")

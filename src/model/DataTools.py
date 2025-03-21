@@ -30,6 +30,8 @@ def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
             image_path = os.path.join(folder_path, filename)
             img = Image.open(image_path)
             img = img.convert("L")  
+            if img.width == 256 and img.height == 256:
+                continue
             img_resized = img.resize(output_size, Image.NEAREST)
             if is_masks:
                 img_binary = img_resized.point(lambda p: 255 if p > 20 else 0)
@@ -49,5 +51,5 @@ def segmentation_tensor_to_numpy(tensor: Tensor) -> np.ndarray:
 
 
 if __name__ == '__main__':
-    folder_path = 'data/images/'
-    resize_and_save_images(folder_path, is_masks=False)
+    folder_path = 'data/masks/'
+    resize_and_save_images(folder_path, is_masks=True)

@@ -29,7 +29,7 @@ class SegmentationAnalyzer():
     
 
     def format_table_data(self, stats: np.ndarray, scale_info: ScaleInfo):
-        scale_factor = scale_info.real_scale_length / scale_info.image_width
+        scale_factor = scale_info.real_scale_length / scale_info.image_width if scale_info else 1
         scaled_areas = self.__get_pixel_areas(stats) * scale_factor
         scaled_diameters = self.__get_diameters(stats) * scale_factor
         
