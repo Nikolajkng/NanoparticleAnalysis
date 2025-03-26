@@ -366,7 +366,7 @@
      <x>0</x>
      <y>0</y>
      <width>1263</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -384,8 +384,9 @@
     <property name="title">
      <string>Model</string>
     </property>
-    <addaction name="action_train_model"/>
+    <addaction name="action_new_data_train_model"/>
     <addaction name="action_load_model"/>
+    <addaction name="action_train_model"/>
     <addaction name="action_test_model"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -461,6 +462,11 @@
   <action name="action_test_model">
    <property name="text">
     <string>Test model</string>
+   </property>
+  </action>
+  <action name="action_new_data_train_model">
+   <property name="text">
+    <string>Train a new model on custom data</string>
    </property>
   </action>
  </widget>

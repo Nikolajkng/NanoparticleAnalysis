@@ -3,14 +3,15 @@ import threading
 from PyQt5.QtGui import QPixmap, QPen
 from PyQt5.QtCore import QRect, Qt, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
-from src.gui.ui.MainUI import Ui_MainWindow
+from gui.ui.MainUI import Ui_MainWindow
 from controller.Controller import Controller
 from shared.Commands import Command
 from PIL import ImageQt
 import os
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QGraphicsPixmapItem, QRubberBand, QGraphicsLineItem, QGraphicsView
 from functools import partial 
-from src.gui.windows.SelectScaleWindow import SelectScaleWindow
+from gui.windows.SelectScaleWindow import SelectScaleWindow
+from gui.windows.TrainModelWindow import TrainModelWindow
 import numpy as np
 from shared.ScaleInfo import ScaleInfo
 from gui.TableData import TableData
@@ -31,7 +32,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.input_image_real_width = 0
         self.scale_info = None
         
-
+        self.train_model_window = None
         self.plot1_scene = QGraphicsScene(self)
         self.plot1.setScene(self.plot1_scene)
         self.plot2_scene = QGraphicsScene(self)
@@ -47,6 +48,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionExport_Segmentation_2.triggered.connect(self.on_export_segmented_clicked)
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
         self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
+        self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
         
     def set_table_data(self, table_data: np.ndarray):
         data = TableData(table_data)
@@ -78,6 +80,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.select_scale_window.scale_bar_set_signal.connect(self.scale_bar_set_event)
 
         self.select_scale_window.show()
+
+    def on_train_model_custom_data_clicked(self):
+        self.train_model_window = TrainModelWindow()
+        self.train_model_window.show()
 
     def on_open_image_clicked(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")

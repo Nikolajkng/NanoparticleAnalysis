@@ -1,5 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-from src.gui.ui.SelectScaleUI import Ui_SelectScale
+from gui.ui.SelectScaleUI import Ui_SelectScale
 from PyQt5.QtWidgets import QGraphicsScene
 
 class SelectScaleWindow(QtWidgets.QWidget, Ui_SelectScale):
