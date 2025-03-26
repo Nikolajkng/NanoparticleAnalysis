@@ -14,6 +14,8 @@ from model.DataTools import get_dataloaders
 from model.DataAugmenter import DataAugmenter
 from model.CrossValidation import *
 
+from shared.ModelTrainingStats import ModelTrainingStats
+
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
@@ -65,6 +67,7 @@ class UNet(nn.Module):
         self.mappingConvolution = nn.Conv2d(64, 2, 1)
 
         self.optimizer = None
+        
         # self.criterion = None
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -87,7 +90,7 @@ class UNet(nn.Module):
         m = self.mappingConvolution(d4)
         return m
 
-    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str):
+    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, loss_callback=None):
         self.to(self.device)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
         self.criterion = nn.CrossEntropyLoss()
@@ -121,11 +124,11 @@ class UNet(nn.Module):
 
             epoch_validation_loss = self.get_validation_loss(validation_dataloader)
             validation_loss_values.append(epoch_validation_loss)
-
+            
             
             # Undgå plot alle k-fold modeller
-            if cross_validation == "holdout":
-                plot_loss(training_loss_values, validation_loss_values)
+            #if cross_validation == "holdout":
+                #plot_loss(training_loss_values, validation_loss_values)
             
             
             print(f'Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}')
@@ -138,6 +141,16 @@ class UNet(nn.Module):
                 no_improvement_epochs += 1
                 if no_improvement_epochs >= 50:
                     break
+            
+            if loss_callback:
+                stats = ModelTrainingStats(training_loss=epoch_training_loss,
+                                           val_loss=epoch_validation_loss,
+                                           best_loss=best_loss,
+                                           epoch=epoch,
+                                           best_epoch=epoch - no_improvement_epochs)
+                loss_callback(stats)
+
+            
         
         print('Finished Training')
         self.load_model("data/models/" + model_name)

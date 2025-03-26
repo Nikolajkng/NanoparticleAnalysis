@@ -1,7 +1,8 @@
 import csv
 import threading
 from PyQt5.QtGui import QPixmap, QPen
-from PyQt5.QtCore import QRect, Qt, pyqtSignal
+from PyQt5.QtCore import QRect, Qt
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
 from gui.ui.MainUI import Ui_MainWindow
 from controller.Controller import Controller
@@ -14,8 +15,12 @@ from gui.windows.SelectScaleWindow import SelectScaleWindow
 from gui.windows.TrainModelWindow import TrainModelWindow
 import numpy as np
 from shared.ScaleInfo import ScaleInfo
+from shared.ModelConfig import ModelConfig
 from gui.TableData import TableData
+from shared.ModelTrainingStats import ModelTrainingStats
 class MainWindow(QMainWindow, Ui_MainWindow):
+    update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
+
     def __init__(self):
         super().__init__()
         self.MainWindow = QMainWindow()
@@ -31,8 +36,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.graphicsView.setScene(self.graphicsView_scene)
         self.input_image_real_width = 0
         self.scale_info = None
+        self.standard_model_config = ModelConfig(images_path="data/images",
+                                                 masks_path="data/masks",
+                                                 epochs=150,
+                                                 learning_rate=0.0005,
+                                                 with_early_stopping=True,
+                                                 with_data_augmentation=True)
         
         self.train_model_window = None
+        
+
         self.plot1_scene = QGraphicsScene(self)
         self.plot1.setScene(self.plot1_scene)
         self.plot2_scene = QGraphicsScene(self)
@@ -82,8 +95,26 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.select_scale_window.show()
 
     def on_train_model_custom_data_clicked(self):
-        self.train_model_window = TrainModelWindow()
+        self.train_model_window = TrainModelWindow(self.update_train_model_values_signal)
+        self.train_model_window.train_model_signal.connect(self.train_model_custom_data)
         self.train_model_window.show()
+
+    def train_model_custom_data(self, model_config: ModelConfig):
+
+        try:
+            train_thread = threading.Thread(
+                target=partial(self.controller.process_command, Command.RETRAIN, self.standard_model_config, self.update_training_model_stats),
+                daemon=True)
+            train_thread.start()
+            
+            self.messageBoxTraining("success")
+        except:
+            self.messageBoxTraining("")
+        # iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, model_config, self.update_training_model_stats)
+        # print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
+
+    def update_training_model_stats(self, stats: ModelTrainingStats):
+        self.update_train_model_values_signal.emit(stats)
 
     def on_open_image_clicked(self):
         file_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
@@ -113,15 +144,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def on_train_model_clicked(self):
-        try:
-            iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, "data/images", "data/masks")
-            print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
-        # TODO: Separat thread fucker live-plot op for hold-out op.
         # try:
-        #     train_thread = threading.Thread(
-        #         target=partial(self.controller.process_command, Command.RETRAIN, "data/images", "data/masks"),
-        #         daemon=True)
-        #     train_thread.start()
+        #     iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, self.standard_model_config)
+        #     print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
+        # TODO: Separat thread fucker live-plot op for hold-out op.
+        try:
+            train_thread = threading.Thread(
+                target=partial(self.controller.process_command, Command.RETRAIN, self.standard_model_config),
+                daemon=True)
+            train_thread.start()
             
             self.messageBoxTraining("success")
         except:

@@ -1,9 +1,12 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from gui.ui.TrainModelUI import Ui_TrainModel
-from PyQt5.QtWidgets import QFileDialog
-class TrainModelWindow(QtWidgets.QWidget, Ui_TrainModel):
+from PyQt5.QtWidgets import QFileDialog, QMainWindow  
+from shared.ModelConfig import ModelConfig
+from shared.ModelTrainingStats import ModelTrainingStats
+class TrainModelWindow(QMainWindow, Ui_TrainModel):
+    train_model_signal = QtCore.pyqtSignal(ModelConfig)
 
-    def __init__(self):
+    def __init__(self, update_data_signal):
         super().__init__()
         self.setupUi(self)
 
@@ -11,6 +14,8 @@ class TrainModelWindow(QtWidgets.QWidget, Ui_TrainModel):
         self.training_labels_directory = None
         self.test_images_directory = None
         self.test_labels_directory = None
+        
+        update_data_signal.connect(self.update_loss_values)
 
         self.training_images_button.clicked.connect(self.select_training_images_clicked)
         self.training_labels_button.clicked.connect(self.select_training_labels_clicked)
@@ -59,7 +64,24 @@ class TrainModelWindow(QtWidgets.QWidget, Ui_TrainModel):
     def train_model_clicked(self):
         self.stop_training_button.setEnabled(True)
         self.train_model_button.setEnabled(False)
+        model_config = ModelConfig(images_path=self.training_images_directory,
+                    masks_path=self.training_labels_directory,
+                    epochs=int(self.epochs_input.text()),
+                    learning_rate=float(self.learning_rate_input.text()),
+                    with_early_stopping=self.early_stopping_checkbox.isChecked(),
+                    with_data_augmentation=self.data_augment_checkbox.isChecked())
+        
+        self.train_model_signal.emit(model_config)
     
     def stop_training_clicked(self):
         self.stop_training_button.setEnabled(False)
         self.train_model_button.setEnabled(True)
+    
+    def update_loss_values(self, stats: ModelTrainingStats):
+        print("Hello there")
+        print(str(stats.training_loss))
+        self.training_loss_data_label.setText(str(stats.training_loss))
+        self.val_loss_data_label.setText(str(stats.validation_loss))
+        self.best_val_loss_data_label.setText(str(stats.best_loss))
+        self.current_epoch_data_label.setText(str(stats.epoch))
+        self.best_epoch_data_label.setText(str(stats.best_epoch))

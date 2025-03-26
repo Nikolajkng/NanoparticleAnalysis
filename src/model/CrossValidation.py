@@ -10,18 +10,17 @@ from model.DataTools import get_dataloaders, get_dataloaders_without_testset
 from model.DataAugmenter import DataAugmenter
 from model.UNet import UNet
 from model.ModelEvaluator import ModelEvaluator
+from shared.ModelConfig import ModelConfig
 
-def cv_holdout(unet: UNet, images_path, masks_path):
+def cv_holdout(unet: UNet, model_config: ModelConfig, loss_callback=None):
     
     # Set parameters:
     train_subset_size = 0.7
     validation_subset_size = 0.2
-    epochs = 300
-    learning_rate = 0.0005
-    print(f"Training model using holdout [train_split_size={train_subset_size}, epochs={epochs}, learnRate={learning_rate}]...")
+    print(f"Training model using holdout [train_split_size={train_subset_size}, epochs={model_config.epochs}, learnRate={model_config.learning_rate}]...")
     print("---------------------------------------------------------------------------------------")
 
-    dataset = SegmentationDataset(images_path, masks_path)
+    dataset = SegmentationDataset(model_config.images_path, model_config.masks_path)
     data_augmenter = DataAugmenter()
     dataset = data_augmenter.augment_dataset(dataset)
     train_dataloader, validation_dataloader, test_dataloder = get_dataloaders(dataset, train_subset_size, validation_subset_size)
@@ -29,10 +28,11 @@ def cv_holdout(unet: UNet, images_path, masks_path):
     unet.train_model(
         training_dataloader=train_dataloader, 
         validation_dataloader=validation_dataloader, 
-        epochs=epochs, 
-        learningRate=learning_rate, 
+        epochs=model_config.epochs, 
+        learningRate=model_config.learning_rate, 
         model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'),
-        cross_validation="holdout"
+        cross_validation="holdout",
+        loss_callback=loss_callback
         )
     
     iou, pixel_accuracy = ModelEvaluator.evaluate_model(unet, test_dataloder)

@@ -8,14 +8,15 @@ import numpy as np
 from model.SegmentationAnalyzer import SegmentationAnalyzer
 from shared.ScaleInfo import ScaleInfo
 from model.ModelEvaluator import ModelEvaluator
+from shared.ModelConfig import ModelConfig
 
 class request_handler:
     def __init__(self, unet):
         self.unet = unet
 
-    def process_request_train(self, images_path, masks_path):  
+    def process_request_train(self, model_config: ModelConfig, loss_callback=None):  
         # CHANGE CROSS VALIDATION HERE (uncomment):
-        iou, pixel_accuracy = cv_holdout(self.unet, images_path, masks_path)
+        iou, pixel_accuracy = cv_holdout(self.unet, model_config, loss_callback)
         #cv_kfold(self.unet, images_path, masks_path)
         
         return iou, pixel_accuracy
