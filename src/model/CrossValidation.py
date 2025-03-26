@@ -30,7 +30,7 @@ def cv_holdout(unet: UNet, model_config: ModelConfig, loss_callback=None):
         validation_dataloader=validation_dataloader, 
         epochs=model_config.epochs, 
         learningRate=model_config.learning_rate, 
-        model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'),
+        model_name="UNet_" + datetime.datetime.now().strftime('%d.%m.%Y_%H:%M:%S'),
         cross_validation="holdout",
         loss_callback=loss_callback
         )
