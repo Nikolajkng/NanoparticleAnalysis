@@ -3,18 +3,18 @@ import threading
 from PyQt5.QtGui import QPixmap, QPen
 from PyQt5.QtCore import QRect, Qt, pyqtSignal
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
-from gui.MainWindow import Ui_MainWindow
+from src.gui.ui.MainUI import Ui_MainWindow
 from controller.Controller import Controller
 from shared.Commands import Command
 from PIL import ImageQt
 import os
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QGraphicsPixmapItem, QRubberBand, QGraphicsLineItem, QGraphicsView
 from functools import partial 
-from gui.SelectScaleUI import SelectScaleUI
+from src.gui.windows.SelectScaleWindow import SelectScaleWindow
 import numpy as np
 from shared.ScaleInfo import ScaleInfo
 from gui.TableData import TableData
-class GUI(QMainWindow, Ui_MainWindow):
+class MainWindow(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
         self.MainWindow = QMainWindow()
@@ -70,7 +70,7 @@ class GUI(QMainWindow, Ui_MainWindow):
         self.scale_info = self.controller.process_command(Command.CALCULATE_REAL_IMAGE_WIDTH, selected_scale_info)
 
     def on_select_bar_scale_clicked(self):
-        self.select_scale_window = SelectScaleUI()
+        self.select_scale_window = SelectScaleWindow()
         pixmap = QPixmap(self.image_path) 
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
         self.select_scale_window.image_scene.addItem(pixmap_item)
