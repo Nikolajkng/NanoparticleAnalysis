@@ -16,7 +16,7 @@ def cv_holdout(unet: UNet, images_path, masks_path):
     # Set parameters:
     train_subset_size = 0.7
     validation_subset_size = 0.2
-    epochs = 300
+    epochs = 10
     learning_rate = 0.0005
     print(f"Training model using holdout [train_split_size={train_subset_size}, epochs={epochs}, learnRate={learning_rate}]...")
     print("---------------------------------------------------------------------------------------")
@@ -31,7 +31,7 @@ def cv_holdout(unet: UNet, images_path, masks_path):
         validation_dataloader=validation_dataloader, 
         epochs=epochs, 
         learningRate=learning_rate, 
-        model_name="UNet_"+datetime.datetime.now().strftime('%Y%m%d%H%M%S'),
+        model_name = "UNet_" + datetime.datetime.now().strftime('%d.%m.%Y_%H:%M:%S'),
         cross_validation="holdout"
         )
     
