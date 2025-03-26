@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SelectScaleWindow</class>
- <widget class="QWidget" name="SelectScaleWindow">
+ <class>SelectScale</class>
+ <widget class="QWidget" name="SelectScale">
   <property name="geometry">
    <rect>
     <x>0</x>

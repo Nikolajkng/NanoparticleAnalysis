@@ -1,8 +1,8 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-from src.gui.ui.SelectScaleUI import Ui_SelectScale
+from src.gui.ui.TrainModelUI import Ui_TrainModel
 from PyQt5.QtWidgets import QGraphicsScene
 
-class SelectScaleWindow(QtWidgets.QWidget, Ui_SelectScale):
+class TrainModelWindow(QtWidgets.QWidget, Ui_TrainModel):
     scale_bar_set_signal = QtCore.pyqtSignal(list)
 
     def __init__(self):

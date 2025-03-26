@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'select_scale_bar.ui'
+# Form implementation generated from reading ui file '.\ui_designs\select_scale_bar.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -11,18 +11,18 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 
 
-class Ui_SelectScaleWindow(object):
-    def setupUi(self, SelectScaleWindow):
-        SelectScaleWindow.setObjectName("SelectScaleWindow")
-        SelectScaleWindow.resize(1024, 1024)
-        self.image = QtWidgets.QGraphicsView(SelectScaleWindow)
+class Ui_SelectScale(object):
+    def setupUi(self, SelectScale):
+        SelectScale.setObjectName("SelectScale")
+        SelectScale.resize(1024, 1024)
+        self.image = QtWidgets.QGraphicsView(SelectScale)
         self.image.setGeometry(QtCore.QRect(0, 0, 1024, 1024))
         self.image.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.image.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.image.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         self.image.setInteractive(True)
         self.image.setObjectName("image")
-        self.label = QtWidgets.QLabel(SelectScaleWindow)
+        self.label = QtWidgets.QLabel(SelectScale)
         self.label.setGeometry(QtCore.QRect(330, 430, 411, 131))
         font = QtGui.QFont()
         font.setPointSize(16)
@@ -33,10 +33,10 @@ class Ui_SelectScaleWindow(object):
         self.label.setTextFormat(QtCore.Qt.AutoText)
         self.label.setObjectName("label")
 
-        self.retranslateUi(SelectScaleWindow)
-        QtCore.QMetaObject.connectSlotsByName(SelectScaleWindow)
+        self.retranslateUi(SelectScale)
+        QtCore.QMetaObject.connectSlotsByName(SelectScale)
 
-    def retranslateUi(self, SelectScaleWindow):
+    def retranslateUi(self, SelectScale):
         _translate = QtCore.QCoreApplication.translate
-        SelectScaleWindow.setWindowTitle(_translate("SelectScaleWindow", "Form"))
-        self.label.setText(_translate("SelectScaleWindow", "Click the two endpoints of the scale bar"))
+        SelectScale.setWindowTitle(_translate("SelectScale", "Form"))
+        self.label.setText(_translate("SelectScale", "Click the two endpoints of the scale bar"))
