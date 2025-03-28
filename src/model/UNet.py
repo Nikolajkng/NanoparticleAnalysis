@@ -173,8 +173,8 @@ class UNet(nn.Module):
         return running_loss / len(validation_dataloader)
 
     def save_model(self, path):
-        torch.save(self.state_dict(), path)
-
+        torch.save(self.state_dict(), path+".pt")
+        
     def load_model(self, path):
         state_dict = torch.load(path, map_location=self.device)
         self.load_state_dict(state_dict)

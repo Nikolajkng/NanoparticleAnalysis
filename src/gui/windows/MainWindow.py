@@ -150,6 +150,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def on_train_model_clicked(self):
         try:
+            self.messageBoxTraining("success")
             iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, self.standard_model_config)
             print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
         # TODO: Separat thread fucker live-plot op for hold-out op.
@@ -159,16 +160,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #         daemon=True)
         #     train_thread.start()
             
-            self.messageBoxTraining("success")
         except:
             self.messageBoxTraining("")
 
 
     def on_load_model_clicked(self):
-        model_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
-        if model_path: 
-            self.controller.process_command(Command.LOAD_MODEL, model_path)
         
+        file_path, selected_filter = QFileDialog.getOpenFileName(None, "Select a file", "", "PT Files (*.pt);;All Files (*)")
+        if file_path: 
+            if "PT" in selected_filter:
+                file_path += ".pt"
+                self.controller.process_command(Command.LOAD_MODEL, file_path)
+                self.messageBox("success", "Model loaded successfully")
+            else:
+                self.messageBox("Error: The selected file is not a PT file.")
+            
+        
+
 
     def on_export_segmented_clicked(self):
         if(self.segmented_image == None):
@@ -187,7 +195,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     file_path += ".png" 
             
             self.segmented_image.save(file_path)            
-            self.messageBox("success")
+            self.messageBox("success", "Segmented image exported successfully")
         else:
             self.messageBox("Error: File path is not selected.")
             
@@ -235,12 +243,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         row_data.append(item.text() if item else "")
                     writer.writerow(row_data)
 
-            self.messageBox("success")
+            self.messageBox("success", "Data exported successfully")
         except Exception as error:
             self.messageBox(f"Failed to export data: {str(error)}")
     
 
-    def messageBox(self, result):
+    def messageBox(self, result, text=""):
         msg_box = QMessageBox(self)  
 
         if result == "success":
@@ -264,7 +272,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if result == "success":
             msg_box.setIcon(QMessageBox.Information)
             msg_box.setWindowTitle("Success")
-            msg_box.setText("Training in progress ...")
+            msg_box.setText("Training in progress...")
             msg_box.setStandardButtons(QMessageBox.Ok)
             
         else:
