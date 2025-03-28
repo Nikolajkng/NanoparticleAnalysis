@@ -32,6 +32,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.select_scale_window = None
         self.scale_start_x = 0
         self.scale_end_x = 0
+        self.scale_is_set = False
         self.graphicsView_scene = QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsView_scene)
         self.input_image_real_width = 0
@@ -75,6 +76,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.on_calculate_input_image_size_clicked()
         print(f"{self.scale_start_x}, {self.scale_end_x}")
+        self.scale_is_set = True
+        print(f"Scale is set {self.scale_is_set}")
+        
 
     def on_calculate_input_image_size_clicked(self):
         selected_scale_info = ScaleInfo(self.scale_start_x, 
@@ -85,13 +89,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.scale_info = self.controller.process_command(Command.CALCULATE_REAL_IMAGE_WIDTH, selected_scale_info)
 
     def on_select_bar_scale_clicked(self):
+        if (self.image_path == None):
+            self.messageBox("No image found. Please upload an image first.")
+            return
         self.select_scale_window = SelectScaleWindow()
         pixmap = QPixmap(self.image_path) 
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
         self.select_scale_window.image_scene.addItem(pixmap_item)
-
         self.select_scale_window.scale_bar_set_signal.connect(self.scale_bar_set_event)
-
         self.select_scale_window.show()
 
     def on_train_model_custom_data_clicked(self):

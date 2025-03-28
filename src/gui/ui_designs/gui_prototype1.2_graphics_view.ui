@@ -285,8 +285,14 @@
       <height>22</height>
      </rect>
     </property>
+    <property name="inputMethodHints">
+     <set>Qt::ImhNone</set>
+    </property>
     <property name="text">
-     <string>Enter length of bar scale</string>
+     <string/>
+    </property>
+    <property name="placeholderText">
+     <string> Enter bar scale length</string>
     </property>
    </widget>
    <widget class="QComboBox" name="comboBox">
