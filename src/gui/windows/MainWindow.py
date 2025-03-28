@@ -18,6 +18,9 @@ from shared.ScaleInfo import ScaleInfo
 from shared.ModelConfig import ModelConfig
 from gui.TableData import TableData
 from shared.ModelTrainingStats import ModelTrainingStats
+from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtGui import QIntValidator
+
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
 
@@ -37,6 +40,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.graphicsView.setScene(self.graphicsView_scene)
         self.input_image_real_width = 0
         self.scale_info = None
+        self.validator = QIntValidator(0, 99999999, self)  
         self.standard_model_config = ModelConfig(images_path="data/images",
                                                  masks_path="data/masks",
                                                  epochs=300,
@@ -63,7 +67,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
         self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
-        
+        self.barScaleInputField.setValidator(self.validator)
+    
+    
+    
+    
     def set_table_data(self, table_data: np.ndarray):
         data = TableData(table_data)
         data.insertIn(self.table_widget)
