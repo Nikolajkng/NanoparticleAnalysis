@@ -35,7 +35,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.select_scale_window = None
         self.scale_start_x = 0
         self.scale_end_x = 0
-        self.scale_is_set = False
+        self.scale_is_selected = False
+        self.scale_input_set = False
         self.graphicsView_scene = QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsView_scene)
         self.input_image_real_width = 0
@@ -68,9 +69,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
         self.barScaleInputField.setValidator(self.validator)
-    
-    
-    
+        
     
     def set_table_data(self, table_data: np.ndarray):
         data = TableData(table_data)
@@ -84,8 +83,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.on_calculate_input_image_size_clicked()
         print(f"{self.scale_start_x}, {self.scale_end_x}")
-        self.scale_is_set = True
-        print(f"Scale is set {self.scale_is_set}")
+        self. scale_is_selected = True
+        self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
+        print(f"Scale is set {self. scale_is_selected}")
+        self.selectBarScaleButton.setStyleSheet("")
         
 
     def on_calculate_input_image_size_clicked(self):
@@ -134,6 +135,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_train_model_values_signal.emit(stats)
 
     def on_open_image_clicked(self):
+        self.scale_is_selected = False
+        self.scale_input_set = False
+        
         file_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
         self.image_path = file_path
         if file_path: 
@@ -153,6 +157,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             self.messageBox("Segmentation failed: No image found")
             return
+        
+        if(not self.scale_is_selected):
+            self.messageBox("Please use the ''Select Bar Scale'' button to select the scale")
+            self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
+            return
+        
+        if(self.barScaleInputField.text() == ""):
+            self.messageBox("Please enter length of the scale bar")
+            return
+        
+        
         self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
         segmented_image_temp = ImageQt.ImageQt(self.segmented_image)
