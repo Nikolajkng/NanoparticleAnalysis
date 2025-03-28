@@ -90,7 +90,7 @@ class UNet(nn.Module):
         m = self.mappingConvolution(d4)
         return m
 
-    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, loss_callback=None):
+    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_callback=None):
         self.to(self.device)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
         self.criterion = nn.CrossEntropyLoss()
@@ -127,8 +127,8 @@ class UNet(nn.Module):
             
             
             # Undgå plot alle k-fold modeller
-            #if cross_validation == "holdout":
-                #plot_loss(training_loss_values, validation_loss_values)
+            if cross_validation == "holdout":
+                plot_loss(training_loss_values, validation_loss_values)
             
             
             print(f'Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}')
@@ -139,15 +139,15 @@ class UNet(nn.Module):
                 no_improvement_epochs = 0
             else:
                 no_improvement_epochs += 1
-                if no_improvement_epochs >= 50:
+                if with_early_stopping and no_improvement_epochs >= 50:
                     break
             
             if loss_callback:
                 stats = ModelTrainingStats(training_loss=epoch_training_loss,
                                            val_loss=epoch_validation_loss,
                                            best_loss=best_loss,
-                                           epoch=epoch,
-                                           best_epoch=epoch - no_improvement_epochs)
+                                           epoch=epoch+1,
+                                           best_epoch=epoch+1 - no_improvement_epochs)
                 loss_callback(stats)
 
             

@@ -38,13 +38,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.scale_info = None
         self.standard_model_config = ModelConfig(images_path="data/images",
                                                  masks_path="data/masks",
-                                                 epochs=150,
+                                                 epochs=300,
                                                  learning_rate=0.0005,
                                                  with_early_stopping=True,
                                                  with_data_augmentation=True)
         
         self.train_model_window = None
-        
+        self.train_thread = None
 
         self.plot1_scene = QGraphicsScene(self)
         self.plot1.setScene(self.plot1_scene)
@@ -97,21 +97,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_train_model_custom_data_clicked(self):
         self.train_model_window = TrainModelWindow(self.update_train_model_values_signal)
         self.train_model_window.train_model_signal.connect(self.train_model_custom_data)
+        self.train_model_window.stop_training_signal.connect(self.stop_model_training)
         self.train_model_window.show()
 
     def train_model_custom_data(self, model_config: ModelConfig):
 
         try:
-            train_thread = threading.Thread(
-                target=partial(self.controller.process_command, Command.RETRAIN, self.standard_model_config, self.update_training_model_stats),
+            self.train_thread = threading.Thread(
+                target=partial(self.controller.process_command, Command.RETRAIN, model_config, self.update_training_model_stats),
                 daemon=True)
-            train_thread.start()
+            self.train_thread.start()
             
             self.messageBoxTraining("success")
         except:
             self.messageBoxTraining("")
         # iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, model_config, self.update_training_model_stats)
         # print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
+
+    def stop_model_training(self):
+        return
 
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
@@ -144,15 +148,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def on_train_model_clicked(self):
-        # try:
-        #     iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, self.standard_model_config)
-        #     print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
-        # TODO: Separat thread fucker live-plot op for hold-out op.
         try:
-            train_thread = threading.Thread(
-                target=partial(self.controller.process_command, Command.RETRAIN, self.standard_model_config),
-                daemon=True)
-            train_thread.start()
+            iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, self.standard_model_config)
+            print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
+        # TODO: Separat thread fucker live-plot op for hold-out op.
+        # try:
+        #     train_thread = threading.Thread(
+        #         target=partial(self.controller.process_command, Command.RETRAIN, self.standard_model_config),
+        #         daemon=True)
+        #     train_thread.start()
             
             self.messageBoxTraining("success")
         except:

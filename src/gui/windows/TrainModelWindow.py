@@ -5,7 +5,7 @@ from shared.ModelConfig import ModelConfig
 from shared.ModelTrainingStats import ModelTrainingStats
 class TrainModelWindow(QMainWindow, Ui_TrainModel):
     train_model_signal = QtCore.pyqtSignal(ModelConfig)
-
+    stop_training_signal = QtCore.pyqtSignal()
     def __init__(self, update_data_signal):
         super().__init__()
         self.setupUi(self)
@@ -70,16 +70,16 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
                     learning_rate=float(self.learning_rate_input.text()),
                     with_early_stopping=self.early_stopping_checkbox.isChecked(),
                     with_data_augmentation=self.data_augment_checkbox.isChecked())
-        
+        print(int(self.epochs_input.text()))
         self.train_model_signal.emit(model_config)
     
     def stop_training_clicked(self):
         self.stop_training_button.setEnabled(False)
         self.train_model_button.setEnabled(True)
+        self.stop_training_signal.emit()
+
     
     def update_loss_values(self, stats: ModelTrainingStats):
-        print("Hello there")
-        print(str(stats.training_loss))
         self.training_loss_data_label.setText(str(stats.training_loss))
         self.val_loss_data_label.setText(str(stats.validation_loss))
         self.best_val_loss_data_label.setText(str(stats.best_loss))
