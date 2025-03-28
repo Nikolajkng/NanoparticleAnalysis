@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader, random_split
 import os
@@ -42,7 +43,7 @@ def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
 
 def tensor_from_image(image_path: str, tensor_size=(256,256)) -> Tensor:
     image = Image.open(image_path).convert("L")
-    image = image.resize(tensor_size, Image.NEAREST)
+    image.thumbnail(tensor_size)
     image = TF.to_tensor(image).unsqueeze(0)
     return image
 
@@ -50,6 +51,145 @@ def segmentation_tensor_to_numpy(tensor: Tensor) -> np.ndarray:
         return (tensor.squeeze(0).numpy() * 255).astype(np.uint8)
 
 
+# Made with help from https://www.programmersought.com/article/15316517340/
+def mirror_fill(images: Tensor, patch_size: tuple, stride_size: tuple):
+    images_np = images.cpu().numpy()
+    batch_size, channels, img_width, img_height = images_np.shape
+    patch_height, patch_width = patch_size
+    stride_height, stride_width = stride_size
+
+    remaining_width = (img_width - patch_width) % stride_width
+    remaining_height = (img_height - patch_height) % stride_height
+
+    needed_padding_width = (stride_width - remaining_width) % stride_width
+    needed_padding_height = (stride_height - remaining_height) % stride_height
+
+    if needed_padding_width:
+
+        padded_images = np.empty(
+            (batch_size, channels, img_width + needed_padding_width, img_height), 
+            dtype=images_np.dtype
+        )
+
+        start_x = needed_padding_width // 2
+        end_x = start_x + img_width
+
+        for i, img in enumerate(images_np):
+            padded_images[i, :, start_x:end_x, :] = img
+            padded_images[i, :, :start_x, :] = np.flip(img[:, :start_x, :], axis=1)
+            padded_images[i, :, end_x:, :] = np.flip(img[:, img_width - (needed_padding_width - needed_padding_width // 2):, :], axis=1)
+        
+        images_np = padded_images
+    
+    if needed_padding_height:
+        img_width = images_np.shape[2]
+        padded_images = np.empty(
+            (batch_size, channels, img_width, img_height + needed_padding_height), 
+            dtype=images_np.dtype
+        )
+        start_y = needed_padding_height // 2
+        end_y = start_y + img_height
+
+        for i, img in enumerate(images_np):
+            padded_images[i, :, :, start_y:end_y] = img
+            padded_images[i, :, :, :start_y] = np.flip(img[:, :, :start_y], axis=2)
+            padded_images[i, :, :, end_y:] = np.flip(img[:, :, img_height - (needed_padding_height - needed_padding_height // 2):], axis=2)
+        
+        images_np = padded_images
+    
+    return torch.tensor(images_np, dtype=images.dtype, device=images.device)
+    
+
+
+# Made with help from https://www.programmersought.com/article/15316517340/
+def extract_slices(images: Tensor, patch_size: tuple, stride_size: tuple):
+    images_np = images.cpu().numpy()
+    batch_size, channels, img_width, img_height = images.shape
+    patch_height, patch_width = patch_size
+    stride_height, stride_width = stride_size
+
+
+    n_patches_y = (img_height - patch_height) // stride_height + 1
+    n_patches_x = (img_width - patch_width) // stride_width + 1
+
+    n_patches_per_image = n_patches_x * n_patches_y
+
+    n_patches_total = n_patches_per_image * batch_size
+
+    patches = np.empty((n_patches_total, channels, patch_width, patch_height), dtype=images_np.dtype)
+
+    patch_idx = 0
+
+    for img in images_np:
+        for i in range(n_patches_y):
+            for j in range(n_patches_x):
+                start_x = j * stride_width
+                start_y = i * stride_height
+                end_x = start_x + patch_width
+                end_y = start_y + patch_height
+
+                patches[patch_idx] = img[:, start_x:end_x, start_y:end_y]
+                patch_idx += 1
+    return torch.tensor(patches, dtype=images.dtype, device=images.device)
+
+def construct_image_from_patches(patches: Tensor, img_size: tuple, stride_size: tuple):
+    patches_np = patches.cpu().numpy()
+    img_width, img_height = img_size
+    stride_width, stride_height = stride_size
+    n_patches_total, channels, patch_width, patch_height = patches_np.shape
+    
+    n_patches_y = (img_height - patch_height) // stride_height + 1
+    n_patches_x = (img_width - patch_width) // stride_width + 1
+
+    n_patches_per_image = n_patches_x * n_patches_y
+
+    batch_size = n_patches_total // n_patches_per_image
+
+    images = np.zeros((batch_size, channels, img_width, img_height))
+    weights = np.zeros_like(images)
+
+    for img_idx, (img, weights) in enumerate(zip(images, weights)):
+        start = img_idx * n_patches_per_image
+
+        for i in range(n_patches_y):
+            for j in range(n_patches_x):
+                start_x = j * stride_width
+                start_y = i * stride_height
+                end_x = start_x + patch_width
+                end_y = start_y + patch_height
+                patch_idx = start + i * n_patches_x + j
+                img[:, start_x:end_x, start_y:end_y] += patches_np[patch_idx]
+                weights[start_x:end_x, start_y:end_y] += 1
+    images /= weights
+
+    return torch.tensor(images, dtype=patches.dtype, device=patches.device)
+
+
+import torch.nn.functional as F
+def normalizeTensorToPixels(tensor: Tensor) -> Tensor:
+    tensor = tensor - tensor.min()
+    tensor = tensor / tensor.max()
+    tensor = tensor * 255
+    return tensor
+    
+def showTensor(tensor: Tensor) -> None:
+    #probabilities = F.softmax(tensor, dim=1)  
+    if tensor.dim == 4:
+        tensor = tensor.squeeze(1)
+    if tensor.size(0) == 1:
+        #probabilities = tensor.squeeze(0)
+        pixels = normalizeTensorToPixels(tensor[0, :, :])
+    
+        img = TF.to_pil_image(pixels.byte())
+        img.show()
+
 if __name__ == '__main__':
-    folder_path = 'data/masks/'
-    resize_and_save_images(folder_path, is_masks=True)
+    # folder_path = 'data/masks/'
+    # resize_and_save_images(folder_path, is_masks=True)
+    tensor = tensor_from_image('data/W. sample_0011.tif', (256, 256))
+    tensor = mirror_fill(tensor, (100,100), (100,100))
+    patches = extract_slices(tensor, (100,100), (100,100))
+    showTensor(tensor)
+    reconstructed = construct_image_from_patches(patches, (300,300), (100,100))
+    showTensor(reconstructed)
+    

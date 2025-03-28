@@ -144,6 +144,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             pixmap = QPixmap(file_path) 
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.addItem(pixmap_item)
+            #TODO: Remove old item
 
     def on_test_model_clicked(self):
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")
