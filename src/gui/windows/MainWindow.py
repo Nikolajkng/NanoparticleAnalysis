@@ -18,6 +18,9 @@ from shared.ScaleInfo import ScaleInfo
 from shared.ModelConfig import ModelConfig
 from gui.TableData import TableData
 from shared.ModelTrainingStats import ModelTrainingStats
+from PyQt5.QtWidgets import QLineEdit
+from PyQt5.QtGui import QIntValidator
+
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
 
@@ -32,10 +35,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.select_scale_window = None
         self.scale_start_x = 0
         self.scale_end_x = 0
+        self.scale_is_set = False
         self.graphicsView_scene = QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsView_scene)
         self.input_image_real_width = 0
         self.scale_info = None
+        self.validator = QIntValidator(0, 99999999, self)  
         self.standard_model_config = ModelConfig(images_path="data/images",
                                                  masks_path="data/masks",
                                                  epochs=300,
@@ -46,8 +51,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.train_model_window = None
         self.train_thread = None
 
-        self.plot1_scene = QGraphicsScene(self)
-        self.plot1.setScene(self.plot1_scene)
+        # self.plot1_scene = QGraphicsScene(self)
+        # self.plot1.setScene(self.plot1_scene)
         self.plot2_scene = QGraphicsScene(self)
         self.plot2.setScene(self.plot2_scene)
         self.plot3_scene = QGraphicsScene(self)
@@ -62,7 +67,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
         self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
-        
+        self.barScaleInputField.setValidator(self.validator)
+    
+    
+    
+    
     def set_table_data(self, table_data: np.ndarray):
         data = TableData(table_data)
         data.insertIn(self.table_widget)
@@ -75,6 +84,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.on_calculate_input_image_size_clicked()
         print(f"{self.scale_start_x}, {self.scale_end_x}")
+        self.scale_is_set = True
+        print(f"Scale is set {self.scale_is_set}")
+        
 
     def on_calculate_input_image_size_clicked(self):
         selected_scale_info = ScaleInfo(self.scale_start_x, 
@@ -85,13 +97,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.scale_info = self.controller.process_command(Command.CALCULATE_REAL_IMAGE_WIDTH, selected_scale_info)
 
     def on_select_bar_scale_clicked(self):
+        if (self.image_path == None):
+            self.messageBox("No image found. Please upload an image first.")
+            return
         self.select_scale_window = SelectScaleWindow()
         pixmap = QPixmap(self.image_path) 
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
         self.select_scale_window.image_scene.addItem(pixmap_item)
-
         self.select_scale_window.scale_bar_set_signal.connect(self.scale_bar_set_event)
-
         self.select_scale_window.show()
 
     def on_train_model_custom_data_clicked(self):
@@ -140,6 +153,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_segment_image_clicked(self):
         if (self.image_path == None):
             self.messageBox("Segmentation failed: No image found")
+            return
         self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
         segmented_image_temp = ImageQt.ImageQt(self.segmented_image)
@@ -150,6 +164,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def on_train_model_clicked(self):
         try:
+            self.messageBoxTraining("success")
             iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, self.standard_model_config)
             print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
         # TODO: Separat thread fucker live-plot op for hold-out op.
@@ -159,16 +174,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #         daemon=True)
         #     train_thread.start()
             
-            self.messageBoxTraining("success")
         except:
             self.messageBoxTraining("")
 
 
     def on_load_model_clicked(self):
-        model_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
-        if model_path: 
-            self.controller.process_command(Command.LOAD_MODEL, model_path)
-        
+        file_path, selected_filter = QFileDialog.getOpenFileName(None, "Select a file", "", "PT Files (*.pt);;All Files (*)")
+        if file_path: 
+            if "PT" in selected_filter:
+                if not file_path.endswith(".pt"):  
+                    file_path += ".pt"
+                self.controller.process_command(Command.LOAD_MODEL, file_path)
+                self.messageBox("success", "Model loaded successfully")
+            else:
+                self.messageBox("Error: The selected file is not a PT file.")
+
 
     def on_export_segmented_clicked(self):
         if(self.segmented_image == None):
@@ -187,7 +207,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     file_path += ".png" 
             
             self.segmented_image.save(file_path)            
-            self.messageBox("success")
+            self.messageBox("success", "Segmented image exported successfully")
         else:
             self.messageBox("Error: File path is not selected.")
             
@@ -235,18 +255,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         row_data.append(item.text() if item else "")
                     writer.writerow(row_data)
 
-            self.messageBox("success")
+            self.messageBox("success", "Data exported successfully")
         except Exception as error:
             self.messageBox(f"Failed to export data: {str(error)}")
     
 
-    def messageBox(self, result):
+    def messageBox(self, result, text=""):
         msg_box = QMessageBox(self)  
 
         if result == "success":
             msg_box.setIcon(QMessageBox.Information)
             msg_box.setWindowTitle("Success")
-            msg_box.setText("Data exported successfully!")
+            msg_box.setText(text)
             msg_box.setStandardButtons(QMessageBox.Ok)
         else:
             msg_box.setIcon(QMessageBox.Critical)
@@ -264,7 +284,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if result == "success":
             msg_box.setIcon(QMessageBox.Information)
             msg_box.setWindowTitle("Success")
-            msg_box.setText("Training in progress ...")
+            msg_box.setText("Training in progress...")
             msg_box.setStandardButtons(QMessageBox.Ok)
             
         else:
