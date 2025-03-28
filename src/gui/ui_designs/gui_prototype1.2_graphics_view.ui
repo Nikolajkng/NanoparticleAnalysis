@@ -208,11 +208,11 @@
     <property name="currentIndex">
      <number>0</number>
     </property>
-    <widget class="QWidget" name="tab1">
+    <widget class="QWidget" name="tab3">
      <attribute name="title">
-      <string>???</string>
+      <string>Labeled</string>
      </attribute>
-     <widget class="QGraphicsView" name="plot1">
+     <widget class="QGraphicsView" name="plot3">
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -237,30 +237,6 @@
       <string>Graph</string>
      </attribute>
      <widget class="QGraphicsView" name="plot2">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>500</width>
-        <height>500</height>
-       </rect>
-      </property>
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="sizeAdjustPolicy">
-       <enum>QAbstractScrollArea::AdjustToContents</enum>
-      </property>
-     </widget>
-    </widget>
-    <widget class="QWidget" name="tab3">
-     <attribute name="title">
-      <string>Labeled</string>
-     </attribute>
-     <widget class="QGraphicsView" name="plot3">
       <property name="geometry">
        <rect>
         <x>0</x>

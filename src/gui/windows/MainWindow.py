@@ -46,8 +46,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.train_model_window = None
         self.train_thread = None
 
-        self.plot1_scene = QGraphicsScene(self)
-        self.plot1.setScene(self.plot1_scene)
+        # self.plot1_scene = QGraphicsScene(self)
+        # self.plot1.setScene(self.plot1_scene)
         self.plot2_scene = QGraphicsScene(self)
         self.plot2.setScene(self.plot2_scene)
         self.plot3_scene = QGraphicsScene(self)
@@ -165,17 +165,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def on_load_model_clicked(self):
-        
         file_path, selected_filter = QFileDialog.getOpenFileName(None, "Select a file", "", "PT Files (*.pt);;All Files (*)")
         if file_path: 
             if "PT" in selected_filter:
-                file_path += ".pt"
+                if not file_path.endswith(".pt"):  
+                    file_path += ".pt"
                 self.controller.process_command(Command.LOAD_MODEL, file_path)
                 self.messageBox("success", "Model loaded successfully")
             else:
                 self.messageBox("Error: The selected file is not a PT file.")
-            
-        
 
 
     def on_export_segmented_clicked(self):
@@ -254,7 +252,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if result == "success":
             msg_box.setIcon(QMessageBox.Information)
             msg_box.setWindowTitle("Success")
-            msg_box.setText("Data exported successfully!")
+            msg_box.setText(text)
             msg_box.setStandardButtons(QMessageBox.Ok)
         else:
             msg_box.setIcon(QMessageBox.Critical)
