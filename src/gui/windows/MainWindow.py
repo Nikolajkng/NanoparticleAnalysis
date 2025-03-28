@@ -139,6 +139,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_segment_image_clicked(self):
         if (self.image_path == None):
             self.messageBox("Segmentation failed: No image found")
+            return
         self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
         segmented_image_temp = ImageQt.ImageQt(self.segmented_image)
