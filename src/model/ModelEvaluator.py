@@ -2,7 +2,10 @@ from model.UNet import UNet
 from torch.utils.data import DataLoader
 import numpy as np
 import torch
-
+from model.DataTools import showTensor
+import cv2
+import matplotlib.pyplot as plt
+import random
 class ModelEvaluator():
     @staticmethod
     def __get_single_image_iou(prediction: np.ndarray, ground_truth: np.ndarray):
@@ -21,17 +24,17 @@ class ModelEvaluator():
         return correct_pixels.float() / total_pixels
     
     @staticmethod
-    def calculate_average_iou(predictions, ground_truths):
-        total_iou = 0.0
+    def calculate_ious(predictions, ground_truths):
+        ious = []
         for prediction, ground_truth in zip(predictions, ground_truths):
-            total_iou += ModelEvaluator.__get_single_image_iou(prediction, ground_truth)
-        return total_iou / len(predictions)
+            ious.append(ModelEvaluator.__get_single_image_iou(prediction, ground_truth))
+        return ious
     @staticmethod
-    def calculate_average_pixel_accuracy(predictions, ground_truths):
-        total_pixel_accuracy = 0.0
+    def calculate_pixel_accuracies(predictions, ground_truths):
+        accuracies = []
         for prediction, ground_truth in zip(predictions, ground_truths):
-            total_pixel_accuracy += ModelEvaluator.__get_single_image_pixel_accuracy(prediction, ground_truth)
-        return total_pixel_accuracy / len(predictions)
+            accuracies.append(ModelEvaluator.__get_single_image_pixel_accuracy(prediction, ground_truth))
+        return accuracies
     
     @staticmethod
     def get_predictions(unet: UNet, dataloader: DataLoader):
@@ -48,11 +51,50 @@ class ModelEvaluator():
         return predictions, labels
 
     @staticmethod
+    def plot_difference(prediction, label, iou, pixel_accuracy):
+        prediction_uint8 = (np.array(prediction) * 255).astype(np.uint8).squeeze(0)
+        label_uint8 = (np.array(label) * 255).astype(np.uint8).squeeze(0)
+
+        false_positives = ((prediction_uint8 == 255) & (label_uint8 == 0))  # FP: Red
+        false_negatives = ((prediction_uint8 == 0) & (label_uint8 == 255))  # FN: Blue
+
+        overlay = np.zeros((*false_positives.shape, 3), dtype=np.uint8)
+
+        overlay[..., 0] = false_positives * 255
+        overlay[..., 2] = false_negatives * 255  # Blue channel for FN
+        
+        fig, axes = plt.subplots(1, 3, figsize=(12, 5), sharex=True, sharey=True)
+
+        axes[0].imshow(prediction_uint8, cmap='gray')
+        axes[0].set_title("Prediction")
+
+        axes[1].imshow(label_uint8, cmap='gray')
+        axes[1].set_title("Label")
+
+        axes[2].imshow(overlay)
+        axes[2].set_title("Difference (FP: Red, FN: Blue)")
+
+        fig.text(0.5, 0.95, f"IoU: {iou:.2f}   Pixel Accuracy: {pixel_accuracy:.2f}",
+         ha='center', va='top', fontsize=14, bbox=dict(facecolor='white', alpha=0.7))
+        
+        plt.tight_layout()
+        plt.show()
+
+    @staticmethod
     def evaluate_model(unet: UNet, test_dataloader: DataLoader) -> tuple[float, float]:
         predictions, labels = ModelEvaluator.get_predictions(unet, test_dataloader)
-        iou = ModelEvaluator.calculate_average_iou(predictions, labels)
-        pixel_accuracy = ModelEvaluator.calculate_average_pixel_accuracy(predictions, labels)
-        return iou.float(), pixel_accuracy.float()
+
+        ious = ModelEvaluator.calculate_ious(predictions, labels)
+        pixel_accuracies = ModelEvaluator.calculate_pixel_accuracies(predictions, labels)
+
+
+        number_of_predictions_to_show = np.min([4, len(predictions)]) 
+        indicies = random.sample(range(len(predictions)), number_of_predictions_to_show)
+        for i in indicies:
+            ModelEvaluator.plot_difference(predictions[i], labels[i], ious[i], pixel_accuracies[i])
+
+
+        return np.mean(ious), np.mean(pixel_accuracies)
 
         
         
