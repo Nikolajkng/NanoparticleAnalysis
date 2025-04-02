@@ -81,7 +81,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         graphics_view_width = self.graphicsView.size().width()
         self.scale_start_x, self.scale_end_x = xcoords[0] / (scale_window_width/graphics_view_width), xcoords[1] / (scale_window_width/graphics_view_width)
 
-        self.on_calculate_input_image_size_clicked()
         print(f"{self.scale_start_x}, {self.scale_end_x}")
         self. scale_is_selected = True
         self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
@@ -101,6 +100,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             self.messageBox("No image found. Please upload an image first.")
             return
+        
+        if(self.barScaleInputField.text() == ""):
+            self.messageBox("Please enter length of the scale bar first")
+            return
+        
         self.select_scale_window = SelectScaleWindow()
         pixmap = QPixmap(self.image_path) 
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
@@ -172,9 +176,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         
         if(self.barScaleInputField.text() == ""):
-            self.messageBox("Please enter length of the scale bar")
+            self.messageBox("Please enter length of the scale bar first")
             return
         
+        
+        self.on_calculate_input_image_size_clicked()
         
         self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
