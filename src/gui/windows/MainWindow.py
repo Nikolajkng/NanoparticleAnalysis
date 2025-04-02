@@ -138,7 +138,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.scale_is_selected = False
         self.scale_input_set = False
         
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, 
+            "Select a file", 
+            "/src/data/images/", 
+            "Image Files (*.png *.jpg *.jpeg *.tif);;All Files (*)")
+        
         self.image_path = file_path
         if file_path: 
             pixmap = QPixmap(file_path) 
@@ -193,8 +198,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.messageBoxTraining("")
 
 
-    def on_load_model_clicked(self):
-        file_path, selected_filter = QFileDialog.getOpenFileName(None, "Select a file", "", "PT Files (*.pt);;All Files (*)")
+    def on_load_model_clicked(self):        
+        file_path, selected_filter = QFileDialog.getOpenFileName(
+            None, 
+            "Select a file", 
+            "src/data/models", 
+            "PT Files (*.pt);;All Files (*)"
+            )
+        
         if file_path: 
             if "PT" in selected_filter:
                 if not file_path.endswith(".pt"):  
