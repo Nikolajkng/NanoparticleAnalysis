@@ -3,6 +3,7 @@ import torchvision.transforms.functional as TF
 from torchvision.transforms.functional import rotate, hflip
 from model.SegmentationDataset import SegmentationDataset
 from model.TensorTools import normalizeTensorToPixels
+import numpy as np
 class DataAugmenter():
     def __init__(self):
         return
@@ -15,6 +16,24 @@ class DataAugmenter():
             rotated_images.append(new_image)
             rotated_masks.append(new_mask)
         return (rotated_images, rotated_masks)
+    
+    def __get_random_crop(self, image: Tensor, mask: Tensor, cropped_size=(256,256)):
+        image_width, image_height = image.shape[-2:]
+        start_height = np.random.randint(0, image_height - cropped_size[1])
+        start_width = np.random.randint(0, image_width - cropped_size[0])
+        cropped_image = image[:, start_width:start_width + cropped_size[0], start_height:start_height + cropped_size[1]]
+        cropped_mask = mask[:, start_width:start_width + cropped_size[0], start_height:start_height + cropped_size[1]]
+        return cropped_image, cropped_mask
+
+    def create_random_crops(self, image: Tensor, mask: Tensor, amount_to_create: int, cropped_size=(256,256)):
+        images, masks = [], []
+        if image.shape[-1] <= cropped_size[1] or image.shape[-2] <= cropped_size[0]:
+            return [image], [mask]
+        for i in range(amount_to_create):
+            cropped_image, cropped_mask = self.__get_random_crop(image, mask, cropped_size)
+            images.append(cropped_image)
+            masks.append(cropped_mask)
+        return images, masks
     
     def create_hflipped_tensors(self, images: list[Tensor], masks: list[Tensor]) -> tuple[list[Tensor], list[Tensor]]:
         final_flipped_images = []
@@ -43,6 +62,10 @@ if __name__ == '__main__':
     dataset = SegmentationDataset("data/images/", "data/masks/")
     image, mask = dataset[0]
     rotated_images, rotated_masks = data_augmenter.create_rotated_tensors(image, mask)
+    crop_image, crop_mask = data_augmenter.random_crop(image, mask, cropped_size=(50,50))
+    pixels = normalizeTensorToPixels(crop_image)
+    img = TF.to_pil_image(pixels.byte())
+    img.show()
     augmented_images, augmented_masks = data_augmenter.create_hflipped_tensors(rotated_images, rotated_masks)
     for image in augmented_images:
         pixels = normalizeTensorToPixels(image)
