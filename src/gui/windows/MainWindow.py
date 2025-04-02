@@ -116,15 +116,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.train_model_window.stop_training_signal.connect(self.stop_model_training)
         self.train_model_window.show()
 
-    def train_model_custom_data(self, model_config: ModelConfig):
 
+    def train_model_custom_data(self, model_config: ModelConfig):
+        result = confirmTrainingMessageBox(self, "Training a new model may take a while, do you want to continue?")
+        if result == QMessageBox.No:
+                return
+                    
         try:
             self.train_thread = threading.Thread(
                 target=partial(self.controller.process_command, Command.RETRAIN, model_config, self.update_training_model_stats),
                 daemon=True)
             self.train_thread.start()
-            
-            messageBoxTraining(self, "success")
+            # messageBoxTraining(self, "success")            
         except:
             messageBoxTraining(self, "")
         # iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, model_config, self.update_training_model_stats)

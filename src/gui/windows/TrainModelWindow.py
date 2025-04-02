@@ -4,6 +4,7 @@ from gui.ui.TrainModelUI import Ui_TrainModel
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
 from shared.ModelConfig import ModelConfig
 from shared.ModelTrainingStats import ModelTrainingStats
+from model.PlottingTools import plot_loss
 class TrainModelWindow(QMainWindow, Ui_TrainModel):
     train_model_signal = QtCore.pyqtSignal(ModelConfig)
     stop_training_signal = QtCore.pyqtSignal()
@@ -15,6 +16,9 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.training_labels_directory = None
         self.test_images_directory = None
         self.test_labels_directory = None
+        
+        self.training_loss_values = []
+        self.validation_loss_values = []
         
         update_data_signal.connect(self.update_loss_values)
 
@@ -89,3 +93,6 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.best_val_loss_data_label.setText(str(stats.best_loss))
         self.current_epoch_data_label.setText(str(stats.epoch))
         self.best_epoch_data_label.setText(str(stats.best_epoch))
+        self.training_loss_values.append(stats.training_loss)
+        self.validation_loss_values.append(stats.validation_loss)
+        plot_loss(self.training_loss_values, self.validation_loss_values)
