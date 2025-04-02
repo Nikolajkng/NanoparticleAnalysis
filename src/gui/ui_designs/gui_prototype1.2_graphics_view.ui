@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1203</width>
-    <height>787</height>
+    <width>1336</width>
+    <height>832</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -359,7 +359,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1203</width>
+     <width>1336</width>
      <height>24</height>
     </rect>
    </property>
@@ -378,9 +378,9 @@
     <property name="title">
      <string>Model</string>
     </property>
-    <addaction name="action_new_data_train_model"/>
     <addaction name="action_load_model"/>
     <addaction name="action_train_model"/>
+    <addaction name="action_new_data_train_model"/>
     <addaction name="action_test_model"/>
    </widget>
    <widget class="QMenu" name="menuTools">
@@ -418,14 +418,14 @@
     <bool>false</bool>
    </property>
   </widget>
-  <action name="action_train_model">
+  <action name="action_new_data_train_model">
    <property name="text">
-    <string>Train model</string>
+    <string>Train New Model on Custom Data</string>
    </property>
   </action>
-  <action name="action_load_model">
+  <action name="action_train_model">
    <property name="text">
-    <string>Load model</string>
+    <string>Train New Model</string>
    </property>
   </action>
   <action name="action_open_image">
@@ -455,12 +455,12 @@
   </action>
   <action name="action_test_model">
    <property name="text">
-    <string>Test model</string>
+    <string>Test Model</string>
    </property>
   </action>
-  <action name="action_new_data_train_model">
+  <action name="action_load_model">
    <property name="text">
-    <string>Train a new model on custom data</string>
+    <string>Load Model</string>
    </property>
   </action>
  </widget>

@@ -28,36 +28,35 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.auto_test_set_checkbox.stateChanged.connect(self.auto_test_set_checkbox_clicked)
 
 
-    def open_directory(self, window_text, data_path = 'data', image_path = None):
-        default_data_path = os.path.abspath(os.path.join(os.getcwd(), data_path, image_path ))
+    def open_directory(self, window_text, data_path = 'data'):
+        default_data_path = os.path.abspath(os.path.join(os.getcwd(), data_path ))
         
-        file_paths, _ = QFileDialog.getOpenFileNames(
+        file_paths, _ = QFileDialog.getExistingDirectory(
         None, 
         window_text, 
         default_data_path,
-        "Image Files (*.png *.jpg *.jpeg *.tif);;All Files (*)"
     )
         if file_paths:
             return file_paths
         return
     
     def select_training_images_clicked(self):
-        folder_path = self.open_directory("Select training images folder", "data", "images")
+        folder_path = self.open_directory("Select training images folder", "data")
         if folder_path:
             self.training_images_directory = folder_path
     
     def select_training_labels_clicked(self):
-        folder_path = self.open_directory("Select training labels folder", "data", "masks")
+        folder_path = self.open_directory("Select training labels folder", "data")
         if folder_path:
             self.training_labels_directory = folder_path
 
     def select_test_images_clicked(self):
-        folder_path = self.open_directory("Select test images folder", "data", "images")
+        folder_path = self.open_directory("Select test images folder", "data")
         if folder_path:
             self.test_images_directory = folder_path
 
     def select_test_labels_clicked(self):
-        folder_path = self.open_directory("Select test labels folder", "data", "masks")
+        folder_path = self.open_directory("Select test labels folder", "data")
         if folder_path:
             self.test_labels_directory = folder_path
     
