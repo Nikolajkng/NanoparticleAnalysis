@@ -175,6 +175,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if image_folder_path and mask_folder_path:
             iou, pixel_accuracy = self.controller.process_command(Command.TEST_MODEL, image_folder_path, mask_folder_path)
             print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
+        else:
+            messageBox(self, "Error in uploading directories")
+            return
+
+
 
     def on_segment_image_clicked(self):
         if (self.image_path == None):
@@ -204,7 +209,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if result == QMessageBox.No:
             return
                 
-        
         try:
             iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, self.standard_model_config)
             print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
