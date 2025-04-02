@@ -1,7 +1,6 @@
 import csv
 import threading
-from PyQt5.QtGui import QPixmap, QPen
-from PyQt5.QtCore import QRect, Qt
+from PyQt5.QtGui import QPixmap
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
 from gui.ui.MainUI import Ui_MainWindow
@@ -9,7 +8,7 @@ from controller.Controller import Controller
 from shared.Commands import Command
 from PIL import ImageQt
 import os
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QGraphicsPixmapItem, QRubberBand, QGraphicsLineItem, QGraphicsView
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QGraphicsPixmapItem
 from functools import partial 
 from gui.windows.SelectScaleWindow import SelectScaleWindow
 from gui.windows.TrainModelWindow import TrainModelWindow
@@ -22,6 +21,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtGui import QIntValidator
+from gui.windows.MessageBoxes import *
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
@@ -51,7 +51,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                                  with_early_stopping=True,
                                                  with_data_augmentation=True)
         
-        self.train_model_window = None
+        self.model_window = None
         self.train_thread = None
 
         # self.plot1_scene = QGraphicsScene(self)
@@ -109,7 +109,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         print(f"{self.scale_start_x}, {self.scale_end_x}")
         self. scale_is_selected = True
         self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
-        print(f"Scale is set {self. scale_is_selected}")
         self.selectBarScaleButton.setStyleSheet("")
         
 
@@ -123,11 +122,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def on_select_bar_scale_clicked(self):
         if (self.image_path == None):
-            self.messageBox("No image found. Please upload an image first.")
+            messageBox(self, "No image found. Please upload an image first.")
             return
         
         if(self.barScaleInputField.text() == ""):
-            self.messageBox("Please enter length of the scale bar first")
+            messageBox(self, "Please enter length of the scale bar first")
             return
         
         self.select_scale_window = SelectScaleWindow()
@@ -143,17 +142,20 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.train_model_window.stop_training_signal.connect(self.stop_model_training)
         self.train_model_window.show()
 
-    def train_model_custom_data(self, model_config: ModelConfig):
 
+    def train_model_custom_data(self, model_config: ModelConfig):
+        result = confirmTrainingMessageBox(self, "Training a new model may take a while, do you want to continue?")
+        if result == QMessageBox.No:
+                return
+                    
         try:
             self.train_thread = threading.Thread(
                 target=partial(self.controller.process_command, Command.RETRAIN, model_config, self.update_training_model_stats),
                 daemon=True)
             self.train_thread.start()
-            
-            self.messageBoxTraining("success")
+            # messageBoxTraining(self, "success")            
         except:
-            self.messageBoxTraining("")
+            messageBoxTraining(self, "")
         # iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, model_config, self.update_training_model_stats)
         # print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
 
@@ -164,7 +166,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_train_model_values_signal.emit(stats)
 
     def on_open_image_clicked(self):
+        #Remove old item
+        if (self.image_path):
+            self.graphicsView_scene.clear()
+            self.image_path = None
+            self.scale_is_selected = False
+            self.scale_input_set = False
+            self.barScaleInputField.setText("")
+            self.segmented_image = None
+            
+        
         default_image_path = os.path.abspath(os.path.join(os.getcwd(), 'data', 'images'))
+        
         self.scale_is_selected = False
         self.scale_input_set = False
         
@@ -189,21 +202,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if image_folder_path and mask_folder_path:
             iou, pixel_accuracy = self.controller.process_command(Command.TEST_MODEL, image_folder_path, mask_folder_path)
             print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
+        else:
+            messageBox(self, "Error in uploading directories")
+            return
+
+
 
     def on_segment_image_clicked(self):
         if (self.image_path == None):
-            self.messageBox("Segmentation failed: No image found")
+            messageBox(self, "Segmentation failed: No image found")
             return
         
         if(not self.scale_is_selected):
-            self.messageBox("Please use the ''Select Bar Scale'' button to select the scale")
-            self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
+            messageBox(self, "Please use the ''Select Bar Scale'' button to select the scale")
             return
         
         if(self.barScaleInputField.text() == ""):
-            self.messageBox("Please enter length of the scale bar first")
+            messageBox(self, "Please enter length of the scale bar first")
             return
-        
         
         self.on_calculate_input_image_size_clicked()
         
@@ -216,19 +232,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def on_train_model_clicked(self):
+        result = confirmTrainingMessageBox(self, "Training a new model may take a while, do you want to continue?")
+        if result == QMessageBox.No:
+            return
+                
         try:
-            self.messageBoxTraining("success")
             iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, self.standard_model_config)
             print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
-        # TODO: Separat thread fucker live-plot op for hold-out op.
-        # try:
-        #     train_thread = threading.Thread(
-        #         target=partial(self.controller.process_command, Command.RETRAIN, self.standard_model_config),
-        #         daemon=True)
-        #     train_thread.start()
+            messageBoxTraining(self, "success")
+        # TODO: Multi-Threading.
             
         except:
-            self.messageBoxTraining("")
+            messageBoxTraining(self, "")
+            
 
 
     def on_load_model_clicked(self):        
@@ -252,7 +268,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def on_export_segmented_clicked(self):
         if(self.segmented_image == None):
-            self.messageBox("Export failed: No segmented image was found to export")
+            messageBox(self, "Export failed: No segmented image was found to export")
             return
 
         file_path, selected_filter = QFileDialog.getSaveFileName(
@@ -271,9 +287,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     file_path += ".png" 
             
             self.segmented_image.save(file_path)            
-            self.messageBox("success", "Segmented image exported successfully")
+            messageBox(self, "success", "Segmented image exported successfully")
         else:
-            self.messageBox("Error: File path is not selected.")
+            messageBox(self, "Error: File path is not selected.")
             
           
     def on_export_data_csv_clicked(self):
@@ -319,45 +335,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         row_data.append(item.text() if item else "")
                     writer.writerow(row_data)
 
-            self.messageBox("success", "Data exported successfully")
+            messageBox(self, "success", "Data exported successfully")
         except Exception as error:
-            self.messageBox(f"Failed to export data: {str(error)}")
+            messageBox(self, f"Failed to export data: {str(error)}")
     
-
-    def messageBox(self, result, text=""):
-        msg_box = QMessageBox(self)  
-
-        if result == "success":
-            msg_box.setIcon(QMessageBox.Information)
-            msg_box.setWindowTitle("Success")
-            msg_box.setText(text)
-            msg_box.setStandardButtons(QMessageBox.Ok)
-        else:
-            msg_box.setIcon(QMessageBox.Critical)
-            msg_box.setWindowTitle("Error")
-            msg_box.setText(result)
-            msg_box.setStandardButtons(QMessageBox.Ok)
-
-        screen_geometry = QApplication.desktop().screenGeometry()  
-        screen_center = screen_geometry.center()
-        msg_box.move(screen_center - msg_box.rect().center()) 
-        msg_box.exec_()
-        
-    def messageBoxTraining(self, result):
-        msg_box = QMessageBox(self)  
-        if result == "success":
-            msg_box.setIcon(QMessageBox.Information)
-            msg_box.setWindowTitle("Success")
-            msg_box.setText("Training in progress...")
-            msg_box.setStandardButtons(QMessageBox.Ok)
-            
-        else:
-            msg_box.setIcon(QMessageBox.Critical)
-            msg_box.setWindowTitle("Error")
-            msg_box.setText("Failed to train model...")
-            msg_box.setStandardButtons(QMessageBox.Ok)
-
-        screen_geometry = QApplication.desktop().screenGeometry()  
-        screen_center = screen_geometry.center()
-        msg_box.move(screen_center - msg_box.rect().center()) 
-        msg_box.exec_()

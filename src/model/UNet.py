@@ -126,10 +126,6 @@ class UNet(nn.Module):
             validation_loss_values.append(epoch_validation_loss)
             
             
-            # Undgå plot alle k-fold modeller
-            if cross_validation == "holdout":
-                plot_loss(training_loss_values, validation_loss_values)
-            
             
             print(f'Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}')
 

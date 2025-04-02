@@ -4,6 +4,7 @@ from gui.ui.TrainModelUI import Ui_TrainModel
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
 from shared.ModelConfig import ModelConfig
 from shared.ModelTrainingStats import ModelTrainingStats
+from model.PlottingTools import plot_loss
 class TrainModelWindow(QMainWindow, Ui_TrainModel):
     train_model_signal = QtCore.pyqtSignal(ModelConfig)
     stop_training_signal = QtCore.pyqtSignal()
@@ -15,6 +16,9 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.training_labels_directory = None
         self.test_images_directory = None
         self.test_labels_directory = None
+        
+        self.training_loss_values = []
+        self.validation_loss_values = []
         
         update_data_signal.connect(self.update_loss_values)
 
@@ -28,36 +32,32 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.auto_test_set_checkbox.stateChanged.connect(self.auto_test_set_checkbox_clicked)
 
 
-    def open_directory(self, window_text, data_path = 'data', image_path = None):
-        default_data_path = os.path.abspath(os.path.join(os.getcwd(), data_path, image_path ))
-        
-        file_paths, _ = QFileDialog.getOpenFileNames(
-        None, 
-        window_text, 
-        default_data_path,
-        "Image Files (*.png *.jpg *.jpeg *.tif);;All Files (*)"
-    )
-        if file_paths:
-            return file_paths
+
+    def open_directory(self, window_text):
+        default_path = os.path.abspath(os.path.join(os.getcwd(), 'data'))
+
+        folder_path = QFileDialog.getExistingDirectory(None, window_text, default_path)
+        if folder_path:
+            return folder_path
         return
     
     def select_training_images_clicked(self):
-        folder_path = self.open_directory("Select training images folder", "data", "images")
+        folder_path = self.open_directory("Select training images folder")
         if folder_path:
             self.training_images_directory = folder_path
     
     def select_training_labels_clicked(self):
-        folder_path = self.open_directory("Select training labels folder", "data", "masks")
+        folder_path = self.open_directory("Select training labels folder")
         if folder_path:
             self.training_labels_directory = folder_path
 
     def select_test_images_clicked(self):
-        folder_path = self.open_directory("Select test images folder", "data", "images")
+        folder_path = self.open_directory("Select test images folder")
         if folder_path:
             self.test_images_directory = folder_path
 
     def select_test_labels_clicked(self):
-        folder_path = self.open_directory("Select test labels folder", "data", "masks")
+        folder_path = self.open_directory("Select test labels folder")
         if folder_path:
             self.test_labels_directory = folder_path
     
@@ -93,3 +93,6 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.best_val_loss_data_label.setText(str(stats.best_loss))
         self.current_epoch_data_label.setText(str(stats.epoch))
         self.best_epoch_data_label.setText(str(stats.best_epoch))
+        self.training_loss_values.append(stats.training_loss)
+        self.validation_loss_values.append(stats.validation_loss)
+        plot_loss(self.training_loss_values, self.validation_loss_values)
