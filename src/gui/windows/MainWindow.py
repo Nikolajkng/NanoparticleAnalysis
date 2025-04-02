@@ -81,7 +81,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         graphics_view_width = self.graphicsView.size().width()
         self.scale_start_x, self.scale_end_x = xcoords[0] / (scale_window_width/graphics_view_width), xcoords[1] / (scale_window_width/graphics_view_width)
 
-        self.on_calculate_input_image_size_clicked()
         print(f"{self.scale_start_x}, {self.scale_end_x}")
         self. scale_is_selected = True
         self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
@@ -101,6 +100,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             self.messageBox("No image found. Please upload an image first.")
             return
+        
+        if(self.barScaleInputField.text() == ""):
+            self.messageBox("Please enter length of the scale bar first")
+            return
+        
         self.select_scale_window = SelectScaleWindow()
         pixmap = QPixmap(self.image_path) 
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
@@ -135,10 +139,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.update_train_model_values_signal.emit(stats)
 
     def on_open_image_clicked(self):
+        default_image_path = os.path.abspath(os.path.join(os.getcwd(), 'data', 'images'))
         self.scale_is_selected = False
         self.scale_input_set = False
         
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select a file", "", "All Files (*)")
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, 
+            "Select a file", 
+            default_image_path, 
+            "Image Files (*.png *.jpg *.jpeg *.tif);;All Files (*)")
+        
         self.image_path = file_path
         if file_path: 
             pixmap = QPixmap(file_path) 
@@ -147,6 +157,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             #TODO: Remove old item
 
     def on_test_model_clicked(self):
+        
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")
         mask_folder_path = QFileDialog.getExistingDirectory(None, "Select test masks folder", "")
 
@@ -165,9 +176,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         
         if(self.barScaleInputField.text() == ""):
-            self.messageBox("Please enter length of the scale bar")
+            self.messageBox("Please enter length of the scale bar first")
             return
         
+        
+        self.on_calculate_input_image_size_clicked()
         
         self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
@@ -193,8 +206,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.messageBoxTraining("")
 
 
-    def on_load_model_clicked(self):
-        file_path, selected_filter = QFileDialog.getOpenFileName(None, "Select a file", "", "PT Files (*.pt);;All Files (*)")
+    def on_load_model_clicked(self):        
+        default_models_path = os.path.abspath(os.path.join(os.getcwd(), 'data', 'models'))
+        file_path, selected_filter = QFileDialog.getOpenFileName(
+            None, 
+            "Select a file", 
+            default_models_path, 
+            "PT Files (*.pt);;All Files (*)"
+            )
+        
         if file_path: 
             if "PT" in selected_filter:
                 if not file_path.endswith(".pt"):  
@@ -210,7 +230,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.messageBox("Export failed: No segmented image was found to export")
             return
 
-        file_path, selected_filter = QFileDialog.getSaveFileName(None, "Save Image", "", "PNG Files (*.png);;JPEG Files (*.jpg);;All Files (*)")
+        file_path, selected_filter = QFileDialog.getSaveFileName(
+            None, 
+            "Save Image", 
+            "", 
+            "PNG Files (*.png);;JPEG Files (*.jpg);;All Files (*)")
 
         if file_path: 
             if not os.path.splitext(file_path)[1]: 

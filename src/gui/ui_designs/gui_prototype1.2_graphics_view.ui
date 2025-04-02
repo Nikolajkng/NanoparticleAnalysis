@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1263</width>
+    <width>1203</width>
     <height>787</height>
    </rect>
   </property>
@@ -29,14 +29,6 @@
       <height>521</height>
      </rect>
     </property>
-    <item>
-     <property name="text">
-      <string>Analyze</string>
-     </property>
-     <property name="textAlignment">
-      <set>AlignCenter</set>
-     </property>
-    </item>
    </widget>
    <widget class="QTableWidget" name="table_widget">
     <property name="geometry">
@@ -206,7 +198,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab3">
      <attribute name="title">
@@ -279,9 +271,9 @@
    <widget class="QLineEdit" name="barScaleInputField">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>70</y>
-      <width>181</width>
+      <x>30</x>
+      <y>80</y>
+      <width>131</width>
       <height>22</height>
      </rect>
     </property>
@@ -292,15 +284,15 @@
      <string/>
     </property>
     <property name="placeholderText">
-     <string> Enter bar scale length</string>
+     <string> Enter scale bar</string>
     </property>
    </widget>
    <widget class="QComboBox" name="comboBox">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>120</y>
-      <width>69</width>
+      <x>160</x>
+      <y>80</y>
+      <width>51</width>
       <height>22</height>
      </rect>
     </property>
@@ -315,24 +307,11 @@
      </property>
     </item>
    </widget>
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>100</y>
-      <width>111</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Select unit:</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="selectBarScaleButton">
     <property name="geometry">
      <rect>
-      <x>20</x>
-      <y>40</y>
+      <x>30</x>
+      <y>50</y>
       <width>181</width>
       <height>24</height>
      </rect>
@@ -341,13 +320,46 @@
      <string>Select scale bar on image</string>
     </property>
    </widget>
+   <widget class="Line" name="line">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>221</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>10</y>
+      <width>121</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>14</pointsize>
+      <weight>75</weight>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>Analyze</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1263</width>
+     <width>1203</width>
      <height>24</height>
     </rect>
    </property>
