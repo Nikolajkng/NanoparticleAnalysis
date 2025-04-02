@@ -22,6 +22,7 @@ from PIL import Image
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtGui import QIntValidator
 from gui.windows.MessageBoxes import *
+from model.PlottingTools import plot_loss
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
@@ -43,24 +44,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.graphicsView.setScene(self.graphicsView_scene)
         self.input_image_real_width = 0
         self.scale_info = None
+        self.training_state = "not done"
         self.validator = QIntValidator(0, 99999999, self)  
         self.standard_model_config = ModelConfig(images_path="data/images",
                                                  masks_path="data/masks",
-                                                 epochs=300,
+                                                 epochs=5,
                                                  learning_rate=0.0005,
                                                  with_early_stopping=True,
                                                  with_data_augmentation=True)
         
         self.model_window = None
         self.train_thread = None
+        self.training_loss_values = []
+        self.validation_loss_values = []
 
-        # self.plot1_scene = QGraphicsScene(self)
-        # self.plot1.setScene(self.plot1_scene)
-        self.plot2_scene = QGraphicsScene(self)
-        self.plot2.setScene(self.plot2_scene)
-        self.plot3_scene = QGraphicsScene(self)
-        self.plot3.setScene(self.plot3_scene)
+        # Connect the signal to the slot
+        self.update_train_model_values_signal.connect(self.update_loss_values)
 
+        # Other connections
         self.action_train_model.triggered.connect(self.on_train_model_clicked)
         self.action_test_model.triggered.connect(self.on_test_model_clicked)
         self.action_open_image.triggered.connect(self.on_open_image_clicked)
@@ -70,7 +71,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
         self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
-        self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.barScaleInputField.setValidator(self.validator)
         
     def on_fullscreen_image_clicked(self):
@@ -150,7 +150,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     
         try:
             self.train_thread = threading.Thread(
-                target=partial(self.controller.process_command, Command.RETRAIN, model_config, self.update_training_model_stats),
+                target=partial(
+                    self.controller.process_command, 
+                    Command.RETRAIN, model_config, 
+                    self.update_training_model_stats),
                 daemon=True)
             self.train_thread.start()
             # messageBoxTraining(self, "success")            
@@ -164,7 +167,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
-
+    def update_loss_values(self, stats: ModelTrainingStats):
+        # Update the GUI with the training stats
+        self.training_loss_values.append(stats.training_loss)
+        self.validation_loss_values.append(stats.validation_loss)
+        plot_loss(self.training_loss_values, self.validation_loss_values)
     def on_open_image_clicked(self):
         #Remove old item
         if (self.image_path):
@@ -233,17 +240,24 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def on_train_model_clicked(self):
         result = confirmTrainingMessageBox(self, "Training a new model may take a while, do you want to continue?")
-        if result == QMessageBox.No:
+        if not result:
             return
-                
+
         try:
-            iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, self.standard_model_config)
-            print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
-            messageBoxTraining(self, "success")
-        # TODO: Multi-Threading.
-            
-        except:
-            messageBoxTraining(self, "")
+            self.train_thread = threading.Thread(
+                target=partial(
+                    self.controller.process_command,
+                    Command.RETRAIN,
+                    self.standard_model_config,
+                    self.update_training_model_stats 
+                ),
+                daemon=True
+            )
+            self.train_thread.start()
+            #messageBoxTraining(self, True)
+        except Exception as e:
+            messageBoxTraining(self, False)
+            print(f"Error during training: {e}")
             
 
 
