@@ -18,6 +18,8 @@ from shared.ScaleInfo import ScaleInfo
 from shared.ModelConfig import ModelConfig
 from gui.TableData import TableData
 from shared.ModelTrainingStats import ModelTrainingStats
+import matplotlib.pyplot as plt
+from PIL import Image
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtGui import QIntValidator
 
@@ -68,9 +70,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
         self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
+        self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.barScaleInputField.setValidator(self.validator)
         
-    
+    def on_fullscreen_image_clicked(self):
+        if (self.image_path == None):
+            self.messageBox("Fullscreen failed: No image found")
+            return
+
+        image = Image.open(self.image_path)
+        
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
+
+        manager = plt.get_current_fig_manager()
+        manager.window.showMaximized()
+
+        axes[0].imshow(image, cmap='gray')
+        axes[0].set_title("Image")
+
+        if self.segmented_image:
+            axes[1].imshow(self.segmented_image, cmap='gray')
+            axes[1].set_title("Segmentation")
+
+        plt.tight_layout()
+        plt.show()
+
+
     def set_table_data(self, table_data: np.ndarray):
         data = TableData(table_data)
         data.insertIn(self.table_widget)
@@ -153,8 +178,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if file_path: 
             pixmap = QPixmap(file_path) 
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
+            self.graphicsView_scene.clear()
             self.graphicsView_scene.addItem(pixmap_item)
-            #TODO: Remove old item
 
     def on_test_model_clicked(self):
         
