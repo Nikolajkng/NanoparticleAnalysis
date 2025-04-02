@@ -24,6 +24,13 @@ def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float) ->
 
     return (train_dataloader, val_dataloader)
 
+def center_crop(image, target_size: tuple[int, int]):
+    _, _, h, w = image.shape
+    th, tw = target_size
+
+    start_h = (h-th) // 2
+    start_w = (w-tw) // 2
+    return image[:, :, start_h:start_h + th, start_w:start_w + tw]
 
 def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
     for filename in os.listdir(folder_path):
@@ -41,15 +48,19 @@ def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
                 img_resized.save(image_path)  # You can change this line to save it elsewhere
             print(image_path)
 
-def tensor_from_image(image_path: str, tensor_size=(256,256)) -> Tensor:
+def tensor_from_image_no_resize(image_path: str):
     image = Image.open(image_path).convert("L")
-    image.thumbnail(tensor_size)
     image = TF.to_tensor(image).unsqueeze(0)
     return image
 
-def segmentation_tensor_to_numpy(tensor: Tensor) -> np.ndarray:
-        return (tensor.squeeze(0).numpy() * 255).astype(np.uint8)
+def tensor_from_image(image_path: str, resize=(256,256)) -> Tensor:
+    image = Image.open(image_path).convert("L")
+    image.thumbnail(resize)
+    image = TF.to_tensor(image).unsqueeze(0)
+    return image
 
+def to_2d_image_array(array: np.ndarray) -> np.ndarray:
+    return (np.squeeze(array) * 255).astype(np.uint8)
 
 # Made with help from https://www.programmersought.com/article/15316517340/
 def mirror_fill(images: Tensor, patch_size: tuple, stride_size: tuple):
@@ -130,13 +141,12 @@ def extract_slices(images: Tensor, patch_size: tuple, stride_size: tuple):
 
                 patches[patch_idx] = img[:, start_x:end_x, start_y:end_y]
                 patch_idx += 1
-    return torch.tensor(patches, dtype=images.dtype, device=images.device)
+    return patches
 
-def construct_image_from_patches(patches: Tensor, img_size: tuple, stride_size: tuple):
-    patches_np = patches.cpu().numpy()
+def construct_image_from_patches(patches: np.ndarray, img_size: tuple, stride_size: tuple):
     img_width, img_height = img_size
     stride_width, stride_height = stride_size
-    n_patches_total, channels, patch_width, patch_height = patches_np.shape
+    n_patches_total, channels, patch_width, patch_height = patches.shape
     
     n_patches_y = (img_height - patch_height) // stride_height + 1
     n_patches_x = (img_width - patch_width) // stride_width + 1
@@ -158,11 +168,11 @@ def construct_image_from_patches(patches: Tensor, img_size: tuple, stride_size: 
                 end_x = start_x + patch_width
                 end_y = start_y + patch_height
                 patch_idx = start + i * n_patches_x + j
-                img[:, start_x:end_x, start_y:end_y] += patches_np[patch_idx]
+                img[:, start_x:end_x, start_y:end_y] += patches[patch_idx]
                 weights[start_x:end_x, start_y:end_y] += 1
     images /= weights
 
-    return torch.tensor(images, dtype=patches.dtype, device=patches.device)
+    return images
 
 
 import torch.nn.functional as F

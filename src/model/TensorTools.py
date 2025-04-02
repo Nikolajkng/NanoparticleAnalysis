@@ -2,13 +2,7 @@ from torch import Tensor
 import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 from PIL.Image import Image
-def crop(tensor: Tensor, target_size: tuple[int, int]) -> Tensor:
-    _, _, h, w = tensor.shape
-    th, tw = target_size
 
-    start_h = (h-th) // 2
-    start_w = (w-tw) // 2
-    return tensor[:, :, start_h:start_h + th, start_w:start_w + tw]
 
 def normalizeTensorToPixels(tensor: Tensor) -> Tensor:
     tensor = tensor - tensor.min()

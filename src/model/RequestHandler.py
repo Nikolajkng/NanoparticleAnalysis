@@ -24,13 +24,27 @@ class request_handler:
 
     def process_request_segment(self, image_path, scale_info: ScaleInfo):
         analyzer = SegmentationAnalyzer()
-        input = tensor_from_image(image_path)
-        segmentation = self.unet.segment(input)
-        segmentation_numpy = segmentation_tensor_to_numpy(segmentation)
-        num_labels, labels, stats, centroids = analyzer.get_connected_components(segmentation_numpy)
+        tensor = tensor_from_image_no_resize(image_path)
+        tensor_mirror_filled = mirror_fill(tensor, (256,256), (200,200))
+        patches = extract_slices(tensor_mirror_filled, (256,256), (200,200))
+
+        segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
+        patch_idx = 0
+        for patch in patches:
+            segmentation = self.unet(torch.tensor(patch, dtype=tensor.dtype, device=tensor.device).unsqueeze(0))
+            segmentation_numpy = segmentation.detach().numpy()
+            segmentations[patch_idx] = segmentation_numpy
+            patch_idx += 1
+        segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (200,200))
+        
+        segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3])).argmax(axis=1)
+        segmented_image_2d = to_2d_image_array(segmented_image)
+        
+        num_labels, labels, stats, centroids = analyzer.get_connected_components(segmented_image_2d)
         table_data = analyzer.format_table_data(stats, scale_info)
-        annotated_image = analyzer.add_annotations(segmentation_numpy, centroids)
+        annotated_image = analyzer.add_annotations(segmented_image_2d, centroids)
         image_pil = Image.fromarray(annotated_image)
+        
         return image_pil, table_data
     
     def process_request_load_model(self, model_path):
