@@ -20,6 +20,7 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.training_loss_values = []
         self.validation_loss_values = []
         
+        update_data_signal.disconnect()
         update_data_signal.connect(self.update_loss_values)
 
         self.training_images_button.clicked.connect(self.select_training_images_clicked)

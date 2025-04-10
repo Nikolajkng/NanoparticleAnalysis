@@ -58,8 +58,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.training_loss_values = []
         self.validation_loss_values = []
 
-        # Connect the signal to the slot
-        self.update_train_model_values_signal.connect(self.update_loss_values)
+        self.plot2_scene = QGraphicsScene(self)
+        self.plot2.setScene(self.plot2_scene)
+        self.plot3_scene = QGraphicsScene(self)
+        self.plot3.setScene(self.plot3_scene)
 
         # Other connections
         self.action_train_model.triggered.connect(self.on_train_model_clicked)
@@ -71,11 +73,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
         self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
+        self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.barScaleInputField.setValidator(self.validator)
         
     def on_fullscreen_image_clicked(self):
         if (self.image_path == None):
-            self.messageBox("Fullscreen failed: No image found")
+            messageBox(self, "Fullscreen failed: No image found")
             return
 
         image = Image.open(self.image_path)
@@ -167,11 +170,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
+
     def update_loss_values(self, stats: ModelTrainingStats):
         # Update the GUI with the training stats
         self.training_loss_values.append(stats.training_loss)
         self.validation_loss_values.append(stats.validation_loss)
         plot_loss(self.training_loss_values, self.validation_loss_values)
+        
     def on_open_image_clicked(self):
         #Remove old item
         if (self.image_path):
@@ -249,7 +254,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     self.controller.process_command,
                     Command.RETRAIN,
                     self.standard_model_config,
-                    self.update_training_model_stats 
+                    self.update_loss_values 
                 ),
                 daemon=True
             )
@@ -275,9 +280,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 if not file_path.endswith(".pt"):  
                     file_path += ".pt"
                 self.controller.process_command(Command.LOAD_MODEL, file_path)
-                self.messageBox("success", "Model loaded successfully")
+                messageBox(self, "success", "Model loaded successfully")
             else:
-                self.messageBox("Error: The selected file is not a PT file.")
+                messageBox(self, "Error: The selected file is not a PT file.")
 
 
     def on_export_segmented_clicked(self):
