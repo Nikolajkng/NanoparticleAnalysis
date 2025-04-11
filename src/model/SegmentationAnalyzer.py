@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 import csv
@@ -15,18 +16,18 @@ class SegmentationAnalyzer():
             scale_factor = scale_info.real_scale_length / scale_info.image_width if scale_info else 1
             scaled_areas = self.__get_pixel_areas(stats) * scale_factor
             scaled_diameters = self.__get_diameters(stats) * scale_factor
-            
-            
-            with open("statistics.txt", "w", newline="", encoding="utf-8") as txtfile:          
-                writer = csv.writer(txtfile, delimiter="\t")
-                
+        
+            base_dir = os.path.dirname(__file__)
+            txtfile = os.path.join(base_dir, "..", "data", "statistics", "statistics.txt")
+            with open(txtfile, "w", newline="", encoding="utf-8") as txtfile:          
+                writer = csv.writer(txtfile, delimiter="\t")    
                 writer.writerow(["Label", "Area", "Diameter"])
                 for label_idx in range(1, particle_count):
                     label = str(label_idx)
                     area = scaled_areas[label_idx-1]
                     diameter = scaled_diameters[label_idx-1]
                     writer.writerow([label, f"{area:.6f}", f"{diameter:.6f}"])
-                writer.writerow("-" * 20)
+                writer.writerow("#" * 20)
                 writer.writerow(["Total count" ,"Mean Area", "Mean Diameter", "Max Area", "Max Diameter", "Min Area", "Min Diameter"])
                 writer.writerow([particle_count, f"{np.mean(scaled_areas):.6f}", f"{np.mean(scaled_diameters):.6f}",
                                 f"{np.max(scaled_areas):.6f}", f"{np.max(scaled_diameters):.6f}",
