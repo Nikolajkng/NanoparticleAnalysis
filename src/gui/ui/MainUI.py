@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\gui_prototype1.2_graphics_view.ui'
+# Form implementation generated from reading ui file 'gui_prototype1.2_graphics_view.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -36,7 +36,7 @@ class Ui_MainWindow(object):
         self.options_widget.setSizePolicy(sizePolicy)
         self.options_widget.setObjectName("options_widget")
         self.table_widget = QtWidgets.QTableWidget(self.centralwidget)
-        self.table_widget.setGeometry(QtCore.QRect(10, 540, 1241, 201))
+        self.table_widget.setGeometry(QtCore.QRect(10, 550, 1241, 201))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(255)
         sizePolicy.setVerticalStretch(255)
@@ -105,7 +105,7 @@ class Ui_MainWindow(object):
         item = QtWidgets.QTableWidgetItem()
         self.table_widget.setItem(4, 3, item)
         self.plots_tab_view = QtWidgets.QTabWidget(self.centralwidget)
-        self.plots_tab_view.setGeometry(QtCore.QRect(750, 10, 511, 531))
+        self.plots_tab_view.setGeometry(QtCore.QRect(750, 0, 511, 531))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(255)
         sizePolicy.setVerticalStretch(255)
@@ -190,9 +190,12 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.fullscreen_image_button.sizePolicy().hasHeightForWidth())
         self.fullscreen_image_button.setSizePolicy(sizePolicy)
         self.fullscreen_image_button.setObjectName("fullscreen_image_button")
+        self.radioButton = QtWidgets.QRadioButton(self.centralwidget)
+        self.radioButton.setGeometry(QtCore.QRect(750, 530, 109, 25))
+        self.radioButton.setObjectName("radioButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 24))
         self.menubar.setObjectName("menubar")
         self.menu_file = QtWidgets.QMenu(self.menubar)
         self.menu_file.setObjectName("menu_file")
@@ -283,6 +286,7 @@ class Ui_MainWindow(object):
         self.selectBarScaleButton.setText(_translate("MainWindow", "Select scale bar on image"))
         self.label.setText(_translate("MainWindow", "Analyze"))
         self.fullscreen_image_button.setText(_translate("MainWindow", "Fullscreen Image"))
+        self.radioButton.setText(_translate("MainWindow", "disable count"))
         self.menu_file.setTitle(_translate("MainWindow", "File"))
         self.menu_edit.setTitle(_translate("MainWindow", "Edit"))
         self.menu_model.setTitle(_translate("MainWindow", "Model"))

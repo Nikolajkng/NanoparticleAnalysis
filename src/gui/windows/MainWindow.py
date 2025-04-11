@@ -75,6 +75,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.barScaleInputField.setValidator(self.validator)
+        self.radioButton.toggled.connect(self.toggle_particle_count_overlay)
+
+    def toggle_particle_count_overlay(self):
+        print("toggling")
         
     def on_fullscreen_image_clicked(self):
         if (self.image_path == None):
