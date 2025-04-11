@@ -24,6 +24,7 @@ from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtGui import QIntValidator
 from gui.windows.MessageBoxes import *
 from model.PlottingTools import plot_loss
+from shared.IOFunctions import is_dm_format
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
@@ -214,7 +215,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.graphicsView_scene.addItem(pixmap_item)
 
     def load_pixmap(self, file_path):
-        if self.is_dm_format(file_path):
+        if is_dm_format(file_path):
             size_info, pil_image = self.controller.process_command(Command.GET_DM_IMAGE, file_path)
             pixel_size, pixel_unit = size_info
 
@@ -226,10 +227,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             return QPixmap(file_path) 
 
-    def is_dm_format(self, file_path):
-        _, file_extension = os.path.splitext(file_path)
-        return file_extension in [".dm3", ".dm4"]
-    
     def on_test_model_clicked(self):
         
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")

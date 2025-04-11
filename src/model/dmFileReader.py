@@ -2,6 +2,8 @@ from ncempy.io import dm
 from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+import torchvision.transforms.functional as TF
 class dmFileReader():
     def __init__(self):
         return
@@ -25,6 +27,20 @@ class dmFileReader():
             
             return (pixel_size, pixel_unit), pil_image
     
+    def get_tensor_from_dm_file(self, file_path):
+        with dm.fileDM(file_path) as dmFile1: 
+            tags = dmFile1.allTags
+            high_limit = float(tags['.DocumentObjectList.1.ImageDisplayInfo.HighLimit'])
+            low_limit = float(tags['.DocumentObjectList.1.ImageDisplayInfo.LowLimit'])
+
+            file = dmFile1.getDataset(0)
+            image_data = file['data']
+
+            normalized_array = self.set_min_and_max(image_data, low_limit, high_limit)
+            pil_image = Image.fromarray(normalized_array).convert('L')
+            return TF.to_tensor(pil_image).unsqueeze(0)
+        
+
     def normalize_image_data(self, image_data):
         image_data = image_data - image_data.min()
         image_data = image_data / image_data.max()

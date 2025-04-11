@@ -10,7 +10,7 @@ from shared.ScaleInfo import ScaleInfo
 from model.ModelEvaluator import ModelEvaluator
 from shared.ModelConfig import ModelConfig
 from model.dmFileReader import dmFileReader
-
+from shared.IOFunctions import is_dm_format
 class request_handler:
     def __init__(self, unet):
         self.unet = unet
@@ -25,7 +25,12 @@ class request_handler:
 
     def process_request_segment(self, image_path, scale_info: ScaleInfo):
         analyzer = SegmentationAnalyzer()
-        tensor = tensor_from_image_no_resize(image_path)
+        reader = dmFileReader()
+        tensor = None
+        if is_dm_format(image_path):
+            tensor = reader.get_tensor_from_dm_file(image_path)
+        else:
+            tensor = tensor_from_image_no_resize(image_path)
         tensor_mirror_filled = mirror_fill(tensor, (256,256), (200,200))
         patches = extract_slices(tensor_mirror_filled, (256,256), (200,200))
 
