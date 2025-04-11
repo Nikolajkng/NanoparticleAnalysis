@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1336</width>
-    <height>832</height>
+    <width>1326</width>
+    <height>801</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -20,6 +20,12 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+     <horstretch>255</horstretch>
+     <verstretch>255</verstretch>
+    </sizepolicy>
+   </property>
    <widget class="QListWidget" name="options_widget">
     <property name="geometry">
      <rect>
@@ -28,6 +34,12 @@
       <width>221</width>
       <height>521</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <horstretch>255</horstretch>
+      <verstretch>255</verstretch>
+     </sizepolicy>
     </property>
    </widget>
    <widget class="QTableWidget" name="table_widget">
@@ -38,6 +50,12 @@
       <width>1241</width>
       <height>201</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <horstretch>255</horstretch>
+      <verstretch>255</verstretch>
+     </sizepolicy>
     </property>
     <property name="editTriggers">
      <set>QAbstractItemView::NoEditTriggers</set>
@@ -197,6 +215,12 @@
       <height>531</height>
      </rect>
     </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <horstretch>255</horstretch>
+      <verstretch>255</verstretch>
+     </sizepolicy>
+    </property>
     <property name="currentIndex">
      <number>1</number>
     </property>
@@ -258,6 +282,12 @@
       <height>500</height>
      </rect>
     </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <horstretch>255</horstretch>
+      <verstretch>255</verstretch>
+     </sizepolicy>
+    </property>
     <property name="verticalScrollBarPolicy">
      <enum>Qt::ScrollBarAlwaysOff</enum>
     </property>
@@ -296,6 +326,12 @@
       <height>22</height>
      </rect>
     </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
     <item>
      <property name="text">
       <string>nm</string>
@@ -315,6 +351,12 @@
       <width>181</width>
       <height>24</height>
      </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
     </property>
     <property name="text">
      <string>Select scale bar on image</string>
@@ -342,6 +384,12 @@
       <height>21</height>
      </rect>
     </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
     <property name="font">
      <font>
       <pointsize>14</pointsize>
@@ -362,6 +410,12 @@
       <height>31</height>
      </rect>
     </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
     <property name="text">
      <string>Fullscreen Image</string>
     </property>
@@ -372,8 +426,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1336</width>
-     <height>24</height>
+     <width>1326</width>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
