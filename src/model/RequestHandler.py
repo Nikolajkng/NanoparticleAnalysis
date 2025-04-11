@@ -43,8 +43,9 @@ class request_handler:
         segmented_image_2d = to_2d_image_array(segmented_image)
         
         num_labels, labels, stats, centroids = analyzer.get_connected_components(segmented_image_2d)
-        table_data = analyzer.format_table_data(stats, scale_info, num_labels)
-        analyzer.write_stats_to_txt(stats, scale_info, num_labels)
+        particle_count = num_labels - 1 # Exclude label 0 - which is background
+        table_data = analyzer.format_table_data(stats, scale_info, particle_count)
+        analyzer.write_stats_to_txt(stats, scale_info, particle_count)
         annotated_image = analyzer.add_annotations(segmented_image_2d, centroids)
         image_pil = Image.fromarray(annotated_image)
         

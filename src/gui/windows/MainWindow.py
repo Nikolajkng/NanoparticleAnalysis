@@ -104,12 +104,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         data.insertIn(self.table_widget)
 
     def scale_bar_set_event(self, xcoords: list[int]):
-        print(f"Recieved xcoords: [{xcoords[0]}, {xcoords[1]}]")
+        #print(f"Recieved xcoords: [{xcoords[0]}, {xcoords[1]}]")
         scale_window_width = self.select_scale_window.size().width()
         graphics_view_width = self.graphicsView.size().width()
         self.scale_start_x, self.scale_end_x = xcoords[0] / (scale_window_width/graphics_view_width), xcoords[1] / (scale_window_width/graphics_view_width)
 
-        print(f"{self.scale_start_x}, {self.scale_end_x}")
+        #print(f"{self.scale_start_x}, {self.scale_end_x}")
         self. scale_is_selected = True
         self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
         self.selectBarScaleButton.setStyleSheet("")
