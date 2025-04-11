@@ -19,6 +19,7 @@ from gui.TableData import TableData
 from shared.ModelTrainingStats import ModelTrainingStats
 import matplotlib.pyplot as plt
 from PIL import Image
+from PIL.ImageQt import ImageQt
 from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtGui import QIntValidator
 from gui.windows.MessageBoxes import *
@@ -44,6 +45,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.graphicsView.setScene(self.graphicsView_scene)
         self.input_image_real_width = 0
         self.scale_info = None
+        self.input_image_pixel_width = 0
+        self.input_image_pixel_unit = "nm"
         self.training_state = "not done"
         self.validator = QIntValidator(0, 99999999, self)  
         self.standard_model_config = ModelConfig(images_path="data/images",
@@ -197,15 +200,32 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self, 
             "Select a file", 
             default_image_path, 
-            "Image Files (*.png *.jpg *.jpeg *.tif);;All Files (*)")
+            "Image Files (*.png *.jpg *.jpeg *.tif *.dm3 *.dm4);;All Files (*)")
         
         self.image_path = file_path
         if file_path: 
-            pixmap = QPixmap(file_path) 
+            pixmap = self.load_pixmap(file_path)
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.clear()
             self.graphicsView_scene.addItem(pixmap_item)
 
+    def load_pixmap(self, file_path):
+        if self.is_dm_format(file_path):
+            size_info, pil_image = self.controller.process_command(Command.GET_DM_IMAGE, file_path)
+            pixel_size, pixel_unit = size_info
+
+            self.input_image_real_width = float(pixel_size[1]*pil_image.width)
+            self.input_image_pixel_width = pixel_size[1]
+            self.input_image_pixel_unit = pixel_unit[1]
+            qimage = ImageQt(pil_image)
+            return QPixmap.fromImage(qimage)
+        else:
+            return QPixmap(file_path) 
+
+    def is_dm_format(self, file_path):
+        _, file_extension = os.path.splitext(file_path)
+        return file_extension in [".dm3", ".dm4"]
+    
     def on_test_model_clicked(self):
         
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")
@@ -218,7 +238,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             messageBox(self, "Error in uploading directories")
             return
 
-
+    
 
     def on_segment_image_clicked(self):
         if (self.image_path == None):
@@ -237,7 +257,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
-        segmented_image_temp = ImageQt.ImageQt(self.segmented_image)
+        segmented_image_temp = ImageQt(self.segmented_image)
         pixmap = QPixmap.fromImage(segmented_image_temp)
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
         self.plot3_scene.addItem(pixmap_item)

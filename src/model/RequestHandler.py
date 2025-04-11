@@ -9,6 +9,7 @@ from model.SegmentationAnalyzer import SegmentationAnalyzer
 from shared.ScaleInfo import ScaleInfo
 from model.ModelEvaluator import ModelEvaluator
 from shared.ModelConfig import ModelConfig
+from model.dmFileReader import dmFileReader
 
 class request_handler:
     def __init__(self, unet):
@@ -71,3 +72,8 @@ class request_handler:
         print(iou)
         print(pixel_accuracy)
         return iou, pixel_accuracy
+    
+    def process_request_get_dm_image(self, file_path):
+        reader = dmFileReader()
+        size_info, image = reader.get_image_from_dm_file(file_path)
+        return size_info, image
