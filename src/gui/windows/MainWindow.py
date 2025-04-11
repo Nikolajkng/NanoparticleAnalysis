@@ -287,7 +287,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def on_load_model_clicked(self):        
-        default_models_path = os.path.abspath(os.path.join(os.getcwd(), 'data', 'models'))
+        default_models_path = os.path.abspath(os.path.join(os.getcwd(), 'data'))
         file_path, selected_filter = QFileDialog.getOpenFileName(
             None, 
             "Select a file", 
