@@ -24,11 +24,9 @@ class Controller():
             print(f"Unknown command: {command}")
             return
         
-        try:
-            data = self.commands[command](*args, **kwargs)
-            return data
-        except Exception as e:
-            print(e)
-            return None
+     
+        data = self.commands[command](*args, **kwargs)
+        return data
+
             
             

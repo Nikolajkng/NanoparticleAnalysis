@@ -35,6 +35,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self.MainWindow)
         self.controller = Controller()
         self.image_path = None
+        self.image = None
         self.segmented_image = None
         self.csv_file = None
         self.select_scale_window = None
@@ -88,15 +89,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             messageBox(self, "Fullscreen failed: No image found")
             return
-
-        image = Image.open(self.image_path)
+        
+        
         
         fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
         manager = plt.get_current_fig_manager()
         manager.window.showMaximized()
 
-        axes[0].imshow(image, cmap='gray')
+        axes[0].imshow(self.image, cmap='gray')
         axes[0].set_title("Image")
 
         if self.segmented_image:
@@ -141,7 +142,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         
         self.select_scale_window = SelectScaleWindow()
-        pixmap = QPixmap(self.image_path) 
+        qimage = ImageQt(self.image)
+        pixmap = QPixmap.fromImage(qimage) 
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
         self.select_scale_window.image_scene.addItem(pixmap_item)
         self.select_scale_window.scale_bar_set_signal.connect(self.scale_bar_set_event)
@@ -218,14 +220,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if is_dm_format(file_path):
             size_info, pil_image = self.controller.process_command(Command.GET_DM_IMAGE, file_path)
             pixel_size, pixel_unit = size_info
-
+            self.image = pil_image
             self.input_image_real_width = float(pixel_size[1]*pil_image.width)
             self.input_image_pixel_width = pixel_size[1]
             self.input_image_pixel_unit = pixel_unit[1]
-            qimage = ImageQt(pil_image)
-            return QPixmap.fromImage(qimage)
         else:
-            return QPixmap(file_path) 
+            self.image = Image.open(file_path)
+        qimage = ImageQt(self.image)
+        return QPixmap.fromImage(qimage) 
 
     def on_test_model_clicked(self):
         
