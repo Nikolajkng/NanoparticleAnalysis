@@ -44,18 +44,19 @@ class request_handler:
             segmentation_numpy = segmentation.detach().numpy()
             segmentations[patch_idx] = segmentation_numpy
             patch_idx += 1
+            
         segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
-        
         segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3])).argmax(axis=1)
         segmented_image_2d = to_2d_image_array(segmented_image)
         
-        num_labels, labels, stats, centroids = analyzer.get_connected_components(segmented_image_2d)
+        # Data Analysis 
+        num_labels, _, stats, centroids = analyzer.get_connected_components(segmented_image_2d)
         particle_count = num_labels - 1
-        table_data = analyzer.format_table_data(stats, scale_info, particle_count)
-        analyzer.write_stats_to_txt(stats, scale_info, particle_count)
         annotated_image = analyzer.add_annotations(segmented_image_2d, centroids)
         annotated_image_pil = Image.fromarray(annotated_image)
-        
+        table_data = analyzer.format_table_data(stats, scale_info, particle_count)
+        analyzer.write_stats_to_txt(stats, scale_info, particle_count)
+        histogram = analyzer.create_histogram(stats, scale_info)
         return segmented_image_2d, annotated_image_pil, table_data
     
     def process_request_load_model(self, model_path):

@@ -10,13 +10,22 @@ class SegmentationAnalyzer():
         num_labels, labels, area_stats, centroids= cv2.connectedComponentsWithStats(image)
         return num_labels, labels, area_stats, centroids
     
+    def create_histogram(self, stats, scale_info):
+        try:
+            scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
+            histogram_data = {
+                "Area": scaled_areas,
+                "Diameter": scaled_diameters
+            }
+            return histogram_data
+        except Exception as e:
+            print("Error in creating histogram: ", e)
+            return None
     
     def write_stats_to_txt(self, stats, scale_info, particle_count):
         try:
-            scale_factor = scale_info.real_scale_length / scale_info.image_width if scale_info else 1
-            scaled_areas = self.__get_pixel_areas(stats) * scale_factor
-            scaled_diameters = self.__get_diameters(stats) * scale_factor
-        
+            scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
+
             base_dir = os.path.dirname(__file__)
             txtfile = os.path.join(base_dir, "..", "data", "statistics", "statistics.txt")
             with open(txtfile, "w", newline="", encoding="utf-8") as txtfile:          
@@ -92,6 +101,11 @@ class SegmentationAnalyzer():
     def __get_pixel_areas(self, stats: np.ndarray):
         return stats[1:, cv2.CC_STAT_AREA] 
     
+    def _get_scaled_meassurements(self, scale_info: ScaleInfo, stats: np.ndarray):
+        scale_factor = scale_info.real_scale_length / scale_info.image_width if scale_info else 1
+        scaled_areas = self.__get_pixel_areas(stats) * scale_factor
+        scaled_diameters = self.__get_diameters(stats) * scale_factor
+        return scaled_areas, scaled_diameters
 
     def format_table_data(self, stats: np.ndarray, scale_info: ScaleInfo, particle_count: int):
         if particle_count == 0:
@@ -100,9 +114,8 @@ class SegmentationAnalyzer():
                 "Area":     [0, 0, 0, 0],  
                 "Diameter": [0, 0, 0, 0]
             }
-        scale_factor = scale_info.real_scale_length / scale_info.image_width if scale_info else 1
-        scaled_areas = self.__get_pixel_areas(stats) * scale_factor
-        scaled_diameters = self.__get_diameters(stats) * scale_factor
+            
+        scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
         
         area_mean = np.mean(scaled_areas).round(2)
         area_max = np.max(scaled_areas).round(2)
