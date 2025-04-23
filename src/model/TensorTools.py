@@ -3,7 +3,6 @@ import torch.nn.functional as F
 import torchvision.transforms.functional as TF
 from PIL.Image import Image
 
-
 def normalizeTensorToPixels(tensor: Tensor) -> Tensor:
     tensor = tensor - tensor.min()
     tensor = tensor / tensor.max()

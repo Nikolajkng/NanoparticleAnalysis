@@ -1,16 +1,15 @@
-import torchvision.transforms.functional as TF
-from model.TensorTools import *
+from PIL import Image
+import numpy as np
 from model.DataTools import *
 from model.PlottingTools import *
 from model.CrossValidation import *
-from PIL import Image
-import numpy as np
 from model.SegmentationAnalyzer import SegmentationAnalyzer
-from shared.ScaleInfo import ScaleInfo
 from model.ModelEvaluator import ModelEvaluator
-from shared.ModelConfig import ModelConfig
 from model.dmFileReader import dmFileReader
-from shared.IOFunctions import is_dm_format
+from shared.ScaleInfo import ScaleInfo
+from shared.ModelConfig import ModelConfig
+import time
+
 class request_handler:
     def __init__(self, unet):
         self.unet = unet
@@ -24,32 +23,24 @@ class request_handler:
 
 
     def process_request_segment(self, image_path, scale_info: ScaleInfo):
-        analyzer = SegmentationAnalyzer()
-        reader = dmFileReader()
-        tensor = None
-        if is_dm_format(image_path):
-            tensor = reader.get_tensor_from_dm_file(image_path)
-        else:
-            tensor = tensor_from_image_no_resize(image_path)
+        tensor = load_image_as_tensor(image_path)
         stride_length = self.unet.preffered_input_size[0]*4//5
         tensor_mirror_filled = mirror_fill(tensor, self.unet.preffered_input_size, (stride_length,stride_length))
         patches = extract_slices(tensor_mirror_filled, self.unet.preffered_input_size, (stride_length,stride_length))
 
         segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
-        patch_idx = 0
+
         self.unet.eval()
-        for patch in patches:
-            with torch.no_grad():
-                segmentation = self.unet(torch.tensor(patch, dtype=tensor.dtype, device=tensor.device).unsqueeze(0))
-            segmentation_numpy = segmentation.detach().numpy()
-            segmentations[patch_idx] = segmentation_numpy
-            patch_idx += 1
+        patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
+        with torch.no_grad():
+            segmentations = self.unet(patches_tensor).detach().numpy()
+
             
         segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
         segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3])).argmax(axis=1)
         segmented_image_2d = to_2d_image_array(segmented_image)
         
-        # Data Analysis 
+        analyzer = SegmentationAnalyzer()
         num_labels, _, stats, centroids = analyzer.get_connected_components(segmented_image_2d)
         particle_count = num_labels - 1
         annotated_image = analyzer.add_annotations(segmented_image_2d, centroids)
