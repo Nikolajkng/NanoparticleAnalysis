@@ -17,8 +17,9 @@ class SegmentationAnalyzer():
                 "Area": scaled_areas,
                 "Diameter": scaled_diameters
             }
-            
             plt.hist(histogram_data["Area"], bins=30, label="Area")
+            return plt
+            
             
         except Exception as e:
             print("Error in creating histogram: ", e)
@@ -33,7 +34,7 @@ class SegmentationAnalyzer():
             txtfile = os.path.join(base_dir, "..", "data", "statistics", "statistics.txt")
             with open(txtfile, "w", newline="", encoding="utf-8") as txtfile:          
                 writer = csv.writer(txtfile, delimiter="\t")    
-                writer.writerow(["Label", "Area", "Diameter"])
+                writer.writerow(["No.", "Area", "Diameter"])
                 for label_idx in range(1, particle_count):
                     label = str(label_idx)
                     area = scaled_areas[label_idx-1]

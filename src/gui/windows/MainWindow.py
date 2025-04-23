@@ -40,6 +40,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.annotated_image = None
         self.pixmap_item_count = None
         self.csv_file = None
+        self.histogram_plot = None
         self.select_scale_window = None
         self.scale_start_x = 0
         self.scale_end_x = 0
@@ -278,16 +279,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             messageBox(self, "Segmentation failed: No image found")
             return
         if(self.barScaleInputField.text() == ""):
-            messageBox(self, "Please enter length of the scale bar")
+            messageBox(self, "Please enter length of the scale bar and use the 'Select Bar Scale'")
             return
         if(not self.scale_is_selected):
-            messageBox(self, "Please use the ''Select Bar Scale'' to select the scale")
+            messageBox(self, "Please use the ''Select Bar Scale''")
             return
         
         self.on_calculate_input_image_size_clicked()
-        self.segmented_image, self.annotated_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
+        self.segmented_image, self.annotated_image, table_data, histogram_plot = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
-        
         self.update_segmented_image_view()
 
     def on_toggle_segmented_image_clicked(self):
