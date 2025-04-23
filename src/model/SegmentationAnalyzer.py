@@ -19,7 +19,7 @@ class SegmentationAnalyzer():
         histogram_image = Image.open(hist_image_path)
         return histogram_image
     
-    def create_histogram(self, stats, scale_info, steps = 30):
+    def create_histogram(self, stats, scale_info):
         try:
             scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
             histogram_data = {
@@ -27,12 +27,21 @@ class SegmentationAnalyzer():
                 "Diameter": scaled_diameters
             }
 
-            fig, ax = plt.subplots()
-            ax.hist(histogram_data["Diameter"], bins=steps, label="Diameter", )
+            # Smart selection of bins/steps, works? (TODO: manual choice instead?)
+            # https://medium.com/@maxmarkovvision/optimal-number-of-bins-for-histograms-3d7c48086fde
+            rice_rule_steps = int(np.ceil(2 * len(histogram_data["Diameter"]) ** (1 / 3))) 
+
+            fig, ax = plt.subplots()            
+            ax.hist(
+                histogram_data["Diameter"], 
+                bins=rice_rule_steps, 
+                label="Diameter", 
+                edgecolor='black'
+                )
             ax.set_title("Particle Diameter Histogram")
             ax.set_xlabel("Diameter (scaled units)")
             ax.set_ylabel("Frequency")
-            ax.legend()
+            ax.legend(title=f"Rice-rule: {rice_rule_steps} steps")
             
             self.save_histogram_as_image(fig)
             return fig           
