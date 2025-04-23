@@ -286,7 +286,7 @@ class Ui_MainWindow(object):
         self.selectBarScaleButton.setText(_translate("MainWindow", "Select scale bar on image"))
         self.label.setText(_translate("MainWindow", "Analyze"))
         self.fullscreen_image_button.setText(_translate("MainWindow", "Fullscreen Image"))
-        self.radioButton.setText(_translate("MainWindow", "disable count"))
+        self.radioButton.setText(_translate("MainWindow", "Toggle count"))
         self.menu_file.setTitle(_translate("MainWindow", "File"))
         self.menu_edit.setTitle(_translate("MainWindow", "Edit"))
         self.menu_model.setTitle(_translate("MainWindow", "Model"))

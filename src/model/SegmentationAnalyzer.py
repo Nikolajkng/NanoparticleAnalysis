@@ -46,15 +46,11 @@ class SegmentationAnalyzer():
             for i in range(1, len(centroids)):
                 cX, cY = int(centroids[i][0]), int(centroids[i][1])
                 label = str(i)
-
-                # Try offsetting label if it's too close to previous ones
                 final_x, final_y = self.check_particle_distance(cX, cY, used_positions, min_distance, max_offset_attempts)
                 used_positions.append((final_x, final_y))
-
                 (text_width, text_height), _ = cv2.getTextSize(label, font, font_scale, thickness)
                 text_x = final_x - text_width // 2
                 text_y = final_y + text_height // 2
-                #cv2.putText(image_rgb, label, (text_x, text_y), font, font_scale, (0, 0, 0), thickness + 2, lineType=cv2.LINE_AA)
                 cv2.putText(image_rgb, label, (text_x, text_y), font, font_scale, (255, 0, 0), thickness)
 
             return image_rgb
