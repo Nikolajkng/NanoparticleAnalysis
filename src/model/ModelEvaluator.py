@@ -90,9 +90,11 @@ class ModelEvaluator():
 
         number_of_predictions_to_show = np.min([4, len(predictions)]) 
         indicies = random.sample(range(len(predictions)), number_of_predictions_to_show)
-        for i in indicies:
-            ModelEvaluator.plot_difference(predictions[i], labels[i], ious[i], pixel_accuracies[i])
-
+        try:
+            for i in indicies:
+                ModelEvaluator.plot_difference(predictions[i], labels[i], ious[i], pixel_accuracies[i])
+        except Exception:
+            return np.mean(ious), np.mean(pixel_accuracies)
 
         return np.mean(ious), np.mean(pixel_accuracies)
 

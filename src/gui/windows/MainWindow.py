@@ -24,8 +24,8 @@ from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtGui import QIntValidator
 from gui.windows.MessageBoxes import *
 from model.PlottingTools import plot_loss
-from shared.IOFunctions import is_dm_format
-
+from shared.IOFunctions import is_dm_format, is_tiff_format
+import tifffile
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
 
@@ -95,7 +95,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
 
         manager = plt.get_current_fig_manager()
-        manager.window.showMaximized()
 
         axes[0].imshow(self.image, cmap='gray')
         axes[0].set_title("Image")
@@ -103,10 +102,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if self.segmented_image:
             axes[1].imshow(self.segmented_image, cmap='gray')
             axes[1].set_title("Segmentation")
-
+        manager.window.showMaximized()
+        plt.pause(0.1)
         plt.tight_layout()
-        plt.show()
-
+        #plt.show(block=False)
+        #fig.tight_layout()
+        #plt.show()
 
     def set_table_data(self, table_data: np.ndarray):
         data = TableData(table_data)
@@ -226,9 +227,27 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.input_image_pixel_unit = pixel_unit[1]
         else:
             self.image = Image.open(file_path)
+            if is_tiff_format(file_path):
+                self.input_image_pixel_width = self.extract_pixel_size_from_tiff_file(file_path)
+                if self.input_image_pixel_width:
+                    self.input_image_real_width = float(self.input_image_pixel_width*self.image.width)
+
         qimage = ImageQt(self.image)
         return QPixmap.fromImage(qimage) 
 
+    def extract_pixel_size_from_tiff_file(self, file_path):
+        try:
+            with tifffile.TiffFile(file_path) as tif:
+                    tags = tif.pages[0].tags
+                    tvips = tags.get('TVIPS') # Can only extract pixel size if file is from TVIPS
+                    if tvips:
+                        pixel_size_x = tvips.value['PixelSizeX']
+                        #pixel_size_y = tvips.value['PixelSizeY']
+                        return pixel_size_x
+                    return None
+        except (tifffile.TiffFileError, TypeError):
+            return None
+    
     def on_test_model_clicked(self):
         
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")

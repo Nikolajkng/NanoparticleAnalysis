@@ -77,7 +77,9 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
                     epochs=int(self.epochs_input.text()),
                     learning_rate=float(self.learning_rate_input.text()),
                     with_early_stopping=self.early_stopping_checkbox.isChecked(),
-                    with_data_augmentation=self.data_augment_checkbox.isChecked())
+                    with_data_augmentation=self.data_augment_checkbox.isChecked(),
+                    test_images_path=self.test_images_directory,
+                    test_masks_path=self.test_labels_directory)
         print(int(self.epochs_input.text()))
         self.train_model_signal.emit(model_config)
     

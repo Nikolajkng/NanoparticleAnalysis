@@ -4,6 +4,8 @@ from torchvision.transforms.functional import rotate, hflip
 from model.SegmentationDataset import SegmentationDataset
 from model.TensorTools import normalizeTensorToPixels
 import numpy as np
+from torch.utils.data import Dataset
+import matplotlib.pyplot as plt
 class DataAugmenter():
     def __init__(self):
         return
@@ -47,28 +49,57 @@ class DataAugmenter():
             final_flipped_masks.extend([mask, hflip(mask)])
         return (final_flipped_images, final_flipped_masks)
     
-    def augment_dataset(self, dataset: SegmentationDataset) -> SegmentationDataset:
+    def augment_dataset(self, dataset: Dataset, input_size: tuple[int, int]) -> Dataset:
         new_images = []
         new_masks = []
-        for image, mask in zip(dataset.images, dataset.masks):
-            augmented_images, augmented_masks = self.create_random_crops(image, mask, 8)
-            if len(augmented_images) == 1:
-                augmented_images, augmented_masks = self.create_rotated_tensors(augmented_images, augmented_masks)
-                augmented_images, augmented_masks = self.create_hflipped_tensors(augmented_images, augmented_masks)
+        
+        for i in range(len(dataset)):
+            image, mask = dataset[i]  # Works for both custom and standard datasets
+
+            cropped_images, cropped_masks = self.create_random_crops(image, mask, 15, input_size)
+            augmented_images = []
+            augmented_masks = []
+            if len(cropped_images) != 1: # Means we could crop the images
+                augmented_images, augmented_masks = cropped_images, cropped_masks
+                # rotated_images, rotated_masks = self.create_rotated_tensors(cropped_images[:2], cropped_masks[:2])
+                # flipped_images, flipped_masks = self.create_hflipped_tensors(cropped_images[2:4], cropped_masks[2:4])
+                # augmented_images = rotated_images + flipped_images + cropped_images[4:]
+                # augmented_masks = rotated_masks + flipped_masks + cropped_masks[4:]
+            else: # image was correct resolution already
+                rotated_images, rotated_masks = self.create_rotated_tensors(cropped_images, cropped_masks)
+                augmented_images, augmented_masks = self.create_hflipped_tensors(rotated_images, rotated_masks)
             new_images.extend(augmented_images)
             new_masks.extend(augmented_masks)
-        print(len(dataset.images))
-        dataset.images = new_images
-        dataset.masks = new_masks
-        print(len(dataset.images))
-        return dataset
+       
+       
 
+        print("Original dataset size:", len(dataset))
+        print("Augmented dataset size:", len(new_images))
+        for image in new_images:
+            if image.shape[-1] != input_size[0] or image.shape[-2] != input_size[1]:
+                print("Error with data augment: Final size doesn't match")
+
+        # Wrap in a new SegmentationDataset or another compatible Dataset
+        return SegmentationDataset.from_image_set(new_images, new_masks)
+
+    def get_crops_for_dataset(self, dataset: Dataset, amount_to_crop, crop_size):
+        new_images, new_masks = [], []
+        for i in range(len(dataset)):
+                image, mask = dataset[i] 
+                if image.shape[-1] > 256:
+                    new_imagesi, new_masksi = self.create_random_crops(image, mask, amount_to_crop, cropped_size=crop_size)
+                    new_images.extend(new_imagesi)
+                    new_masks.extend(new_masksi)
+                else:
+                    new_images.append(image)
+                    new_masks.append(mask)
+        return SegmentationDataset.from_image_set(new_images, new_masks)
 
 
 if __name__ == '__main__':
     data_augmenter = DataAugmenter()
-    dataset = SegmentationDataset("data/images/", "data/masks/")
-    data_augmenter.augment_dataset(dataset)
+    dataset = SegmentationDataset("data/highres_images/", "data/highres_masks/")
+    dataset = data_augmenter.augment_dataset(dataset, (512, 512))
     # image, mask = dataset[0]
     # rotated_images, rotated_masks = data_augmenter.create_rotated_tensors(image, mask)
     # crop_image, crop_mask = data_augmenter.random_crop(image, mask, cropped_size=(50,50))
@@ -76,8 +107,27 @@ if __name__ == '__main__':
     # img = TF.to_pil_image(pixels.byte())
     # img.show()
     # augmented_images, augmented_masks = data_augmenter.create_hflipped_tensors(rotated_images, rotated_masks)
-    # for image in augmented_images:
+    
+    
+    # for idx, (image, mask) in enumerate(dataset):
     #     pixels = normalizeTensorToPixels(image)
-    #     img = TF.to_pil_image(pixels.byte())
-    #     img.show()
+    #     image = TF.to_pil_image(pixels.byte())
+    #     mask_np = mask.numpy()
+    #     mask_np = to_2d_image_array(mask_np)
+    #     segmented_image = Image.fromarray(mask_np)
+        
+
+    #     fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
+
+    #     manager = plt.get_current_fig_manager()
+
+    #     axes[0].imshow(image, cmap='gray')
+    #     axes[0].set_title("Image")
+
+        
+    #     axes[1].imshow(segmented_image, cmap='gray')
+    #     axes[1].set_title("Segmentation")
+    #     manager.window.showMaximized()
+    #     plt.pause(0.1)
+    #     plt.tight_layout()
 

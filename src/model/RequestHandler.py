@@ -17,9 +17,9 @@ class request_handler:
 
     def process_request_train(self, model_config: ModelConfig, loss_callback=None):  
         # CHANGE CROSS VALIDATION HERE (uncomment):
-        iou, pixel_accuracy = cv_holdout(self.unet, model_config, loss_callback)
+        iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preffered_input_size, loss_callback)
         #cv_kfold(self.unet, images_path, masks_path)
-        
+        print(f"Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}")
         return iou, pixel_accuracy
 
 
@@ -31,8 +31,9 @@ class request_handler:
             tensor = reader.get_tensor_from_dm_file(image_path)
         else:
             tensor = tensor_from_image_no_resize(image_path)
-        tensor_mirror_filled = mirror_fill(tensor, (256,256), (200,200))
-        patches = extract_slices(tensor_mirror_filled, (256,256), (200,200))
+        stride_length = self.unet.preffered_input_size[0]*4//5
+        tensor_mirror_filled = mirror_fill(tensor, self.unet.preffered_input_size, (stride_length,stride_length))
+        patches = extract_slices(tensor_mirror_filled, self.unet.preffered_input_size, (stride_length,stride_length))
 
         segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
         patch_idx = 0
@@ -43,7 +44,7 @@ class request_handler:
             segmentation_numpy = segmentation.detach().numpy()
             segmentations[patch_idx] = segmentation_numpy
             patch_idx += 1
-        segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (200,200))
+        segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
         
         segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3])).argmax(axis=1)
         segmented_image_2d = to_2d_image_array(segmented_image)

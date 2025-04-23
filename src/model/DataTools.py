@@ -6,22 +6,35 @@ from PIL import Image
 from torch import Tensor
 import torchvision.transforms.functional as TF
 import numpy as np
+from model.DataAugmenter import DataAugmenter
+from model.SegmentationDataset import SegmentationDataset
 
-def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float) -> tuple[DataLoader, DataLoader, DataLoader]:
+def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader, DataLoader]:
+    data_augmenter = DataAugmenter()
     
     train_data, val_data, test_data = random_split(dataset, [train_data_size, validation_data_size, 1-train_data_size-validation_data_size])
-    train_dataloader = DataLoader(train_data, batch_size=12, shuffle=True, drop_last=True)
-    val_dataloader = DataLoader(val_data, batch_size=3, shuffle=True, drop_last=True)
+    
+    train_data = data_augmenter.augment_dataset(train_data)
+    val_data = data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
+    test_data = data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
+
+    train_dataloader = DataLoader(train_data, batch_size=8, shuffle=True, drop_last=True)
+    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(test_data, batch_size=1)
     return (train_dataloader, val_dataloader, test_dataloader)
 
 
-def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float) -> tuple[DataLoader, DataLoader]:
+def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader]:
     
     train_data, val_data = random_split(dataset, [train_data_size, 1-train_data_size])
-    train_dataloader = DataLoader(train_data, batch_size=1, shuffle=True)
-    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=False)
 
+    data_augmenter = DataAugmenter()
+    train_data = data_augmenter.augment_dataset(train_data, input_size)
+
+    val_data = data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
+
+    train_dataloader = DataLoader(train_data, batch_size=8, shuffle=True, drop_last=True)
+    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
     return (train_dataloader, val_dataloader)
 
 def center_crop(image, target_size: tuple[int, int]):
@@ -194,12 +207,12 @@ def showTensor(tensor: Tensor) -> None:
         img.show()
 
 if __name__ == '__main__':
-    # folder_path = 'data/masks/'
-    # resize_and_save_images(folder_path, is_masks=True)
-    tensor = tensor_from_image('data/W. sample_0011.tif', (256, 256))
-    tensor = mirror_fill(tensor, (100,100), (100,100))
-    patches = extract_slices(tensor, (100,100), (100,100))
-    showTensor(tensor)
-    reconstructed = construct_image_from_patches(patches, (300,300), (100,100))
-    showTensor(reconstructed)
+    folder_path = 'data/to_resize/'
+    resize_and_save_images(folder_path, is_masks=True, output_size=(4096, 4074))
+    # tensor = tensor_from_image('data/W. sample_0011.tif', (256, 256))
+    # tensor = mirror_fill(tensor, (100,100), (100,100))
+    # patches = extract_slices(tensor, (100,100), (100,100))
+    # showTensor(tensor)
+    # reconstructed = construct_image_from_patches(patches, (300,300), (100,100))
+    # showTensor(reconstructed)
     

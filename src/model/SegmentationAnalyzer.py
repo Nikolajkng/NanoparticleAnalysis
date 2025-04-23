@@ -54,8 +54,8 @@ class SegmentationAnalyzer():
                 (text_width, text_height), _ = cv2.getTextSize(label, font, font_scale, thickness)
                 text_x = final_x - text_width // 2
                 text_y = final_y + text_height // 2
-                cv2.putText(image_rgb, label, (text_x, text_y), font, font_scale, (0, 0, 0), thickness + 2, lineType=cv2.LINE_AA)
-                cv2.putText(image_rgb, label, (text_x, text_y), font, font_scale, (255, 0, 0), thickness, lineType=cv2.LINE_AA)
+                #cv2.putText(image_rgb, label, (text_x, text_y), font, font_scale, (0, 0, 0), thickness + 2, lineType=cv2.LINE_AA)
+                cv2.putText(image_rgb, label, (text_x, text_y), font, font_scale, (255, 0, 0), thickness)
 
             return image_rgb
 
@@ -98,6 +98,12 @@ class SegmentationAnalyzer():
     
 
     def format_table_data(self, stats: np.ndarray, scale_info: ScaleInfo, particle_count: int):
+        if particle_count == 0:
+            return {
+                "Count":    [0, 0, 0, 0],  
+                "Area":     [0, 0, 0, 0],  
+                "Diameter": [0, 0, 0, 0]
+            }
         scale_factor = scale_info.real_scale_length / scale_info.image_width if scale_info else 1
         scaled_areas = self.__get_pixel_areas(stats) * scale_factor
         scaled_diameters = self.__get_diameters(stats) * scale_factor

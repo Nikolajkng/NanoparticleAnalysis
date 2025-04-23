@@ -73,6 +73,8 @@ class UNet(nn.Module):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using {self.device}")
 
+        self.preffered_input_size = (256, 256)
+
     def forward(self, input):
         e1 = self.encoder1(input)
         pooled = nn.MaxPool2d(2,2)(e1)
@@ -99,12 +101,13 @@ class UNet(nn.Module):
         validation_loss_values = []
         best_loss = np.inf
         no_improvement_epochs = 0
-
+        batches_in_epoch = len(training_dataloader.dataset)//training_dataloader.batch_size
         for epoch in range(epochs):
             self.train()
             running_loss = 0.0
-
+            
             for i, data in enumerate(training_dataloader):
+                
                 inputs, labels = data
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.long().squeeze(1)
@@ -118,7 +121,7 @@ class UNet(nn.Module):
                 self.optimizer.step()
                 
                 running_loss += loss.item()
-
+                print(f"Epoch {epoch + 1}: Finished batch {i + 1} of {batches_in_epoch}")
             epoch_training_loss = running_loss / len(training_dataloader)
             training_loss_values.append(epoch_training_loss)
 
@@ -127,7 +130,7 @@ class UNet(nn.Module):
             
             
             
-            print(f'Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}')
+            print(f'---Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}---')
 
             if epoch_validation_loss < best_loss:
                 self.save_model("data/models/" + model_name)
