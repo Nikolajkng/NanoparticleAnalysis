@@ -54,9 +54,9 @@ class request_handler:
         table_data = analyzer.format_table_data(stats, scale_info, particle_count)
         analyzer.write_stats_to_txt(stats, scale_info, particle_count)
         annotated_image = analyzer.add_annotations(segmented_image_2d, centroids)
-        image_pil = Image.fromarray(annotated_image)
+        annotated_image_pil = Image.fromarray(annotated_image)
         
-        return image_pil, table_data
+        return segmented_image_2d, annotated_image_pil, table_data
     
     def process_request_load_model(self, model_path):
         self.unet.load_model(model_path)

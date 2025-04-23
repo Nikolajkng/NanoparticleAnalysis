@@ -430,7 +430,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>disable count</string>
+     <string>Toggle count</string>
     </property>
    </widget>
   </widget>
