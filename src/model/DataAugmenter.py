@@ -1,11 +1,9 @@
 from torch import Tensor
-import torchvision.transforms.functional as TF
 from torchvision.transforms.functional import rotate, hflip
-from model.SegmentationDataset import SegmentationDataset
-from model.TensorTools import normalizeTensorToPixels
 import numpy as np
 from torch.utils.data import Dataset
-import matplotlib.pyplot as plt
+
+from model.SegmentationDataset import SegmentationDataset
 class DataAugmenter():
     def __init__(self):
         return

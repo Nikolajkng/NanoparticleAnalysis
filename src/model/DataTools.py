@@ -6,8 +6,11 @@ from PIL import Image
 from torch import Tensor
 import torchvision.transforms.functional as TF
 import numpy as np
+
+
 from model.DataAugmenter import DataAugmenter
-from model.SegmentationDataset import SegmentationDataset
+from model.dmFileReader import dmFileReader
+from shared.IOFunctions import is_dm_format
 
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
@@ -74,6 +77,17 @@ def tensor_from_image(image_path: str, resize=(256,256)) -> Tensor:
 
 def to_2d_image_array(array: np.ndarray) -> np.ndarray:
     return (np.squeeze(array) * 255).astype(np.uint8)
+
+def load_image_as_tensor(image_path: str):
+    reader = dmFileReader()
+    tensor = None
+    if is_dm_format(image_path):
+        tensor = reader.get_tensor_from_dm_file(image_path)
+    else:
+        tensor = tensor_from_image_no_resize(image_path)
+    if tensor.shape[-1] > 256 or tensor.shape[-2] > 256:
+        tensor = TF.resize(tensor, 1024)
+    return tensor
 
 # Made with help from https://www.programmersought.com/article/15316517340/
 def mirror_fill(images: Tensor, patch_size: tuple, stride_size: tuple):

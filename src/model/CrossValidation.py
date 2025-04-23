@@ -3,8 +3,8 @@ from torch.utils.data import DataLoader, Subset
 import numpy as np
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader
+
 from model.SegmentationDataset import SegmentationDataset
-from model.TensorTools import *
 from model.PlottingTools import *
 from model.DataTools import get_dataloaders, get_dataloaders_without_testset
 from model.DataAugmenter import DataAugmenter

@@ -1,8 +1,6 @@
 from ncempy.io import dm
 from PIL import Image
-import matplotlib.pyplot as plt
 import numpy as np
-import torch
 import torchvision.transforms.functional as TF
 class dmFileReader():
     def __init__(self):
