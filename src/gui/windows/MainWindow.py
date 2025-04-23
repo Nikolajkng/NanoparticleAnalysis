@@ -37,12 +37,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.image_path = None
         self.image = None
         self.segmented_image = None
+        self.annotated_image = None
+        self.pixmap_item_count = None
         self.csv_file = None
         self.select_scale_window = None
         self.scale_start_x = 0
         self.scale_end_x = 0
         self.scale_is_selected = False
         self.scale_input_set = False
+        self.show_annotated_image = True  
         self.graphicsView_scene = QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsView_scene)
         self.input_image_real_width = 0
@@ -63,10 +66,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.training_loss_values = []
         self.validation_loss_values = []
 
-        self.plot2_scene = QGraphicsScene(self)
-        self.plot2.setScene(self.plot2_scene)
-        self.plot3_scene = QGraphicsScene(self)
-        self.plot3.setScene(self.plot3_scene)
+        self.plot_segmentation_scene = QGraphicsScene(self)
+        self.plot_segmentation.setScene(self.plot_segmentation_scene)
+        self.plot_graph_scene = QGraphicsScene(self)
+        self.plot_graph.setScene(self.plot_graph_scene)
+
+
 
         # Other connections
         self.action_train_model.triggered.connect(self.on_train_model_clicked)
@@ -80,10 +85,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.barScaleInputField.setValidator(self.validator)
-        self.radioButton.toggled.connect(self.toggle_particle_count_overlay)
+        self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
 
-    def toggle_particle_count_overlay(self):
-        print("toggling")
+    def toggle_count_overlay(self):
+            print("toggling")
+            if self.segmented_image is None or self.annotated_image is None:
+                messageBox(self, "No segmented image available to toggle.")
+                return
+
+            self.show_annotated_image = not self.show_annotated_image
+            self.update_segmented_image_view()
         
     def on_fullscreen_image_clicked(self):
         if (self.image_path == None):
@@ -135,11 +146,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def on_select_bar_scale_clicked(self):
         if (self.image_path == None):
-            messageBox(self, "No image found. Please upload an image first.")
+            messageBox(self, "No image found. Please upload an image.")
             return
         
         if(self.barScaleInputField.text() == ""):
-            messageBox(self, "Please enter length of the scale bar first")
+            messageBox(self, "Please enter length of the scale bar")
             return
         
         self.select_scale_window = SelectScaleWindow()
@@ -266,24 +277,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             messageBox(self, "Segmentation failed: No image found")
             return
-        
-        if(not self.scale_is_selected):
-            messageBox(self, "Please use the ''Select Bar Scale'' button to select the scale")
-            return
-        
         if(self.barScaleInputField.text() == ""):
-            messageBox(self, "Please enter length of the scale bar first")
+            messageBox(self, "Please enter length of the scale bar")
+            return
+        if(not self.scale_is_selected):
+            messageBox(self, "Please use the ''Select Bar Scale'' to select the scale")
             return
         
         self.on_calculate_input_image_size_clicked()
-        
-        self.segmented_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
+        self.segmented_image, self.annotated_image, table_data = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
-        segmented_image_temp = ImageQt(self.segmented_image)
-        pixmap = QPixmap.fromImage(segmented_image_temp)
-        pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
-        self.plot3_scene.addItem(pixmap_item)
+        
+        self.update_segmented_image_view()
 
+    def on_toggle_segmented_image_clicked(self):
+        if self.segmented_image is None or self.annotated_image is None:
+            messageBox(self, "No segmented image available to toggle.")
+            return
+
+        self.show_annotated_image = not self.show_annotated_image
+        self.update_segmented_image_view()
+
+    def update_segmented_image_view(self):
+        if self.show_annotated_image:
+            image_to_display = self.annotated_image
+        else:
+            image_to_display = self.segmented_image
+
+        if isinstance(image_to_display, np.ndarray): image_to_display = Image.fromarray(image_to_display)
+        image_temp = ImageQt(image_to_display)
+        pixmap = QPixmap.fromImage(image_temp)
+        pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
+        self.plot_segmentation_scene.clear()
+        self.plot_segmentation_scene.addItem(pixmap_item)
 
     def on_train_model_clicked(self):
         result = confirmTrainingMessageBox(self, "Training a new model may take a while, do you want to continue?")
@@ -399,4 +425,4 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             messageBox(self, "success", "Data exported successfully")
         except Exception as error:
             messageBox(self, f"Failed to export data: {str(error)}")
-    
+
