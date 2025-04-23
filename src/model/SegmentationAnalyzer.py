@@ -27,11 +27,11 @@ class SegmentationAnalyzer():
     
     def write_stats_to_txt(self, stats, scale_info, particle_count):
         try:
-            if(scale_info is not None):
-                scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
-
+            scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
             base_dir = os.path.dirname(__file__)
             txtfile = os.path.join(base_dir, "..", "data", "statistics", "statistics.txt")
+            os.makedirs(os.path.dirname(txtfile), exist_ok=True)
+            
             with open(txtfile, "w", newline="", encoding="utf-8") as txtfile:          
                 writer = csv.writer(txtfile, delimiter="\t")    
                 writer.writerow(["No.", "Area", "Diameter"])

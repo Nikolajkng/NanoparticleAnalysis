@@ -111,9 +111,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         axes[0].imshow(self.image, cmap='gray')
         axes[0].set_title("Image")
 
-        if self.segmented_image:
+
+        if self.show_annotated_image and self.annotated_image is not None:
+            axes[1].imshow(self.annotated_image, cmap='gray')
+            axes[1].set_title("Annotated Segmentation")  
+        elif self.segmented_image is not None:
             axes[1].imshow(self.segmented_image, cmap='gray')
             axes[1].set_title("Segmentation")
+
         manager.window.showMaximized()
         plt.pause(0.1)
         plt.tight_layout()
@@ -335,7 +340,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
     def on_load_model_clicked(self):        
-        default_models_path = os.path.abspath(os.path.join(os.getcwd(), 'data'))
+        default_models_path = os.path.abspath(os.path.join(os.getcwd(), 'data', 'models'))
         file_path, selected_filter = QFileDialog.getOpenFileName(
             None, 
             "Select a file", 
