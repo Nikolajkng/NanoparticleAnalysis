@@ -1,5 +1,6 @@
 import csv
 import threading
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
@@ -26,6 +27,9 @@ from gui.windows.MessageBoxes import *
 from model.PlottingTools import plot_loss
 from shared.IOFunctions import is_dm_format, is_tiff_format
 import tifffile
+from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
 
@@ -40,7 +44,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.annotated_image = None
         self.pixmap_item_count = None
         self.csv_file = None
-        self.histogram_plot = None
         self.select_scale_window = None
         self.scale_start_x = 0
         self.scale_end_x = 0
@@ -69,9 +72,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         self.plot_segmentation_scene = QGraphicsScene(self)
         self.plot_segmentation.setScene(self.plot_segmentation_scene)
-        self.plot_graph_scene = QGraphicsScene(self)
-        self.plot_graph.setScene(self.plot_graph_scene)
-
+        self.plot_graph_layout = QVBoxLayout(self.plot_histogram)
+        self.plot_histogram.setLayout(self.plot_graph_layout)
 
 
         # Other connections
@@ -291,10 +293,21 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         
         self.on_calculate_input_image_size_clicked()
-        self.segmented_image, self.annotated_image, table_data, histogram_plot = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
+        self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
         self.update_segmented_image_view()
+        self.display_histogram(histogram_fig)
+        
+    def display_histogram(self, histogram_fig):
+        if histogram_fig is not None:
+            if hasattr(self, 'histogram_canvas') and self.histogram_canvas:
+                self.histogram_canvas.setParent(None)
 
+            self.histogram_canvas = FigureCanvas(histogram_fig)
+            self.plot_graph_layout.addWidget(self.histogram_canvas)
+            self.histogram_canvas.draw()
+            
+        
     def on_toggle_segmented_image_clicked(self):
         if self.segmented_image is None or self.annotated_image is None:
             messageBox(self, "No segmented image available to toggle.")
@@ -309,7 +322,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             image_to_display = self.segmented_image
 
-        if isinstance(image_to_display, np.ndarray): image_to_display = Image.fromarray(image_to_display)
+        if isinstance(image_to_display, np.ndarray): 
+            image_to_display = Image.fromarray(image_to_display)
+            
         image_temp = ImageQt(image_to_display)
         pixmap = QPixmap.fromImage(image_temp)
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))

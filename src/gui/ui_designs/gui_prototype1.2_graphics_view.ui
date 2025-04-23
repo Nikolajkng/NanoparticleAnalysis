@@ -211,7 +211,7 @@
      <rect>
       <x>750</x>
       <y>0</y>
-      <width>511</width>
+      <width>501</width>
       <height>531</height>
      </rect>
     </property>
@@ -255,23 +255,29 @@
      <attribute name="title">
       <string>Graph</string>
      </attribute>
-     <widget class="QGraphicsView" name="plot_graph">
+     <widget class="QFrame" name="plot_histogram">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>500</width>
-        <height>500</height>
+        <width>511</width>
+        <height>501</height>
        </rect>
       </property>
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
+      <property name="cursor">
+       <cursorShape>ArrowCursor</cursorShape>
       </property>
-      <property name="sizeAdjustPolicy">
-       <enum>QAbstractScrollArea::AdjustToContents</enum>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
       </property>
      </widget>
     </widget>
@@ -320,7 +326,7 @@
      <string> Enter scale bar</string>
     </property>
    </widget>
-   <widget class="QComboBox" name="comboBox">
+   <widget class="QComboBox" name="unit_checkbox">
     <property name="geometry">
      <rect>
       <x>160</x>
