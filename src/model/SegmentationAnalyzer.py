@@ -4,23 +4,37 @@ import numpy as np
 import csv
 import matplotlib.pyplot as plt
 from shared.ScaleInfo import ScaleInfo
+from PIL import Image
 class SegmentationAnalyzer():
 
     def get_connected_components(self, image):
         num_labels, labels, area_stats, centroids= cv2.connectedComponentsWithStats(image)
         return num_labels, labels, area_stats, centroids
     
-    def create_histogram(self, stats, scale_info):
+  
+    def save_histogram_as_image(self, fig):
+        hist_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "histogram", "diameter_histogram.png")
+        os.makedirs(os.path.dirname(hist_image_path), exist_ok=True)
+        fig.savefig(hist_image_path)
+        plt.close()
+        histogram_image = Image.open(hist_image_path)
+        return histogram_image
+    
+    def create_histogram(self, stats, scale_info, steps = 30):
         try:
             scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
             histogram_data = {
                 "Area": scaled_areas,
                 "Diameter": scaled_diameters
             }
-            plt.hist(histogram_data["Area"], bins=30, label="Area")
-            return plt
-            
-            
+
+            fig, ax = plt.subplots()
+            ax.hist(histogram_data["Diameter"], bins=steps, label="Diameter", )
+            ax.set_title("Particle Diameter Histogram")
+            ax.set_xlabel("Diameter (scaled units)")
+            ax.set_ylabel("Frequency")
+            ax.legend()
+            return self.save_histogram_as_image(fig)
         except Exception as e:
             print("Error in creating histogram: ", e)
             return None
@@ -28,8 +42,7 @@ class SegmentationAnalyzer():
     def write_stats_to_txt(self, stats, scale_info, particle_count):
         try:
             scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
-            base_dir = os.path.dirname(__file__)
-            txtfile = os.path.join(base_dir, "..", "data", "statistics", "statistics.txt")
+            txtfile = os.path.join(os.path.dirname(__file__), "..", "..", "data", "statistics", "statistics.txt")
             os.makedirs(os.path.dirname(txtfile), exist_ok=True)
             
             with open(txtfile, "w", newline="", encoding="utf-8") as txtfile:          

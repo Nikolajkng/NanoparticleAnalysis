@@ -1,5 +1,6 @@
 import csv
 import threading
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
@@ -40,7 +41,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.annotated_image = None
         self.pixmap_item_count = None
         self.csv_file = None
-        self.histogram_plot = None
         self.select_scale_window = None
         self.scale_start_x = 0
         self.scale_end_x = 0
@@ -291,10 +291,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         
         self.on_calculate_input_image_size_clicked()
-        self.segmented_image, self.annotated_image, table_data, histogram_plot = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
+        self.segmented_image, self.annotated_image, table_data, histogram_image = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
         self.set_table_data(table_data)
         self.update_segmented_image_view()
-
+        self.display_histogram(histogram_image)
+        
+    def display_histogram(self, histogram_image):
+        if (histogram_image is not None):
+            image_temp = ImageQt(histogram_image)
+            pixmap = QPixmap.fromImage(image_temp)
+            pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+            self.plot_graph_scene.clear()
+            self.plot_graph_scene.addItem(pixmap_item)
+        else: 
+            return
+            
+        
     def on_toggle_segmented_image_clicked(self):
         if self.segmented_image is None or self.annotated_image is None:
             messageBox(self, "No segmented image available to toggle.")
@@ -309,7 +321,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             image_to_display = self.segmented_image
 
-        if isinstance(image_to_display, np.ndarray): image_to_display = Image.fromarray(image_to_display)
+        if isinstance(image_to_display, np.ndarray): 
+            image_to_display = Image.fromarray(image_to_display)
+            
         image_temp = ImageQt(image_to_display)
         pixmap = QPixmap.fromImage(image_temp)
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))

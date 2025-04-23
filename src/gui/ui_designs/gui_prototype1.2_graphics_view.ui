@@ -320,7 +320,7 @@
      <string> Enter scale bar</string>
     </property>
    </widget>
-   <widget class="QComboBox" name="comboBox">
+   <widget class="QComboBox" name="unit_checkbox">
     <property name="geometry">
      <rect>
       <x>160</x>

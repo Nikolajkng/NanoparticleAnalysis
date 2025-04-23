@@ -47,9 +47,9 @@ class request_handler:
         annotated_image_pil = Image.fromarray(annotated_image)
         table_data = analyzer.format_table_data(stats, scale_info, particle_count)
         analyzer.write_stats_to_txt(stats, scale_info, particle_count)
-        histogram_plot = analyzer.create_histogram(stats, scale_info) # Tilføj batch regulering (steps)
+        histogram_image = analyzer.create_histogram(stats, scale_info) 
         
-        return segmented_image_2d, annotated_image_pil, table_data, histogram_plot
+        return segmented_image_2d, annotated_image_pil, table_data, histogram_image
     
     def process_request_load_model(self, model_path):
         self.unet.load_model(model_path)
