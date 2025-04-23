@@ -11,7 +11,6 @@ class SegmentationAnalyzer():
         num_labels, labels, area_stats, centroids= cv2.connectedComponentsWithStats(image)
         return num_labels, labels, area_stats, centroids
     
-  
     def save_histogram_as_image(self, fig):
         hist_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "histogram", "diameter_histogram.png")
         os.makedirs(os.path.dirname(hist_image_path), exist_ok=True)
@@ -34,7 +33,9 @@ class SegmentationAnalyzer():
             ax.set_xlabel("Diameter (scaled units)")
             ax.set_ylabel("Frequency")
             ax.legend()
-            return self.save_histogram_as_image(fig)
+            
+            self.save_histogram_as_image(fig)
+            return fig           
         except Exception as e:
             print("Error in creating histogram: ", e)
             return None
