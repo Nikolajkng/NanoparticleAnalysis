@@ -56,7 +56,9 @@ class request_handler:
         annotated_image_pil = Image.fromarray(annotated_image)
         table_data = analyzer.format_table_data(stats, scale_info, particle_count)
         analyzer.write_stats_to_txt(stats, scale_info, particle_count)
-        histogram = analyzer.create_histogram(stats, scale_info)
+        # histogram = analyzer.create_histogram(stats, scale_info)
+        analyzer.create_histogram(stats, scale_info)
+        
         return segmented_image_2d, annotated_image_pil, table_data
     
     def process_request_load_model(self, model_path):

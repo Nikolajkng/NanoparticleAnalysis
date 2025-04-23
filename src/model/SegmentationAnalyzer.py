@@ -2,7 +2,7 @@ import os
 import cv2
 import numpy as np
 import csv
-
+import matplotlib.pyplot as plt
 from shared.ScaleInfo import ScaleInfo
 class SegmentationAnalyzer():
 
@@ -17,14 +17,17 @@ class SegmentationAnalyzer():
                 "Area": scaled_areas,
                 "Diameter": scaled_diameters
             }
-            return histogram_data
+            
+            plt.hist(histogram_data["Area"], bins=30, label="Area")
+            
         except Exception as e:
             print("Error in creating histogram: ", e)
             return None
     
     def write_stats_to_txt(self, stats, scale_info, particle_count):
         try:
-            scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
+            if(scale_info is not None):
+                scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
 
             base_dir = os.path.dirname(__file__)
             txtfile = os.path.join(base_dir, "..", "data", "statistics", "statistics.txt")
@@ -101,7 +104,7 @@ class SegmentationAnalyzer():
     def __get_pixel_areas(self, stats: np.ndarray):
         return stats[1:, cv2.CC_STAT_AREA] 
     
-    def _get_scaled_meassurements(self, scale_info: ScaleInfo, stats: np.ndarray):
+    def _get_scaled_meassurements(self, stats: np.ndarray, scale_info: ScaleInfo):
         scale_factor = scale_info.real_scale_length / scale_info.image_width if scale_info else 1
         scaled_areas = self.__get_pixel_areas(stats) * scale_factor
         scaled_diameters = self.__get_diameters(stats) * scale_factor
@@ -115,6 +118,8 @@ class SegmentationAnalyzer():
                 "Diameter": [0, 0, 0, 0]
             }
             
+        if scale_info is None:
+            scale_info = ScaleInfo(0, 0, 1, 1)
         scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
         
         area_mean = np.mean(scaled_areas).round(2)

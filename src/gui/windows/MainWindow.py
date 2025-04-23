@@ -400,14 +400,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         dialog_center = dialog_geometry.center()
         file_dialog.move(screen_center - dialog_center)
         
-        if self.csv_file is None: 
-            return  
-        
-        if not self.csv_file.lower().endswith(".csv"):
-            self.csv_file += ".csv"
+        if not file_path: 
+            return
+
+        if not file_path.lower().endswith(".csv"):
+            file_path += ".csv"
+
 
         try:
-            with open(self.csv_file, mode='w', newline='', encoding='utf-8') as file:
+            with open(file_path, mode='w', newline='', encoding='utf-8') as file:
                 writer = csv.writer(file)
 
                 headers = []
