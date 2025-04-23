@@ -221,14 +221,17 @@
       <verstretch>255</verstretch>
      </sizepolicy>
     </property>
-    <property name="currentIndex">
-     <number>1</number>
+    <property name="focusPolicy">
+     <enum>Qt::NoFocus</enum>
     </property>
-    <widget class="QWidget" name="tab3">
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="tab1">
      <attribute name="title">
       <string>Labeled</string>
      </attribute>
-     <widget class="QGraphicsView" name="plot3">
+     <widget class="QGraphicsView" name="plot_segmentation">
       <property name="geometry">
        <rect>
         <x>0</x>
@@ -252,7 +255,7 @@
      <attribute name="title">
       <string>Graph</string>
      </attribute>
-     <widget class="QGraphicsView" name="plot2">
+     <widget class="QGraphicsView" name="plot_graph">
       <property name="geometry">
        <rect>
         <x>0</x>

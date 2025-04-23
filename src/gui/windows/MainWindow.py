@@ -66,10 +66,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.training_loss_values = []
         self.validation_loss_values = []
 
-        self.plot2_scene = QGraphicsScene(self)
-        self.plot2.setScene(self.plot2_scene)
-        self.plot3_scene = QGraphicsScene(self)
-        self.plot3.setScene(self.plot3_scene)
+        self.plot_segmentation_scene = QGraphicsScene(self)
+        self.plot_segmentation.setScene(self.plot_segmentation_scene)
+        self.plot_graph_scene = QGraphicsScene(self)
+        self.plot_graph.setScene(self.plot_graph_scene)
+
+
 
         # Other connections
         self.action_train_model.triggered.connect(self.on_train_model_clicked)
@@ -306,8 +308,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         image_temp = ImageQt(image_to_display)
         pixmap = QPixmap.fromImage(image_temp)
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
-        self.plot3_scene.clear()
-        self.plot3_scene.addItem(pixmap_item)
+        self.plot_segmentation_scene.clear()
+        self.plot_segmentation_scene.addItem(pixmap_item)
 
     def on_train_model_clicked(self):
         result = confirmTrainingMessageBox(self, "Training a new model may take a while, do you want to continue?")
