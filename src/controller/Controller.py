@@ -15,6 +15,7 @@ class Controller():
             Command.TEST_MODEL: self.request_handler.process_request_test_model,
             Command.GET_DM_IMAGE: self.request_handler.process_request_get_dm_image,
             Command.SEGMENT_FOLDER: self.request_handler.process_request_segment_folder,
+            Command.LOAD_IMAGE: self.request_handler.process_request_load_image,
             # Command.ANALYZE: self.request_handler.analyze_segmentation,
             # Command.EXPORT: self.request_handler.export_results
         }

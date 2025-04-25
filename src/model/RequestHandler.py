@@ -8,8 +8,7 @@ from model.ModelEvaluator import ModelEvaluator
 from model.dmFileReader import dmFileReader
 from shared.ScaleInfo import ScaleInfo
 from shared.ModelConfig import ModelConfig
-import time
-
+from shared.ParticleImage import ParticleImage
 class request_handler:
     def __init__(self, unet):
         self.unet = unet
@@ -96,3 +95,7 @@ class request_handler:
             segmented_image_pil.save(os.path.join(output_folder, f"segmented_{filename}.png"))
             annotated_image_pil.save(os.path.join(output_folder, f"annotated_{filename}.png"))
             
+    def process_request_load_image(self, image_path):
+        image = ParticleImage(image_path)
+        image.file_info = image.get_file_info(image_path)
+        return image

@@ -27,6 +27,7 @@ from PyQt5.QtGui import QIntValidator
 from gui.windows.MessageBoxes import *
 from model.PlottingTools import plot_loss
 from shared.IOFunctions import is_dm_format, is_tiff_format
+from shared.ParticleImage import ParticleImage
 import tifffile
 from PyQt5.QtWidgets import QVBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -262,7 +263,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         self.image_path = file_path
         if file_path: 
-            pixmap = self.load_pixmap(file_path)
+            image = self.controller.process_command(Command.LOAD_IMAGE, file_path)
+            self.input_image_pixel_width = image.file_info.pixel_width
+            self.input_image_pixel_unit = image.file_info.unit
+
+            self.input_image_real_width = float(self.input_image_pixel_width*image.pil_image.width)
+            pixmap = self.load_pixmap(image)
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.clear()
             self.graphicsView_scene.addItem(pixmap_item)
@@ -271,41 +277,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             image_height = str(pixmap.height())
             self.display_image_metadata_overlay(file_path, image_width, image_height)
 
-    def load_pixmap(self, file_path):
-        if is_dm_format(file_path):
-            size_info, pil_image = self.controller.process_command(Command.GET_DM_IMAGE, file_path)
-            pixel_size, pixel_unit = size_info
-            self.image = pil_image
-            if self.image.width > 256 or self.image.height > 256:
+    def load_pixmap(self, image: ParticleImage):
+        self.image = image.pil_image
+
+        if self.image.width > 256 or self.image.height > 256:
                 self.image.thumbnail((1024,1024))
-            self.input_image_real_width = float(pixel_size[1]*pil_image.width)
-            self.input_image_pixel_width = pixel_size[1]
-            self.input_image_pixel_unit = pixel_unit[1]
-        else:
-            self.image = Image.open(file_path)
-            if self.image.width > 256 or self.image.height > 256:
-                self.image.thumbnail((1024,1024))
-            if is_tiff_format(file_path):
-                self.input_image_pixel_width = self.extract_pixel_size_from_tiff_file(file_path)
-                if self.input_image_pixel_width:
-                    self.input_image_real_width = float(self.input_image_pixel_width*self.image.width)
 
         qimage = ImageQt(self.image)
         return QPixmap.fromImage(qimage) 
 
-    def extract_pixel_size_from_tiff_file(self, file_path):
-        try:
-            with tifffile.TiffFile(file_path) as tif:
-                    tags = tif.pages[0].tags
-                    tvips = tags.get('TVIPS') # Can only extract pixel size if file is from TVIPS
-                    if tvips:
-                        pixel_size_x = tvips.value['PixelSizeX']
-                        #pixel_size_y = tvips.value['PixelSizeY']
-                        return pixel_size_x
-                    return None
-        except (tifffile.TiffFileError, TypeError):
-            return None
-    
     def on_test_model_clicked(self):
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")
         mask_folder_path = QFileDialog.getExistingDirectory(None, "Select test masks folder", "")

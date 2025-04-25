@@ -11,3 +11,4 @@ class Command(Enum):
     TEST_MODEL = auto()
     GET_DM_IMAGE = auto()
     SEGMENT_FOLDER = auto()
+    LOAD_IMAGE = auto()

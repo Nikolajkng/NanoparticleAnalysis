@@ -18,12 +18,9 @@ class dmFileReader():
             normalized_image = self.set_min_and_max(image_data, low_limit, high_limit)
             pil_image = Image.fromarray(normalized_image).convert('L')
 
-            pixel_unit = file['pixelUnit']
-            pixel_size = file['pixelSize']
-
-            print(f"{pixel_size[0]*height} {pixel_unit[0]}, {pixel_size[1]*width} {pixel_unit[1]}")
             
-            return (pixel_size, pixel_unit), pil_image
+            
+            return pil_image
     
     def get_tensor_from_dm_file(self, file_path):
         with dm.fileDM(file_path) as dmFile1: 
@@ -53,3 +50,11 @@ class dmFileReader():
         scaled_image = (clipped_image - min_value) / (max_value - min_value) * 255
 
         return scaled_image.astype("uint8")
+    
+    def get_pixel_size(self, file_path):
+        with dm.fileDM(file_path) as dmFile1: 
+            file = dmFile1.getDataset(0)
+            pixel_unit = file['pixelUnit']
+            pixel_size = file['pixelSize']
+            return pixel_size, pixel_unit[0]
+        
