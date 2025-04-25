@@ -81,6 +81,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.action_test_model.triggered.connect(self.on_test_model_clicked)
         self.action_open_image.triggered.connect(self.on_open_image_clicked)
         self.actionRun_Segmentation_on_Current_Image.triggered.connect(self.on_segment_image_clicked)
+        self.actionRun_Segmentation_on_folder.triggered.connect(self.on_segment_folder_clicked)
         self.action_load_model.triggered.connect(self.on_load_model_clicked)
         self.actionExport_Segmentation_2.triggered.connect(self.on_export_segmented_clicked)
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
@@ -164,6 +165,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                                self.graphicsView.size().width())
 
         self.scale_info = self.controller.process_command(Command.CALCULATE_REAL_IMAGE_WIDTH, selected_scale_info)
+
+    def on_segment_folder_clicked(self):
+        input_folder_path = QFileDialog.getExistingDirectory(None, "Select an input folder", "")
+        output_folder_path = QFileDialog.getExistingDirectory(None, "Select a folder for the output", "")
+        if input_folder_path and output_folder_path:
+            self.controller.process_command(Command.SEGMENT_FOLDER, input_folder_path, output_folder_path)
+        else:
+            messageBox(self, "Error in uploading directory")
+            return
 
     def on_select_bar_scale_clicked(self):
         if (self.image_path == None):
@@ -258,11 +268,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             size_info, pil_image = self.controller.process_command(Command.GET_DM_IMAGE, file_path)
             pixel_size, pixel_unit = size_info
             self.image = pil_image
+            if self.image.width > 256 or self.image.height > 256:
+                self.image.thumbnail((1024,1024))
             self.input_image_real_width = float(pixel_size[1]*pil_image.width)
             self.input_image_pixel_width = pixel_size[1]
             self.input_image_pixel_unit = pixel_unit[1]
         else:
             self.image = Image.open(file_path)
+            if self.image.width > 256 or self.image.height > 256:
+                self.image.thumbnail((1024,1024))
             if is_tiff_format(file_path):
                 self.input_image_pixel_width = self.extract_pixel_size_from_tiff_file(file_path)
                 if self.input_image_pixel_width:
@@ -285,7 +299,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return None
     
     def on_test_model_clicked(self):
-        
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")
         mask_folder_path = QFileDialog.getExistingDirectory(None, "Select test masks folder", "")
 
@@ -338,9 +351,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             image_to_display = self.annotated_image
         else:
             image_to_display = self.segmented_image
-
-        if isinstance(image_to_display, np.ndarray): 
-            image_to_display = Image.fromarray(image_to_display)
             
         image_temp = ImageQt(image_to_display)
         pixmap = QPixmap.fromImage(image_temp)

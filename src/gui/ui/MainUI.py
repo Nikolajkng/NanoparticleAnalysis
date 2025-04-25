@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'gui_prototype1.2_graphics_view.ui'
+# Form implementation generated from reading ui file '.\gui_prototype1.2_graphics_view.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -205,7 +205,7 @@ class Ui_MainWindow(object):
         self.input_image_metadata.setObjectName("input_image_metadata")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 24))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 21))
         self.menubar.setObjectName("menubar")
         self.menu_file = QtWidgets.QMenu(self.menubar)
         self.menu_file.setObjectName("menu_file")
@@ -245,6 +245,8 @@ class Ui_MainWindow(object):
         self.action_test_model.setObjectName("action_test_model")
         self.action_load_model = QtWidgets.QAction(MainWindow)
         self.action_load_model.setObjectName("action_load_model")
+        self.actionRun_Segmentation_on_folder = QtWidgets.QAction(MainWindow)
+        self.actionRun_Segmentation_on_folder.setObjectName("actionRun_Segmentation_on_folder")
         self.menu_file.addAction(self.action_open_image)
         self.menu_model.addAction(self.action_load_model)
         self.menu_model.addAction(self.action_train_model)
@@ -253,6 +255,7 @@ class Ui_MainWindow(object):
         self.menuTools.addAction(self.actionExport_Segmentation_2)
         self.menuTools.addAction(self.actionExport_Data_as_csv)
         self.menuRun.addAction(self.actionRun_Segmentation_on_Current_Image)
+        self.menuRun.addAction(self.actionRun_Segmentation_on_folder)
         self.menubar.addAction(self.menu_file.menuAction())
         self.menubar.addAction(self.menu_edit.menuAction())
         self.menubar.addAction(self.menuRun.menuAction())
@@ -312,3 +315,4 @@ class Ui_MainWindow(object):
         self.actionRun_Segmentation_on_Current_Image.setText(_translate("MainWindow", "Run Segmentation on Current Image"))
         self.action_test_model.setText(_translate("MainWindow", "Test Model"))
         self.action_load_model.setText(_translate("MainWindow", "Load Model"))
+        self.actionRun_Segmentation_on_folder.setText(_translate("MainWindow", "Run Segmentation on folder"))

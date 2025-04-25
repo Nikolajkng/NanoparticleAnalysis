@@ -13,7 +13,8 @@ class Controller():
             Command.LOAD_MODEL: self.request_handler.process_request_load_model,
             Command.CALCULATE_REAL_IMAGE_WIDTH: self.request_handler.process_request_calculate_image_width,
             Command.TEST_MODEL: self.request_handler.process_request_test_model,
-            Command.GET_DM_IMAGE: self.request_handler.process_request_get_dm_image
+            Command.GET_DM_IMAGE: self.request_handler.process_request_get_dm_image,
+            Command.SEGMENT_FOLDER: self.request_handler.process_request_segment_folder,
             # Command.ANALYZE: self.request_handler.analyze_segmentation,
             # Command.EXPORT: self.request_handler.export_results
         }

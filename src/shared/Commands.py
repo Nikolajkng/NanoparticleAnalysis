@@ -10,3 +10,4 @@ class Command(Enum):
     CALCULATE_REAL_IMAGE_WIDTH = auto()
     TEST_MODEL = auto()
     GET_DM_IMAGE = auto()
+    SEGMENT_FOLDER = auto()
