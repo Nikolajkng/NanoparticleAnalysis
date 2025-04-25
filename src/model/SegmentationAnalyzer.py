@@ -55,29 +55,32 @@ class SegmentationAnalyzer():
     def write_stats_to_txt(self, stats, scale_info, particle_count, unit):
         try:
             scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
-            txtfile = os.path.join(os.path.dirname(__file__), "..", "..", "data", "statistics", "statistics.txt")
-            os.makedirs(os.path.dirname(txtfile), exist_ok=True)
+            txtfile_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "statistics", "statistics.txt")
+            os.makedirs(os.path.dirname(txtfile_path), exist_ok=True)
             
-            with open(txtfile, "w", newline="", encoding="utf-8") as txtfile:          
-                writer = csv.writer(txtfile, delimiter="\t")    
-                writer.writerow(["##############################"])
-                writer.writerow(["Date: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
-                writer.writerow(["##############################"])
-                writer.writerow(["Particle No.", "Area ["+unit+"²"+"]", "Diameter ["+unit+"]"])
-                for label_idx in range(1, particle_count):
-                    label = str(label_idx)
-                    area = scaled_areas[label_idx-1]
-                    diameter = scaled_diameters[label_idx-1]
-                    writer.writerow([label, f"{area:.6f}", f"{diameter:.6f}"])
-                writer.writerow(["_______________________________"])
-                writer.writerow(["Total count" ,"Mean Area ["+unit+"²"+"]", "Mean Diameter ["+unit+"]", 
-                                 "Max Area ["+unit+"²"+"]", "Max Diameter ["+unit+"]", 
-                                 "Min Area ["+unit+"²"+"]", "Min Diameter ["+unit+"]"])
-                writer.writerow([particle_count, f"{np.mean(scaled_areas):.6f}", f"{np.mean(scaled_diameters):.6f}",
-                                f"{np.max(scaled_areas):.6f}", f"{np.max(scaled_diameters):.6f}",
-                                f"{np.min(scaled_areas):.6f}", f"{np.min(scaled_diameters):.6f}"])
+            with open(txtfile_path, "w", encoding="utf-8") as txtfile:
+                txtfile.write("##############################\n")
+                txtfile.write("Date: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
+                txtfile.write("##############################\n")
+                txtfile.write(f"{'Particle No.':<12}{'Area [' + unit + '²]':>20}{'Diameter [' + unit + ']':>20}\n")
+                
+                for label_idx in range(1, particle_count + 1):
+                    area = scaled_areas[label_idx - 1]
+                    diameter = scaled_diameters[label_idx - 1]
+                    txtfile.write(f"{label_idx:<12}{area:>20.6f}{diameter:>20.6f}\n")
+                
+                txtfile.write("_______________________________\n")
+                txtfile.write(f"{'Total count':<12}{'Mean Area [' + unit + '²]':>20}{'Mean Diameter [' + unit + ']':>20}"
+                            f"{'Max Area [' + unit + '²]':>20}{'Max Diameter [' + unit + ']':>20}"
+                            f"{'Min Area [' + unit + '²]':>20}{'Min Diameter [' + unit + ']':>20}\n")
+                txtfile.write(f"{particle_count:<12}"
+                            f"{np.mean(scaled_areas):>20.6f}{np.mean(scaled_diameters):>20.6f}"
+                            f"{np.max(scaled_areas):>20.6f}{np.max(scaled_diameters):>20.6f}"
+                            f"{np.min(scaled_areas):>20.6f}{np.min(scaled_diameters):>20.6f}\n")
+
         except Exception as e:
             print("Error in writing statistics to txt file: ", e)
+
     
     def add_annotations(self, image, centroids, min_distance=10, max_offset_attempts=5):
         try:
