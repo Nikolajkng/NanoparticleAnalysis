@@ -167,7 +167,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
 
     def on_calculate_input_image_size_clicked(self):
-        selected_scale_info = ScaleInfo(self.scale_start_x, 
+        selected_scale_info = ScaleInfo(
+                               self.scale_start_x, 
                                self.scale_end_x, 
                                self.barScaleInputField.text(), 
                                self.graphicsView.size().width())
