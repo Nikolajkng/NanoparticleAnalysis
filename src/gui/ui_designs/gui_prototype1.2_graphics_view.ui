@@ -413,9 +413,9 @@
    <widget class="QPushButton" name="fullscreen_image_button">
     <property name="geometry">
      <rect>
-      <x>60</x>
+      <x>50</x>
       <y>480</y>
-      <width>111</width>
+      <width>141</width>
       <height>31</height>
      </rect>
     </property>
@@ -455,6 +455,25 @@
      <string/>
     </property>
    </widget>
+   <widget class="QPushButton" name="setScaleButton">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>440</y>
+      <width>141</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="text">
+     <string>Set Scale</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -462,7 +481,7 @@
      <x>0</x>
      <y>0</y>
      <width>1326</width>
-     <height>21</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
