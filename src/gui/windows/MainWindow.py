@@ -94,9 +94,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     
     def on_unit_checkbox_changed(self, index):
         if index == 1:
-            self.selected_unit = " μm"
+            self.selected_unit = "μm"
         else:
-            self.selected_unit = " nm"
+            self.selected_unit = "nm"
             
         
     def toggle_count_overlay(self):

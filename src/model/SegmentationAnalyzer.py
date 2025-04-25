@@ -20,7 +20,7 @@ class SegmentationAnalyzer():
         histogram_image = Image.open(hist_image_path)
         return histogram_image
     
-    def create_histogram(self, stats, scale_info):
+    def create_histogram(self, stats, scale_info, unit):
         try:
             scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
             histogram_data = {
@@ -40,9 +40,9 @@ class SegmentationAnalyzer():
                 edgecolor='black'
                 )
             ax.set_title("Particle Diameter Histogram")
-            ax.set_xlabel("Diameter (scaled units)")
+            ax.set_xlabel("Diameter"+" ["+unit+"]")
             ax.set_ylabel("Frequency")
-            ax.legend(title=f"Rice-rule: {rice_rule_steps} steps")
+            ax.legend(title=f"Steps: {rice_rule_steps} (Rice-rule)")
             
             self.save_histogram_as_image(fig)
             return fig           
@@ -163,7 +163,7 @@ class SegmentationAnalyzer():
         diameter_std = np.std(scaled_diameters).round(2)
 
 
-
+        unit = " "+unit
         table_data = {
         "Count":    [particle_count, particle_count, particle_count, particle_count],  
         "Area":    [str(area_mean)+unit+"²", str(area_min)+unit+"²", str(area_max)+unit+"²", str(area_std)+unit+"²"],
