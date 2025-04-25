@@ -47,7 +47,7 @@ class request_handler:
         annotated_image_pil = Image.fromarray(annotated_image)
         
         table_data = analyzer.format_table_data(stats, scale_info, particle_count, unit)
-        analyzer.write_stats_to_txt(stats, scale_info, particle_count)
+        analyzer.write_stats_to_txt(stats, scale_info, particle_count, unit)
         histogram_fig = analyzer.create_histogram(stats, scale_info) 
         
         return segmented_image_2d, annotated_image_pil, table_data, histogram_fig

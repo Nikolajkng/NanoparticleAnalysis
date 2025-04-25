@@ -5,6 +5,7 @@ import csv
 import matplotlib.pyplot as plt
 from shared.ScaleInfo import ScaleInfo
 from PIL import Image
+from datetime import datetime
 class SegmentationAnalyzer():
 
     def get_connected_components(self, image):
@@ -49,7 +50,7 @@ class SegmentationAnalyzer():
             print("Error in creating histogram: ", e)
             return None
     
-    def write_stats_to_txt(self, stats, scale_info, particle_count):
+    def write_stats_to_txt(self, stats, scale_info, particle_count, unit):
         try:
             scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
             txtfile = os.path.join(os.path.dirname(__file__), "..", "..", "data", "statistics", "statistics.txt")
@@ -57,14 +58,19 @@ class SegmentationAnalyzer():
             
             with open(txtfile, "w", newline="", encoding="utf-8") as txtfile:          
                 writer = csv.writer(txtfile, delimiter="\t")    
-                writer.writerow(["No.", "Area", "Diameter"])
+                writer.writerow(["##############################"])
+                writer.writerow(["Date: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+                writer.writerow(["##############################"])
+                writer.writerow(["Particle No.", "Area ["+unit+"²"+"]", "Diameter ["+unit+"]"])
                 for label_idx in range(1, particle_count):
                     label = str(label_idx)
                     area = scaled_areas[label_idx-1]
                     diameter = scaled_diameters[label_idx-1]
                     writer.writerow([label, f"{area:.6f}", f"{diameter:.6f}"])
-                writer.writerow("#" * 20)
-                writer.writerow(["Total count" ,"Mean Area", "Mean Diameter", "Max Area", "Max Diameter", "Min Area", "Min Diameter"])
+                writer.writerow(["_______________________________"])
+                writer.writerow(["Total count" ,"Mean Area ["+unit+"²"+"]", "Mean Diameter ["+unit+"]", 
+                                 "Max Area ["+unit+"²"+"]", "Max Diameter ["+unit+"]", 
+                                 "Min Area ["+unit+"²"+"]", "Min Diameter ["+unit+"]"])
                 writer.writerow([particle_count, f"{np.mean(scaled_areas):.6f}", f"{np.mean(scaled_diameters):.6f}",
                                 f"{np.max(scaled_areas):.6f}", f"{np.max(scaled_diameters):.6f}",
                                 f"{np.min(scaled_areas):.6f}", f"{np.min(scaled_diameters):.6f}"])
@@ -159,7 +165,7 @@ class SegmentationAnalyzer():
 
 
         table_data = {
-        "Count":    [str(particle_count)+unit, str(particle_count)+unit, str(particle_count)+unit, str(particle_count)+unit],  
+        "Count":    [particle_count, particle_count, particle_count, particle_count],  
         "Area":    [str(area_mean)+unit+"²", str(area_min)+unit+"²", str(area_max)+unit+"²", str(area_std)+unit+"²"],
         "Diameter":    [str(diameter_mean)+unit, str(diameter_min)+unit, str(diameter_max)+unit, str(diameter_std)+unit]
         }
