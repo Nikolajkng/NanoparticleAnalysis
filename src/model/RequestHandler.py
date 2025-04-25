@@ -45,12 +45,13 @@ class request_handler:
         particle_count = num_labels - 1
         annotated_image = analyzer.add_annotations(segmented_image_2d, centroids)
         annotated_image_pil = Image.fromarray(annotated_image)
-        
+        segmented_image_pil = Image.fromarray(segmented_image_2d)
+
         table_data = analyzer.format_table_data(stats, scale_info, particle_count, unit)
         analyzer.write_stats_to_txt(stats, scale_info, particle_count, unit)
         histogram_fig = analyzer.create_histogram(stats, scale_info, unit) 
         
-        return segmented_image_2d, annotated_image_pil, table_data, histogram_fig
+        return segmented_image_pil, annotated_image_pil, table_data, histogram_fig
     
     def process_request_load_model(self, model_path):
         self.unet.load_model(model_path)
@@ -79,3 +80,19 @@ class request_handler:
         reader = dmFileReader()
         size_info, image = reader.get_image_from_dm_file(file_path)
         return size_info, image
+    
+    def process_request_segment_folder(self, input_folder, output_folder):
+        
+        for filename in os.listdir(input_folder):
+            file_path = os.path.join(input_folder, filename)
+            size_info = None
+            if filename.endswith(".dm3") or filename.endswith(".dm4"):
+                size_info, _ = self.process_request_get_dm_image(file_path)
+            elif filename.endswith(('.tif', '.png')):
+                size_info = ScaleInfo(1, 1, 1, 1)
+            segmented_image_pil, annotated_image_pil, table_data, histogram_fig = self.process_request_segment(file_path, size_info, "um")
+                
+            # Save the segmented image and annotated image
+            segmented_image_pil.save(os.path.join(output_folder, f"segmented_{filename}.png"))
+            annotated_image_pil.save(os.path.join(output_folder, f"annotated_{filename}.png"))
+            
