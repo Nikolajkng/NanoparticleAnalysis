@@ -13,6 +13,8 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, 
 from functools import partial 
 from gui.windows.SelectScaleWindow import SelectScaleWindow
 from gui.windows.TrainModelWindow import TrainModelWindow
+from gui.windows.SetScaleWindow import SetScaleWindow
+
 import numpy as np
 from shared.ScaleInfo import ScaleInfo
 from shared.ModelConfig import ModelConfig
@@ -28,6 +30,7 @@ from shared.IOFunctions import is_dm_format, is_tiff_format
 import tifffile
 from PyQt5.QtWidgets import QVBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
@@ -91,6 +94,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.barScaleInputField.setValidator(self.validator)
         self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
         self.unit_checkbox.currentIndexChanged.connect(self.on_unit_checkbox_changed)
+        self.setScaleButton.clicked.connect(self.open_set_scale_window) 
+    
+    def open_set_scale_window(self):
+        self.set_scale_window = SetScaleWindow()
+        self.set_scale_window.show()
     
     def display_image_metadata_overlay(self, file_path:str, image_width: str, image_height: str):
         file_name = os.path.basename(file_path)

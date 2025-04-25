@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\gui_prototype1.2_graphics_view.ui'
+# Form implementation generated from reading ui file 'gui_prototype1.2_graphics_view.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -189,7 +189,7 @@ class Ui_MainWindow(object):
         self.label.setFont(font)
         self.label.setObjectName("label")
         self.fullscreen_image_button = QtWidgets.QPushButton(self.centralwidget)
-        self.fullscreen_image_button.setGeometry(QtCore.QRect(60, 480, 111, 31))
+        self.fullscreen_image_button.setGeometry(QtCore.QRect(50, 480, 141, 31))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -203,9 +203,17 @@ class Ui_MainWindow(object):
         self.input_image_metadata.setGeometry(QtCore.QRect(240, 10, 501, 19))
         self.input_image_metadata.setText("")
         self.input_image_metadata.setObjectName("input_image_metadata")
+        self.setScaleButton = QtWidgets.QPushButton(self.centralwidget)
+        self.setScaleButton.setGeometry(QtCore.QRect(50, 440, 141, 31))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.setScaleButton.sizePolicy().hasHeightForWidth())
+        self.setScaleButton.setSizePolicy(sizePolicy)
+        self.setScaleButton.setObjectName("setScaleButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 24))
         self.menubar.setObjectName("menubar")
         self.menu_file = QtWidgets.QMenu(self.menubar)
         self.menu_file.setObjectName("menu_file")
@@ -300,6 +308,7 @@ class Ui_MainWindow(object):
         self.label.setText(_translate("MainWindow", "Analyze"))
         self.fullscreen_image_button.setText(_translate("MainWindow", "Fullscreen Image"))
         self.radioButton.setText(_translate("MainWindow", "Toggle count"))
+        self.setScaleButton.setText(_translate("MainWindow", "Set Scale"))
         self.menu_file.setTitle(_translate("MainWindow", "File"))
         self.menu_edit.setTitle(_translate("MainWindow", "Edit"))
         self.menu_model.setTitle(_translate("MainWindow", "Model"))
