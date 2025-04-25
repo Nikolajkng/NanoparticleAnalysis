@@ -56,6 +56,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.scale_info = None
         self.input_image_pixel_width = 0
         self.input_image_pixel_unit = "nm"
+        self.selected_unit = " nm"   
         self.training_state = "not done"
         self.validator = QIntValidator(0, 99999999, self)  
         self.standard_model_config = ModelConfig(images_path="data/images",
@@ -89,7 +90,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.barScaleInputField.setValidator(self.validator)
         self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
-
+        self.unit_checkbox.currentIndexChanged.connect(self.on_unit_checkbox_changed) 
+    
+    def on_unit_checkbox_changed(self, index):
+        if index == 1:
+            self.selected_unit = " μm"
+        else:
+            self.selected_unit = " nm"
+            
+        
     def toggle_count_overlay(self):
             print("toggling")
             if self.segmented_image is None or self.annotated_image is None:
@@ -293,7 +302,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         
         self.on_calculate_input_image_size_clicked()
-        self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info)
+        self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info, self.selected_unit)
         self.set_table_data(table_data)
         self.update_segmented_image_view()
         self.display_histogram(histogram_fig)

@@ -134,7 +134,7 @@ class SegmentationAnalyzer():
         scaled_diameters = self.__get_diameters(stats) * scale_factor
         return scaled_areas, scaled_diameters
 
-    def format_table_data(self, stats: np.ndarray, scale_info: ScaleInfo, particle_count: int):
+    def format_table_data(self, stats: np.ndarray, scale_info: ScaleInfo, particle_count: int, unit: str):
         if particle_count == 0:
             return {
                 "Count":    [0, 0, 0, 0],  
@@ -156,10 +156,12 @@ class SegmentationAnalyzer():
         diameter_min = np.min(scaled_diameters).round(2)
         diameter_std = np.std(scaled_diameters).round(2)
 
+
+
         table_data = {
-        "Count":    [particle_count, particle_count, particle_count, particle_count],  
-        "Area":    [area_mean, area_min, area_max, area_std],  
-        "Diameter":    [diameter_mean, diameter_min, diameter_max, diameter_std] 
+        "Count":    [str(particle_count)+unit, str(particle_count)+unit, str(particle_count)+unit, str(particle_count)+unit],  
+        "Area":    [str(area_mean)+unit+"²", str(area_min)+unit+"²", str(area_max)+unit+"²", str(area_std)+unit+"²"],
+        "Diameter":    [str(diameter_mean)+unit, str(diameter_min)+unit, str(diameter_max)+unit, str(diameter_std)+unit]
         }
 
         return table_data
