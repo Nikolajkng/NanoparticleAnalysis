@@ -22,7 +22,7 @@ class request_handler:
         return iou, pixel_accuracy
 
 
-    def process_request_segment(self, image_path, scale_info: ScaleInfo):
+    def process_request_segment(self, image_path, scale_info: ScaleInfo, unit: str):
         tensor = load_image_as_tensor(image_path)
         stride_length = self.unet.preffered_input_size[0]*4//5
         tensor_mirror_filled = mirror_fill(tensor, self.unet.preffered_input_size, (stride_length,stride_length))
@@ -45,9 +45,10 @@ class request_handler:
         particle_count = num_labels - 1
         annotated_image = analyzer.add_annotations(segmented_image_2d, centroids)
         annotated_image_pil = Image.fromarray(annotated_image)
-        table_data = analyzer.format_table_data(stats, scale_info, particle_count)
-        analyzer.write_stats_to_txt(stats, scale_info, particle_count)
-        histogram_fig = analyzer.create_histogram(stats, scale_info) 
+        
+        table_data = analyzer.format_table_data(stats, scale_info, particle_count, unit)
+        analyzer.write_stats_to_txt(stats, scale_info, particle_count, unit)
+        histogram_fig = analyzer.create_histogram(stats, scale_info, unit) 
         
         return segmented_image_2d, annotated_image_pil, table_data, histogram_fig
     
