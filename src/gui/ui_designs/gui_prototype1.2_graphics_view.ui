@@ -442,6 +442,19 @@
      <string>Toggle count</string>
     </property>
    </widget>
+   <widget class="QLabel" name="input_image_metadata">
+    <property name="geometry">
+     <rect>
+      <x>240</x>
+      <y>10</y>
+      <width>501</width>
+      <height>19</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

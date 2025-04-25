@@ -21,13 +21,12 @@ from shared.ModelTrainingStats import ModelTrainingStats
 import matplotlib.pyplot as plt
 from PIL import Image
 from PIL.ImageQt import ImageQt
-from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtGui import QIntValidator
 from gui.windows.MessageBoxes import *
 from model.PlottingTools import plot_loss
 from shared.IOFunctions import is_dm_format, is_tiff_format
 import tifffile
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QVBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 class MainWindow(QMainWindow, Ui_MainWindow):
@@ -90,7 +89,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.barScaleInputField.setValidator(self.validator)
         self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
-        self.unit_checkbox.currentIndexChanged.connect(self.on_unit_checkbox_changed) 
+        self.unit_checkbox.currentIndexChanged.connect(self.on_unit_checkbox_changed)
+    
+    def display_image_metadata_overlay(self, file_path:str, image_width: str, image_height: str):
+        file_name = os.path.basename(file_path)
+        self.input_image_metadata.setText(file_name + " (" + image_width + "x" + image_height+")")
+        
     
     def on_unit_checkbox_changed(self, index):
         if index == 1:
@@ -234,7 +238,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         file_path, _ = QFileDialog.getOpenFileName(
             self, 
-            "Select a file", 
+            "Select an image file", 
             default_image_path, 
             "Image Files (*.png *.jpg *.jpeg *.tif *.dm3 *.dm4);;All Files (*)")
         
@@ -244,6 +248,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.clear()
             self.graphicsView_scene.addItem(pixmap_item)
+        
+            image_width = str(pixmap.width())
+            image_height = str(pixmap.height())
+            self.display_image_metadata_overlay(file_path, image_width, image_height)
 
     def load_pixmap(self, file_path):
         if is_dm_format(file_path):
@@ -367,7 +375,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         default_models_path = os.path.abspath(os.path.join(os.getcwd(), 'data', 'models'))
         file_path, selected_filter = QFileDialog.getOpenFileName(
             None, 
-            "Select a file", 
+            "Select a model file", 
             default_models_path, 
             "PT Files (*.pt);;All Files (*)"
             )
