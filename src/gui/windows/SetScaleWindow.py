@@ -1,7 +1,6 @@
-from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDialog  
-from shared.ModelConfig import ModelConfig
-from gui.ui.SetScaleUI import Ui_set_scale_window
+
+from src.gui.ui.SetScaleUI import Ui_set_scale_window
 
 
 class SetScaleWindow(QDialog, Ui_set_scale_window):

@@ -1,11 +1,10 @@
-from model.UNet import UNet
 from torch.utils.data import DataLoader
 import numpy as np
 import torch
-from model.DataTools import showTensor
-import cv2
 import matplotlib.pyplot as plt
 import random
+
+from src.model.UNet import UNet
 class ModelEvaluator():
     @staticmethod
     def __get_single_image_iou(prediction: np.ndarray, ground_truth: np.ndarray):

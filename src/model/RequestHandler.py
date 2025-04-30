@@ -1,13 +1,13 @@
 from PIL import Image
 import numpy as np
-from model.DataTools import *
-from model.PlottingTools import *
-from model.CrossValidation import *
-from model.SegmentationAnalyzer import SegmentationAnalyzer
-from model.ModelEvaluator import ModelEvaluator
-from model.dmFileReader import dmFileReader
-from shared.ModelConfig import ModelConfig
-from shared.ParticleImage import ParticleImage
+
+from src.model.DataTools import *
+from src.model.PlottingTools import *
+from src.model.CrossValidation import *
+from src.model.SegmentationAnalyzer import SegmentationAnalyzer
+from src.model.ModelEvaluator import ModelEvaluator
+from src.shared.ModelConfig import ModelConfig
+from src.shared.ParticleImage import ParticleImage
 class request_handler:
     def __init__(self, unet):
         self.unet = unet

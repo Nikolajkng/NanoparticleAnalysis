@@ -1,32 +1,31 @@
-import csv
-import threading
 from PyQt5.QtGui import QPixmap
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QFileDialog, QMainWindow
-
-from gui.ui.MainUI import Ui_MainWindow
-from controller.Controller import Controller
-from shared.Commands import Command
+from PyQt5.QtWidgets import (
+    QFileDialog, QMainWindow, QMessageBox, QApplication, 
+    QGraphicsScene, QGraphicsPixmapItem, QVBoxLayout
+)
 from PIL import ImageQt
 import os
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QFileDialog, QMessageBox, QApplication, QGraphicsScene, QGraphicsPixmapItem
-from functools import partial 
-from gui.windows.SelectScaleWindow import SelectScaleWindow
-from gui.windows.TrainModelWindow import TrainModelWindow
-from gui.windows.SetScaleWindow import SetScaleWindow
-
-import numpy as np
-from shared.ModelConfig import ModelConfig
-from gui.TableData import TableData
-from shared.ModelTrainingStats import ModelTrainingStats
-from PIL import Image
-from PIL.ImageQt import ImageQt
-from gui.windows.MessageBoxes import *
-from model.PlottingTools import plot_loss
-from shared.ParticleImage import ParticleImage
-from PyQt5.QtWidgets import QVBoxLayout
+import csv
+import threading
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from threading import Event
+from functools import partial 
+import numpy as np
+
+from src.gui.ui.MainUI import Ui_MainWindow
+from src.controller.Controller import Controller
+from src.shared.Commands import Command
+from src.gui.windows.TrainModelWindow import TrainModelWindow
+from src.gui.windows.SetScaleWindow import SetScaleWindow
+from src.shared.ModelConfig import ModelConfig
+from src.gui.TableData import TableData
+from src.shared.ModelTrainingStats import ModelTrainingStats
+from PIL import Image
+from PIL.ImageQt import ImageQt
+from src.gui.windows.MessageBoxes import *
+from src.model.PlottingTools import plot_loss
+from src.shared.ParticleImage import ParticleImage
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)

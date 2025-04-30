@@ -4,13 +4,13 @@ import numpy as np
 from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader
 
-from model.SegmentationDataset import SegmentationDataset
-from model.PlottingTools import *
-from model.DataTools import get_dataloaders, get_dataloaders_without_testset
-from model.DataAugmenter import DataAugmenter
-from model.UNet import UNet
-from model.ModelEvaluator import ModelEvaluator
-from shared.ModelConfig import ModelConfig
+from src.model.SegmentationDataset import SegmentationDataset
+from src.model.PlottingTools import *
+from src.model.DataTools import get_dataloaders, get_dataloaders_without_testset
+from src.model.DataAugmenter import DataAugmenter
+from src.model.UNet import UNet
+from src.model.ModelEvaluator import ModelEvaluator
+from src.shared.ModelConfig import ModelConfig
 
 def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None):
     

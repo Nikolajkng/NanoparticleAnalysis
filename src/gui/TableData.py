@@ -1,6 +1,4 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-import numpy as np
-
+from PyQt5 import QtWidgets
 class TableData():
     def __init__(self, data: dict[list[float]]):
         self.data = data

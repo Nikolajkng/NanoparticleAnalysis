@@ -1,13 +1,13 @@
 import os
 import cv2
 import numpy as np
-import csv
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from PIL import Image
 from datetime import datetime
-from shared.FileInfo import FileInfo
+
+from src.shared.FileInfo import FileInfo
 class SegmentationAnalyzer():
 
     def get_connected_components(self, image):

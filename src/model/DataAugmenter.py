@@ -3,7 +3,7 @@ from torchvision.transforms.functional import rotate, hflip
 import numpy as np
 from torch.utils.data import Dataset
 
-from model.SegmentationDataset import SegmentationDataset
+from src.model.SegmentationDataset import SegmentationDataset
 class DataAugmenter():
     def __init__(self):
         return

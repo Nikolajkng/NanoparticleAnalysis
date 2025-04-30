@@ -1,11 +1,12 @@
 import os
-from PyQt5 import QtCore, QtGui, QtWidgets
-from gui.ui.TrainModelUI import Ui_TrainModel
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog, QMainWindow  
-from shared.ModelConfig import ModelConfig
-from shared.ModelTrainingStats import ModelTrainingStats
-from model.PlottingTools import plot_loss
 from threading import Event
+
+from src.gui.ui.TrainModelUI import Ui_TrainModel
+from src.shared.ModelConfig import ModelConfig
+from src.shared.ModelTrainingStats import ModelTrainingStats
+from src.model.PlottingTools import plot_loss
 class TrainModelWindow(QMainWindow, Ui_TrainModel):
     train_model_signal = QtCore.pyqtSignal(ModelConfig, Event)
 

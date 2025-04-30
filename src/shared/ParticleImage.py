@@ -1,9 +1,10 @@
 import os
 from PIL import Image
 import tifffile
-from shared.IOFunctions import is_dm_format, is_tiff_format
-from shared.FileInfo import FileInfo
-from model.dmFileReader import dmFileReader
+
+from src.shared.IOFunctions import is_dm_format, is_tiff_format
+from src.shared.FileInfo import FileInfo
+from src.model.dmFileReader import dmFileReader
 class ParticleImage:
     def __init__(self, image_path):
         self.image_path = image_path

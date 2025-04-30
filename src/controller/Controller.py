@@ -1,6 +1,6 @@
-from shared.Commands import Command
-from model.RequestHandler import request_handler
-from model.UNet import UNet
+from src.shared.Commands import Command
+from src.model.RequestHandler import request_handler
+from src.model.UNet import UNet
 
 class Controller():
     def __init__(self):

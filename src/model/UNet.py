@@ -5,12 +5,13 @@ from torch import Tensor
 from torch.utils.data import DataLoader
 import numpy as np
 from threading import Event
+import os
 
 # Model-related imports
-from model.TensorTools import *
-from model.PlottingTools import *
-from model.CrossValidation import *
-from shared.ModelTrainingStats import ModelTrainingStats
+from src.model.TensorTools import *
+from src.model.PlottingTools import *
+from src.model.CrossValidation import *
+from src.shared.ModelTrainingStats import ModelTrainingStats
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -132,7 +133,7 @@ class UNet(nn.Module):
             print(f'---Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}---')
 
             if epoch_validation_loss < best_loss:
-                self.save_model("data/models/" + model_name)
+                self.save_model("data/models/", model_name)
                 best_loss = epoch_validation_loss
                 no_improvement_epochs = 0
             else:
@@ -170,7 +171,10 @@ class UNet(nn.Module):
 
         return running_loss / len(validation_dataloader)
 
-    def save_model(self, path):
+    def save_model(self, folder_path: str, model_name: str):
+        path = folder_path + model_name
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
         torch.save(self.state_dict(), path)
         
     def load_model(self, path):

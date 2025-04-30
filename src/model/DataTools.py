@@ -7,10 +7,9 @@ from torch import Tensor
 import torchvision.transforms.functional as TF
 import numpy as np
 
-
-from model.DataAugmenter import DataAugmenter
-from model.dmFileReader import dmFileReader
-from shared.IOFunctions import is_dm_format
+from src.model.DataAugmenter import DataAugmenter
+from src.model.dmFileReader import dmFileReader
+from src.shared.IOFunctions import is_dm_format
 
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
