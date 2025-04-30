@@ -22,7 +22,7 @@ class request_handler:
 
 
     def process_request_segment(self, image: ParticleImage):
-        tensor = load_image_as_tensor(image.image_path)
+        tensor = TF.to_tensor(image.pil_image).unsqueeze(0)
         stride_length = self.unet.preffered_input_size[0]*4//5
         tensor_mirror_filled = mirror_fill(tensor, self.unet.preffered_input_size, (stride_length,stride_length))
         patches = extract_slices(tensor_mirror_filled, self.unet.preffered_input_size, (stride_length,stride_length))
