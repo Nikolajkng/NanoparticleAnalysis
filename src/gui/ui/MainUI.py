@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\gui_prototype1.2_graphics_view.ui'
+# Form implementation generated from reading ui file 'gui_prototype1.2_graphics_view.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -188,9 +188,17 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.setScaleButton.sizePolicy().hasHeightForWidth())
         self.setScaleButton.setSizePolicy(sizePolicy)
         self.setScaleButton.setObjectName("setScaleButton")
+        self.runSegmentationBtn = QtWidgets.QPushButton(self.centralwidget)
+        self.runSegmentationBtn.setGeometry(QtCore.QRect(30, 60, 181, 41))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.runSegmentationBtn.sizePolicy().hasHeightForWidth())
+        self.runSegmentationBtn.setSizePolicy(sizePolicy)
+        self.runSegmentationBtn.setObjectName("runSegmentationBtn")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 24))
         self.menubar.setObjectName("menubar")
         self.menu_file = QtWidgets.QMenu(self.menubar)
         self.menu_file.setObjectName("menu_file")
@@ -282,6 +290,7 @@ class Ui_MainWindow(object):
         self.fullscreen_image_button.setText(_translate("MainWindow", "Fullscreen Image"))
         self.radioButton.setText(_translate("MainWindow", "Toggle count"))
         self.setScaleButton.setText(_translate("MainWindow", "Set Scale"))
+        self.runSegmentationBtn.setText(_translate("MainWindow", "Run Segmentation"))
         self.menu_file.setTitle(_translate("MainWindow", "File"))
         self.menu_edit.setTitle(_translate("MainWindow", "Edit"))
         self.menu_model.setTitle(_translate("MainWindow", "Model"))
@@ -295,6 +304,7 @@ class Ui_MainWindow(object):
         self.actionExport_Segmentation_2.setText(_translate("MainWindow", "Export Segmentation"))
         self.actionExport_Data_as_csv.setText(_translate("MainWindow", "Export Data as csv"))
         self.actionRun_Segmentation_on_Current_Image.setText(_translate("MainWindow", "Run Segmentation on Current Image"))
+        self.actionRun_Segmentation_on_Current_Image.setIconText(_translate("MainWindow", "Run Segmentation"))
         self.action_test_model.setText(_translate("MainWindow", "Test Model"))
         self.action_load_model.setText(_translate("MainWindow", "Load Model"))
         self.actionRun_Segmentation_on_folder.setText(_translate("MainWindow", "Run Segmentation on folder"))
