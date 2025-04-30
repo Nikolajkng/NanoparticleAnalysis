@@ -201,7 +201,6 @@ def construct_image_from_patches(patches: np.ndarray, img_size: tuple, stride_si
     return images
 
 
-import torch.nn.functional as F
 def normalizeTensorToPixels(tensor: Tensor) -> Tensor:
     tensor = tensor - tensor.min()
     tensor = tensor / tensor.max()
