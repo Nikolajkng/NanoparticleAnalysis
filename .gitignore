@@ -21,3 +21,14 @@ __pycache__/
 
 # Ignore any copied shared libraries (e.g., MKL binaries copied to root)
 libmkl*.so*
+
+# PyInstaller
+/dist/
+/build/
+/__pycache__/
+/*.spec
+
+# Include compiled binary
+*.exe
+*.app
+my_app

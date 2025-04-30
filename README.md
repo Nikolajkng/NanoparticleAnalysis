@@ -12,6 +12,6 @@ Install pyinstaller with 'pip install pyinstaller'
 
 ## Linux (Ubuntu): 
 0. Navigate to root of project folder
-1. Give build script exec. permission: 'sudo chmod +x build_exec_linux.sh'
+1. Give build script exec. permission: 'sudo chmod +x build_app_mkl.sh'
 2. Run the script 'build_exec_linux.sh'
 3. To run the application, navigate to dist folder and execute: './my_app'
