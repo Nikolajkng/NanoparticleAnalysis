@@ -79,6 +79,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
         self.setScaleButton.clicked.connect(self.open_set_scale_window) 
+        self.runSegmentationBtn.clicked.connect(self.on_segment_image_clicked)
     
     def open_set_scale_window(self):
         self.set_scale_window = SetScaleWindow()
@@ -261,9 +262,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             messageBox(self, "Segmentation failed: No image found")
             return
-        # if(not self.scale_is_selected):
-        #     messageBox(self, "Please use the ''Select Bar Scale''")
-        #     return
         
         self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image)
         self.set_table_data(table_data)
@@ -337,6 +335,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 if not file_path.endswith(".pt"):  
                     file_path += ".pt"
                 self.controller.process_command(Command.LOAD_MODEL, file_path)
+                self.current_model_label.setText(f"{os.path.basename(file_path)}")
                 messageBox(self, "success", "Model loaded successfully")
             else:
                 messageBox(self, "Error: The selected file is not a PT file.")
