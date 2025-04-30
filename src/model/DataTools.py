@@ -6,6 +6,7 @@ from PIL import Image
 from torch import Tensor
 import torchvision.transforms.functional as TF
 import numpy as np
+import sys
 
 from src.model.DataAugmenter import DataAugmenter
 from src.model.dmFileReader import dmFileReader
@@ -200,6 +201,14 @@ def construct_image_from_patches(patches: np.ndarray, img_size: tuple, stride_si
 
     return images
 
+def resource_path(relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    if hasattr(sys, '_MEIPASS'):
+        base_path = sys._MEIPASS  # Temporary folder for PyInstaller
+    else:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 def normalizeTensorToPixels(tensor: Tensor) -> Tensor:
     tensor = tensor - tensor.min()

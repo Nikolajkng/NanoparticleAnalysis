@@ -11,6 +11,7 @@ import os
 from src.model.PlottingTools import *
 from src.model.CrossValidation import *
 from src.shared.ModelTrainingStats import ModelTrainingStats
+from src.model.DataTools import resource_path
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -45,7 +46,7 @@ class DecoderBlock(nn.Module):
         
 
 class UNet(nn.Module):
-    def __init__(self):
+    def __init__(self, pre_loaded_model_path = None):
         super().__init__()
 
         self.encoder1 = EncoderBlock(1, 64)
@@ -70,6 +71,10 @@ class UNet(nn.Module):
         print(f"Using {self.device}")
 
         self.preffered_input_size = (256, 256)
+    
+        if pre_loaded_model_path:
+            model_path = resource_path(pre_loaded_model_path)
+            self.load_model(model_path)
 
     def forward(self, input):
         e1 = self.encoder1(input)
