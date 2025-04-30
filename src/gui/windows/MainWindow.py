@@ -1,6 +1,5 @@
 import csv
 import threading
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QFileDialog, QMainWindow
@@ -24,9 +23,7 @@ from PIL import Image
 from PIL.ImageQt import ImageQt
 from gui.windows.MessageBoxes import *
 from model.PlottingTools import plot_loss
-from shared.IOFunctions import is_dm_format, is_tiff_format
 from shared.ParticleImage import ParticleImage
-import tifffile
 from PyQt5.QtWidgets import QVBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
@@ -50,11 +47,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.show_annotated_image = True  
         self.graphicsView_scene = QGraphicsScene(self)
         self.graphicsView.setScene(self.graphicsView_scene)
-        self.input_image_real_width = 0
-        self.scale_info = None
-        self.input_image_pixel_width = 0
-        self.input_image_pixel_unit = "nm"
-        self.selected_unit = " nm"   
         self.training_state = "not done"
         self.standard_model_config = ModelConfig(images_path="data/images",
                                                  masks_path="data/masks",
@@ -95,13 +87,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def display_image_metadata_overlay(self, file_path:str, image_width: str, image_height: str):
         file_name = os.path.basename(file_path)
         self.input_image_metadata.setText(file_name + " (" + image_width + "x" + image_height+")")
-        
-    
-    def on_unit_checkbox_changed(self, index):
-        if index == 1:
-            self.selected_unit = "μm"
-        else:
-            self.selected_unit = "nm"
             
         
     def toggle_count_overlay(self):
@@ -207,7 +192,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.image_path = None
             self.scale_is_selected = False
             self.scale_input_set = False
-            self.barScaleInputField.setText("")
             self.segmented_image = None
             
         
@@ -226,14 +210,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if file_path: 
             self.image = self.controller.process_command(Command.LOAD_IMAGE, file_path)
-            if self.image.pil_image.width > 256 or self.image.pil_image.height > 256:
-                self.image.pil_image.thumbnail((1024,1024))
-        
-            self.input_image_pixel_width = self.image.file_info.pixel_width
-            self.input_image_pixel_unit = self.image.file_info.unit
-
-            self.input_image_real_width = float(self.input_image_pixel_width*self.image.pil_image.width)
-
+            if self.image.pil_image.width > 1024 or self.image.pil_image.height > 1024:
+                self.image.resize((1024, 1024))
             pixmap = self.load_pixmap(self.image.pil_image)
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.clear()

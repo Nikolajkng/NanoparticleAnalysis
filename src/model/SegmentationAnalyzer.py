@@ -153,8 +153,6 @@ class SegmentationAnalyzer():
                 "Diameter": [0, 0, 0, 0]
             }
             
-        # if scale_info is None:
-        #     scale_info = ScaleInfo(0, 0, 1, 1)
         scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, file_info)
         
         area_mean = np.mean(scaled_areas).round(2)
