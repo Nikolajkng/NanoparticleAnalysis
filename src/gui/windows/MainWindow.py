@@ -82,6 +82,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.runSegmentationBtn.clicked.connect(self.on_segment_image_clicked)
     
     def open_set_scale_window(self):
+        if (self.image_path == None):
+            messageBox(self, "No image found")
+            return
         self.set_scale_window = SetScaleWindow()
         self.set_scale_window.show()
     

@@ -38,7 +38,7 @@
     <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
    </property>
   </widget>
-  <widget class="QLineEdit" name="setScaleInputField_1">
+  <widget class="QLineEdit" name="setScaleInputField_DistanceInPixels">
    <property name="geometry">
     <rect>
      <x>160</x>
@@ -57,7 +57,7 @@
     <string> Enter value</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="setScaleInputField_2">
+  <widget class="QLineEdit" name="setScaleInputField_KnownDistance">
    <property name="geometry">
     <rect>
      <x>160</x>
@@ -76,7 +76,7 @@
     <string> Enter value</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="setScaleInputField_3">
+  <widget class="QLineEdit" name="setScaleInputField_PixelRatio">
    <property name="geometry">
     <rect>
      <x>160</x>
@@ -144,7 +144,7 @@
    <property name="geometry">
     <rect>
      <x>160</x>
-     <y>150</y>
+     <y>180</y>
      <width>87</width>
      <height>27</height>
     </rect>
@@ -164,6 +164,44 @@
    </property>
    <property name="text">
     <string>Scale: 71.984 pixels/unit</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="setScaleInputField_Unit">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>150</y>
+     <width>121</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="inputMethodHints">
+    <set>Qt::ImhDigitsOnly</set>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+   <property name="placeholderText">
+    <string> Enter value</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_4">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>150</y>
+     <width>101</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="text">
+    <string>Unit of length:</string>
    </property>
   </widget>
  </widget>
