@@ -265,7 +265,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #     messageBox(self, "Please use the ''Select Bar Scale''")
         #     return
         
-        self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image)
+        self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image, "data/statistics")
         self.set_table_data(table_data)
         self.update_segmented_image_view()
         self.display_histogram(histogram_fig)

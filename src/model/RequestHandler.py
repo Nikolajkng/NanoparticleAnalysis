@@ -20,7 +20,7 @@ class request_handler:
         return iou, pixel_accuracy
 
 
-    def process_request_segment(self, image: ParticleImage):
+    def process_request_segment(self, image: ParticleImage, output_folder):
         tensor = TF.to_tensor(image.pil_image).unsqueeze(0)
         stride_length = self.unet.preffered_input_size[0]*4//5
         tensor_mirror_filled = mirror_fill(tensor, self.unet.preffered_input_size, (stride_length,stride_length))
@@ -46,7 +46,7 @@ class request_handler:
         segmented_image_pil = Image.fromarray(segmented_image_2d)
 
         table_data = analyzer.format_table_data(stats, image.file_info, particle_count)
-        analyzer.write_stats_to_txt(stats, image.file_info, particle_count)
+        analyzer.write_stats_to_txt(stats, image.file_info, particle_count, output_folder)
         histogram_fig = analyzer.create_histogram(stats, image.file_info) 
         
         return segmented_image_pil, annotated_image_pil, table_data, histogram_fig
@@ -63,16 +63,16 @@ class request_handler:
         print(pixel_accuracy)
         return iou, pixel_accuracy
         
-    def process_request_segment_folder(self, input_folder, output_folder):
-        
+    def process_request_segment_folder(self, input_folder, output_parent_folder):
         for filename in os.listdir(input_folder):
             file_path = os.path.join(input_folder, filename)
             image = self.process_request_load_image(file_path)
-            segmented_image_pil, annotated_image_pil, table_data, histogram_fig = self.process_request_segment(file_path, image)
-                
+            output_folder = f"{output_parent_folder}/{image.file_info.file_name}"
+            os.makedirs(output_folder, exist_ok=True)
+            segmented_image_pil, annotated_image_pil, table_data, histogram_fig = self.process_request_segment(image, output_folder)
             # Save the segmented image and annotated image
-            segmented_image_pil.save(os.path.join(output_folder, f"segmented_{filename}.png"))
-            annotated_image_pil.save(os.path.join(output_folder, f"annotated_{filename}.png"))
+            segmented_image_pil.save(os.path.join(output_folder, f"{image.file_info.file_name}_segmented.tif"))
+            annotated_image_pil.save(os.path.join(output_folder, f"{image.file_info.file_name}_annotated.tif"))
             
     def process_request_load_image(self, image_path):
         image = ParticleImage(image_path)

@@ -52,10 +52,10 @@ class SegmentationAnalyzer():
             print("Error in creating histogram: ", e)
             return None
     
-    def write_stats_to_txt(self, stats, file_info: FileInfo, particle_count):
+    def write_stats_to_txt(self, stats, file_info: FileInfo, particle_count, output_folder):
         try:
             scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, file_info)
-            txtfile_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "statistics", "statistics.txt")
+            txtfile_path = os.path.join(output_folder, f"{file_info.file_name}_statistics.txt")
             os.makedirs(os.path.dirname(txtfile_path), exist_ok=True)
             
             with open(txtfile_path, "w", encoding="utf-8") as txtfile:

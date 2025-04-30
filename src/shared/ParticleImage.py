@@ -1,3 +1,4 @@
+import os
 from PIL import Image
 import tifffile
 from shared.IOFunctions import is_dm_format, is_tiff_format
@@ -9,6 +10,7 @@ class ParticleImage:
         self.pil_image = self.load_image(image_path)
         self.file_info = None
         self.convert_from_cm = True
+        
 
     def load_image(self, image_path):
         if is_dm_format(image_path):
@@ -33,6 +35,10 @@ class ParticleImage:
         file_info.real_width = float(file_info.pixel_width*self.pil_image.width)
         file_info.width = self.pil_image.width 
         file_info.height = self.pil_image.height
+        split_name = os.path.splitext(os.path.basename(file_path))
+        file_info.file_name = split_name[0]
+        file_info.file_type = split_name[1]
+
         return file_info
     
     def extract_pixel_size_from_tiff_file(self, file_path):
