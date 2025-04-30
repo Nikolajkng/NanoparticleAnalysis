@@ -23,9 +23,19 @@ from src.gui.TableData import TableData
 from src.shared.ModelTrainingStats import ModelTrainingStats
 from PIL import Image
 from PIL.ImageQt import ImageQt
+<<<<<<< Updated upstream
 from src.gui.windows.MessageBoxes import *
 from src.model.PlottingTools import plot_loss
 from src.shared.ParticleImage import ParticleImage
+=======
+from gui.windows.MessageBoxes import *
+from model.PlottingTools import plot_loss
+from shared.Formatters import _truncate
+from shared.ParticleImage import ParticleImage
+from PyQt5.QtWidgets import QVBoxLayout
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+
+>>>>>>> Stashed changes
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
@@ -81,10 +91,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.runSegmentationBtn.clicked.connect(self.on_segment_image_clicked)
     
     def open_set_scale_window(self):
-        if (self.image_path == None):
+        if (self.image_path == None or self.image == None):
             messageBox(self, "No image found")
             return
-        self.set_scale_window = SetScaleWindow()
+        self.set_scale_window = SetScaleWindow(self.image)
         self.set_scale_window.show()
     
     def display_image_metadata_overlay(self, file_path: str):
@@ -92,8 +102,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         image_width = str(self.image.file_info.width)
         image_height = str(self.image.file_info.height)
-        image_real_width = str(self._truncate(self.image.file_info.real_width, 2))
-        image_real_height = str(self._truncate(self.image.file_info.real_height, 2))
+        image_real_width = str(_truncate(self.image.file_info.real_width, 2))
+        image_real_height = str(_truncate(self.image.file_info.real_height, 2))
 
         metadata = (
             f"{image_real_width}x{image_real_height} {self.image.file_info.unit} "
@@ -112,14 +122,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.input_image_metadata.setText(html_text)
 
     
-    def _truncate(self, f, n):
-        '''Truncates/pads a float f to n decimal places without rounding'''
-        s = '{}'.format(f)
-        if 'e' in s or 'E' in s:
-            return '{0:.{1}f}'.format(f, n)
-        i, p, d = s.partition('.')
-        return '.'.join([i, (d+'0'*n)[:n]])    
-        
+    
     def toggle_count_overlay(self):
             print("toggling")
             if self.segmented_image is None or self.annotated_image is None:

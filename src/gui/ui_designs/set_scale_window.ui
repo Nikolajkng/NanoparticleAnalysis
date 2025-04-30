@@ -153,17 +153,17 @@
     <string>Clear</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_scale_result">
+  <widget class="QLabel" name="label_scale">
    <property name="geometry">
     <rect>
-     <x>70</x>
+     <x>80</x>
      <y>240</y>
-     <width>171</width>
-     <height>21</height>
+     <width>51</width>
+     <height>16</height>
     </rect>
    </property>
    <property name="text">
-    <string>Scale: 71.984 pixels/unit</string>
+    <string>Scale:</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="setScaleInputField_Unit">
@@ -202,6 +202,32 @@
    </property>
    <property name="text">
     <string>Unit of length:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_scale_result">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>240</y>
+     <width>51</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>71.984</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_scale_unit">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>240</y>
+     <width>81</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>pixels/unit</string>
    </property>
   </widget>
  </widget>
