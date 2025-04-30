@@ -5,9 +5,10 @@ from PyQt5.QtWidgets import QFileDialog, QMainWindow
 from shared.ModelConfig import ModelConfig
 from shared.ModelTrainingStats import ModelTrainingStats
 from model.PlottingTools import plot_loss
+from threading import Event
 class TrainModelWindow(QMainWindow, Ui_TrainModel):
-    train_model_signal = QtCore.pyqtSignal(ModelConfig)
-    stop_training_signal = QtCore.pyqtSignal()
+    train_model_signal = QtCore.pyqtSignal(ModelConfig, Event)
+
     def __init__(self, update_data_signal):
         super().__init__()
         self.setupUi(self)
@@ -30,7 +31,8 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.stop_training_button.clicked.connect(self.stop_training_clicked)
 
         self.auto_test_set_checkbox.stateChanged.connect(self.auto_test_set_checkbox_clicked)
-
+        self.stop_training_event = Event()
+        
 
 
     def open_directory(self, window_text):
@@ -81,12 +83,13 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
                     test_images_path=self.test_images_directory,
                     test_masks_path=self.test_labels_directory)
         print(int(self.epochs_input.text()))
-        self.train_model_signal.emit(model_config)
+        self.stop_training_event.clear()
+        self.train_model_signal.emit(model_config, self.stop_training_event)
     
     def stop_training_clicked(self):
         self.stop_training_button.setEnabled(False)
         self.train_model_button.setEnabled(True)
-        self.stop_training_signal.emit()
+        self.stop_training_event.set()
 
     
     def update_loss_values(self, stats: ModelTrainingStats):

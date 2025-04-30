@@ -26,7 +26,7 @@ from model.PlottingTools import plot_loss
 from shared.ParticleImage import ParticleImage
 from PyQt5.QtWidgets import QVBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
+from threading import Event
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
@@ -176,11 +176,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def on_train_model_custom_data_clicked(self):
         self.train_model_window = TrainModelWindow(self.update_train_model_values_signal)
         self.train_model_window.train_model_signal.connect(self.train_model_custom_data)
-        self.train_model_window.stop_training_signal.connect(self.stop_model_training)
         self.train_model_window.show()
 
 
-    def train_model_custom_data(self, model_config: ModelConfig):
+    def train_model_custom_data(self, model_config: ModelConfig, stop_training_event: Event):
         result = confirmTrainingMessageBox(self, "Training a new model may take a while, do you want to continue?")
         if result == QMessageBox.No:
                 return
@@ -190,6 +189,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 target=partial(
                     self.controller.process_command, 
                     Command.RETRAIN, model_config, 
+                    stop_training_event,
                     self.update_training_model_stats),
                 daemon=True)
             self.train_thread.start()
@@ -199,8 +199,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         # iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, model_config, self.update_training_model_stats)
         # print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
 
-    def stop_model_training(self):
-        return
 
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
@@ -312,6 +310,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     self.controller.process_command,
                     Command.RETRAIN,
                     self.standard_model_config,
+                    None,
                     self.update_loss_values 
                 ),
                 daemon=True

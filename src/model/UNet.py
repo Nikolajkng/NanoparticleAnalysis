@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from torch.utils.data import DataLoader
 import numpy as np
+from threading import Event
 
 # Model-related imports
 from model.TensorTools import *
@@ -87,7 +88,7 @@ class UNet(nn.Module):
         m = self.mappingConvolution(d4)
         return m
 
-    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_callback=None):
+    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, stop_training_event: Event = None, loss_callback = None):
         self.to(self.device)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
         self.criterion = nn.CrossEntropyLoss()
@@ -102,6 +103,9 @@ class UNet(nn.Module):
             running_loss = 0.0
             
             for i, data in enumerate(training_dataloader):
+                if (stop_training_event is not None) and stop_training_event.is_set():
+                    print("Training stopped by user.")
+                    return training_loss_values, validation_loss_values
                 
                 inputs, labels = data
                 inputs, labels = inputs.to(self.device), labels.to(self.device)

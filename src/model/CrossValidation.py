@@ -12,7 +12,7 @@ from model.UNet import UNet
 from model.ModelEvaluator import ModelEvaluator
 from shared.ModelConfig import ModelConfig
 
-def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, loss_callback=None):
+def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None):
     
     # Set parameters:
     train_subset_size = 0.7
@@ -37,6 +37,7 @@ def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, loss_callback=
         model_name="UNet_" + datetime.datetime.now().strftime('%d.%m.%Y_%H-%M-%S')+".pt",
         cross_validation="holdout",
         with_early_stopping=model_config.with_early_stopping,
+        stop_training_event=stop_training_event,
         loss_callback=loss_callback
         )
     

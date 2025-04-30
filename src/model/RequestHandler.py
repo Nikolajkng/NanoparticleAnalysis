@@ -12,9 +12,9 @@ class request_handler:
     def __init__(self, unet):
         self.unet = unet
 
-    def process_request_train(self, model_config: ModelConfig, loss_callback=None):  
+    def process_request_train(self, model_config: ModelConfig, stop_training_event = None, loss_callback = None):  
         # CHANGE CROSS VALIDATION HERE (uncomment):
-        iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preffered_input_size, loss_callback)
+        iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preffered_input_size, stop_training_event, loss_callback)
         #cv_kfold(self.unet, images_path, masks_path)
         print(f"Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}")
         return iou, pixel_accuracy
