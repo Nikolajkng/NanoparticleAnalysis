@@ -1,16 +1,17 @@
 from PyQt5.QtWidgets import QDialog  
 from PyQt5.QtGui import QDoubleValidator
 from src.gui.ui.SetScaleUI import Ui_set_scale_window
-from src.gui.ui.SetScaleUI import Ui_set_scale_window
 from src.shared.Formatters import _truncate
 
 class SetScaleWindow(QDialog, Ui_set_scale_window):
     
-    def __init__(self, uploaded_image):
+    def __init__(self, uploaded_image, file_path_image, overlay_updater=None):
         super().__init__()
         self.setupUi(self)
         self.image = uploaded_image
         self.file_info = self.image.file_info
+        self.file_path = file_path_image
+        self.overlay_updater = overlay_updater 
 
         # Validators
         double_validator = QDoubleValidator()
@@ -71,6 +72,7 @@ class SetScaleWindow(QDialog, Ui_set_scale_window):
             self.label_scale_result.setText(str(_truncate(pixels_per_unit, 2)))
         except ValueError:
             self.label_scale_result.setText("NaN")
+            
     def confirmBtnClicked(self):
         try:
             if self.setScaleInputField_DistanceInPixels.text() == "":
@@ -95,7 +97,7 @@ class SetScaleWindow(QDialog, Ui_set_scale_window):
             self.file_info.unit = unit
             self.file_info.real_width = self.file_info.width * self.file_info.pixel_width
             self.file_info.real_height = self.file_info.height * self.file_info.pixel_height
-
+            if self.overlay_updater: self.overlay_updater.display_image_metadata_overlay(self.file_path)
             self.accept()
 
         except ValueError:

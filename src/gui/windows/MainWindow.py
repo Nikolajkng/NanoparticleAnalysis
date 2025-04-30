@@ -48,6 +48,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.annotated_image = None
         self.pixmap_item_count = None
         self.csv_file = None
+        self.file_path_image = None
         self.scale_is_selected = False
         self.scale_input_set = False
         self.show_annotated_image = True  
@@ -91,9 +92,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None or self.image == None):
             messageBox(self, "No image found")
             return
-        self.set_scale_window = SetScaleWindow(self.image)
+        self.set_scale_window = SetScaleWindow(self.image, self.file_path_image, overlay_updater=self)
         self.set_scale_window.show()
-    
+            
     def display_image_metadata_overlay(self, file_path: str):
         file_name = os.path.basename(file_path)
 
@@ -223,23 +224,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.scale_is_selected = False
         self.scale_input_set = False
         
-        file_path, _ = QFileDialog.getOpenFileName(
+        self.file_path_image, _ = QFileDialog.getOpenFileName(
             self, 
             "Select an image file", 
             default_image_path, 
             "Image Files (*.png *.jpg *.jpeg *.tif *.dm3 *.dm4);;All Files (*)")
         
-        self.image_path = file_path
+        self.image_path = self.file_path_image
 
-        if file_path: 
-            self.image = self.controller.process_command(Command.LOAD_IMAGE, file_path)
+        if self.file_path_image: 
+            self.image = self.controller.process_command(Command.LOAD_IMAGE, self.file_path_image)
             if self.image.pil_image.width > 1024 or self.image.pil_image.height > 1024:
                 self.image.resize((1024, 1024))
             pixmap = self.load_pixmap(self.image.pil_image)
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.clear()
             self.graphicsView_scene.addItem(pixmap_item)
-            self.display_image_metadata_overlay(file_path)
+            self.display_image_metadata_overlay(self.file_path_image)
 
     def load_pixmap(self, image: Image) -> QPixmap:
         qimage = ImageQt(image)
