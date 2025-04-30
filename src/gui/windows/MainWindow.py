@@ -160,12 +160,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         data = TableData(table_data)
         data.insertIn(self.table_widget)
 
-    # def scale_bar_set_event(self, xcoords: list[int]):
-    #     self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
-    #     self.selectBarScaleButton.setStyleSheet("")
-        
-
-
     def on_segment_folder_clicked(self):
         input_folder_path = QFileDialog.getExistingDirectory(None, "Select an input folder", "")
         output_folder_path = QFileDialog.getExistingDirectory(None, "Select a folder for the output", "")
