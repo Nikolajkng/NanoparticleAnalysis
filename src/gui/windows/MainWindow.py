@@ -1,5 +1,6 @@
 from PyQt5.QtGui import QPixmap
 from PyQt5 import QtCore
+from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import (
     QFileDialog, QMainWindow, QMessageBox, QApplication, 
     QGraphicsScene, QGraphicsPixmapItem, QVBoxLayout
@@ -23,19 +24,15 @@ from src.gui.TableData import TableData
 from src.shared.ModelTrainingStats import ModelTrainingStats
 from PIL import Image
 from PIL.ImageQt import ImageQt
-<<<<<<< Updated upstream
 from src.gui.windows.MessageBoxes import *
 from src.model.PlottingTools import plot_loss
 from src.shared.ParticleImage import ParticleImage
-=======
-from gui.windows.MessageBoxes import *
-from model.PlottingTools import plot_loss
-from shared.Formatters import _truncate
-from shared.ParticleImage import ParticleImage
-from PyQt5.QtWidgets import QVBoxLayout
+from src.gui.windows.MessageBoxes import *
+from src.model.PlottingTools import plot_loss
+from src.shared.Formatters import _truncate
+from src.shared.ParticleImage import ParticleImage
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
->>>>>>> Stashed changes
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)

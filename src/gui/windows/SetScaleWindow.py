@@ -1,14 +1,9 @@
 from PyQt5.QtWidgets import QDialog  
-<<<<<<< Updated upstream
-
-from src.gui.ui.SetScaleUI import Ui_set_scale_window
-
-=======
-from gui.ui.SetScaleUI import Ui_set_scale_window
-from shared.Formatters import _truncate
-from gui.windows.MessageBoxes import messageBox
 from PyQt5.QtGui import QDoubleValidator
->>>>>>> Stashed changes
+from src.gui.ui.SetScaleUI import Ui_set_scale_window
+from src.gui.ui.SetScaleUI import Ui_set_scale_window
+from src.shared.Formatters import _truncate
+from src.gui.windows.MessageBoxes import messageBox
 
 class SetScaleWindow(QDialog, Ui_set_scale_window):
     
