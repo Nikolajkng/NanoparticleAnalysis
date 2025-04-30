@@ -17,7 +17,7 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     
     train_data, val_data, test_data = random_split(dataset, [train_data_size, validation_data_size, 1-train_data_size-validation_data_size])
     
-    train_data = data_augmenter.augment_dataset(train_data)
+    train_data = data_augmenter.augment_dataset(train_data, input_size)  
     val_data = data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
     test_data = data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
 
@@ -229,4 +229,4 @@ if __name__ == '__main__':
     # showTensor(tensor)
     # reconstructed = construct_image_from_patches(patches, (300,300), (100,100))
     # showTensor(reconstructed)
-    
+
