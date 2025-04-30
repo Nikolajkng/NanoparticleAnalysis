@@ -101,11 +101,39 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.set_scale_window = SetScaleWindow()
         self.set_scale_window.show()
     
-    def display_image_metadata_overlay(self, file_path:str, image_width: str, image_height: str):
+    def display_image_metadata_overlay(self, file_path: str):
         file_name = os.path.basename(file_path)
-        self.input_image_metadata.setText(file_name + " (" + image_width + "x" + image_height+")")
-        
+
+        image_width = str(self.image.file_info.width)
+        image_height = str(self.image.file_info.height)
+        image_real_width = str(self._truncate(self.image.file_info.real_width, 2))
+        image_real_height = str(self._truncate(self.image.file_info.real_height, 2))
+
+        metadata = (
+            f"{image_real_width}x{image_real_height} {self.image.file_info.unit} "
+            f"({image_width}x{image_height})"
+        )
+
+        html_text = f"""
+        <table width="100%" cellspacing="0" cellpadding="0">
+            <tr>
+                <td align="left">{file_name}</td>
+                <td align="right">{metadata}</td>
+            </tr>
+        </table>
+        """
+
+        self.input_image_metadata.setText(html_text)
+
     
+    def _truncate(self, f, n):
+        '''Truncates/pads a float f to n decimal places without rounding'''
+        s = '{}'.format(f)
+        if 'e' in s or 'E' in s:
+            return '{0:.{1}f}'.format(f, n)
+        i, p, d = s.partition('.')
+        return '.'.join([i, (d+'0'*n)[:n]])    
+            
     def on_unit_checkbox_changed(self, index):
         if index == 1:
             self.selected_unit = "μm"
@@ -279,10 +307,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.clear()
             self.graphicsView_scene.addItem(pixmap_item)
-        
-            image_width = str(pixmap.width())
-            image_height = str(pixmap.height())
-            self.display_image_metadata_overlay(file_path, image_width, image_height)
+            self.display_image_metadata_overlay(file_path)
 
     def load_pixmap(self, image: Image) -> QPixmap:
         qimage = ImageQt(image)
