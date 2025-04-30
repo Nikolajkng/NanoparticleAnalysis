@@ -5,7 +5,6 @@ import csv
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from shared.ScaleInfo import ScaleInfo
 from PIL import Image
 from datetime import datetime
 from shared.FileInfo import FileInfo

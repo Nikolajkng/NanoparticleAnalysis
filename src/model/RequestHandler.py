@@ -6,7 +6,6 @@ from model.CrossValidation import *
 from model.SegmentationAnalyzer import SegmentationAnalyzer
 from model.ModelEvaluator import ModelEvaluator
 from model.dmFileReader import dmFileReader
-from shared.ScaleInfo import ScaleInfo
 from shared.ModelConfig import ModelConfig
 from shared.ParticleImage import ParticleImage
 class request_handler:
@@ -55,17 +54,6 @@ class request_handler:
     def process_request_load_model(self, model_path):
         self.unet.load_model(model_path)
         return None
-        
-    def process_request_calculate_image_width(self, scale_info: ScaleInfo):
-        scaled_length = float(np.abs(scale_info.end_x- scale_info.start_x))
-        real_length = float(scale_info.real_scale_length)
-        input_image_real_width = real_length / scaled_length * scale_info.image_width
-        return ScaleInfo(
-            0,
-            scale_info.image_width,
-            input_image_real_width,
-            scale_info.image_width
-        )
     
     def process_request_test_model(self, test_data_image_dir, test_data_mask_dir):
         dataset = SegmentationDataset(test_data_image_dir, test_data_mask_dir)
@@ -84,12 +72,8 @@ class request_handler:
         
         for filename in os.listdir(input_folder):
             file_path = os.path.join(input_folder, filename)
-            size_info = None
-            if filename.endswith(".dm3") or filename.endswith(".dm4"):
-                size_info, _ = self.process_request_get_dm_image(file_path)
-            elif filename.endswith(('.tif', '.png')):
-                size_info = ScaleInfo(1, 1, 1, 1)
-            segmented_image_pil, annotated_image_pil, table_data, histogram_fig = self.process_request_segment(file_path, size_info, "um")
+            image = self.process_request_load_image(file_path)
+            segmented_image_pil, annotated_image_pil, table_data, histogram_fig = self.process_request_segment(file_path, image)
                 
             # Save the segmented image and annotated image
             segmented_image_pil.save(os.path.join(output_folder, f"segmented_{filename}.png"))
