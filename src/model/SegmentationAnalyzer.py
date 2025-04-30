@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from shared.ScaleInfo import ScaleInfo
 from PIL import Image
 from datetime import datetime
+from shared.FileInfo import FileInfo
 class SegmentationAnalyzer():
 
     def get_connected_components(self, image):
@@ -22,9 +23,9 @@ class SegmentationAnalyzer():
         histogram_image = Image.open(hist_image_path)
         return histogram_image
     
-    def create_histogram(self, stats, scale_info, unit):
+    def create_histogram(self, stats, file_info: FileInfo):
         try:
-            scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
+            scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, file_info)
             histogram_data = {
                 "Area": scaled_areas,
                 "Diameter": scaled_diameters
@@ -42,7 +43,7 @@ class SegmentationAnalyzer():
                 edgecolor='black'
                 )
             ax.set_title("Particle Diameter Histogram")
-            ax.set_xlabel("Diameter"+" ["+unit+"]")
+            ax.set_xlabel("Diameter"+" ["+file_info.unit+"]")
             ax.set_ylabel("Frequency")
             ax.legend(title=f"Steps: {rice_rule_steps} (Rice-rule)")
             
@@ -52,9 +53,9 @@ class SegmentationAnalyzer():
             print("Error in creating histogram: ", e)
             return None
     
-    def write_stats_to_txt(self, stats, scale_info, particle_count, unit):
+    def write_stats_to_txt(self, stats, file_info: FileInfo, particle_count):
         try:
-            scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
+            scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, file_info)
             txtfile_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "statistics", "statistics.txt")
             os.makedirs(os.path.dirname(txtfile_path), exist_ok=True)
             
@@ -62,7 +63,7 @@ class SegmentationAnalyzer():
                 txtfile.write("##############################\n")
                 txtfile.write("Date: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + "\n")
                 txtfile.write("##############################\n")
-                txtfile.write(f"{'Particle No.':<12}{'Area [' + unit + '²]':>20}{'Diameter [' + unit + ']':>20}\n")
+                txtfile.write(f"{'Particle No.':<12}{'Area [' + file_info.unit + '²]':>20}{'Diameter [' + file_info.unit + ']':>20}\n")
                 
                 for label_idx in range(1, particle_count + 1):
                     area = scaled_areas[label_idx - 1]
@@ -70,9 +71,9 @@ class SegmentationAnalyzer():
                     txtfile.write(f"{label_idx:<12}{area:>20.6f}{diameter:>20.6f}\n")
                 
                 txtfile.write("_______________________________\n")
-                txtfile.write(f"{'Total count':<12}{'Mean Area [' + unit + '²]':>20}{'Mean Diameter [' + unit + ']':>20}"
-                            f"{'Max Area [' + unit + '²]':>20}{'Max Diameter [' + unit + ']':>20}"
-                            f"{'Min Area [' + unit + '²]':>20}{'Min Diameter [' + unit + ']':>20}\n")
+                txtfile.write(f"{'Total count':<12}{'Mean Area [' + file_info.unit + '²]':>20}{'Mean Diameter [' + file_info.unit + ']':>20}"
+                            f"{'Max Area [' + file_info.unit + '²]':>20}{'Max Diameter [' + file_info.unit + ']':>20}"
+                            f"{'Min Area [' + file_info.unit + '²]':>20}{'Min Diameter [' + file_info.unit + ']':>20}\n")
                 txtfile.write(f"{particle_count:<12}"
                             f"{np.mean(scaled_areas):>20.6f}{np.mean(scaled_diameters):>20.6f}"
                             f"{np.max(scaled_areas):>20.6f}{np.max(scaled_diameters):>20.6f}"
@@ -139,13 +140,13 @@ class SegmentationAnalyzer():
     def __get_pixel_areas(self, stats: np.ndarray):
         return stats[1:, cv2.CC_STAT_AREA] 
     
-    def _get_scaled_meassurements(self, stats: np.ndarray, scale_info: ScaleInfo):
-        scale_factor = scale_info.real_scale_length / scale_info.image_width if scale_info else 1
+    def _get_scaled_meassurements(self, stats: np.ndarray, file_info: FileInfo):
+        scale_factor = file_info.real_width / file_info.width if file_info else 1
         scaled_areas = self.__get_pixel_areas(stats) * scale_factor
         scaled_diameters = self.__get_diameters(stats) * scale_factor
         return scaled_areas, scaled_diameters
 
-    def format_table_data(self, stats: np.ndarray, scale_info: ScaleInfo, particle_count: int, unit: str):
+    def format_table_data(self, stats: np.ndarray, file_info: FileInfo, particle_count: int):
         if particle_count == 0:
             return {
                 "Count":    [0, 0, 0, 0],  
@@ -153,9 +154,9 @@ class SegmentationAnalyzer():
                 "Diameter": [0, 0, 0, 0]
             }
             
-        if scale_info is None:
-            scale_info = ScaleInfo(0, 0, 1, 1)
-        scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, scale_info)
+        # if scale_info is None:
+        #     scale_info = ScaleInfo(0, 0, 1, 1)
+        scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, file_info)
         
         area_mean = np.mean(scaled_areas).round(2)
         area_max = np.max(scaled_areas).round(2)
@@ -168,7 +169,7 @@ class SegmentationAnalyzer():
         diameter_std = np.std(scaled_diameters).round(2)
 
 
-        unit = " "+unit
+        unit = " "+file_info.unit
         table_data = {
         "Count":    [particle_count, particle_count, particle_count, particle_count],  
         "Area":    [str(area_mean)+unit+"²", str(area_min)+unit+"²", str(area_max)+unit+"²", str(area_std)+unit+"²"],

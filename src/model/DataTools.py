@@ -85,7 +85,7 @@ def load_image_as_tensor(image_path: str):
         tensor = reader.get_tensor_from_dm_file(image_path)
     else:
         tensor = tensor_from_image_no_resize(image_path)
-    if tensor.shape[-1] > 256 or tensor.shape[-2] > 256:
+    if tensor.shape[-1] > 1024 or tensor.shape[-2] > 1024:
         tensor = TF.resize(tensor, 1024)
     return tensor
 

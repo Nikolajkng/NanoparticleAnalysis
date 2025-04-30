@@ -3,7 +3,8 @@ import threading
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QFileDialog, QMainWindow  
+from PyQt5.QtWidgets import QFileDialog, QMainWindow
+
 from gui.ui.MainUI import Ui_MainWindow
 from controller.Controller import Controller
 from shared.Commands import Command
@@ -20,7 +21,6 @@ from shared.ScaleInfo import ScaleInfo
 from shared.ModelConfig import ModelConfig
 from gui.TableData import TableData
 from shared.ModelTrainingStats import ModelTrainingStats
-import matplotlib.pyplot as plt
 from PIL import Image
 from PIL.ImageQt import ImageQt
 from PyQt5.QtGui import QIntValidator
@@ -42,7 +42,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.setupUi(self.MainWindow)
         self.controller = Controller()
         self.image_path = None
-        self.image = None
+        self.image: ParticleImage = None
         self.segmented_image = None
         self.annotated_image = None
         self.pixmap_item_count = None
@@ -126,14 +126,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             messageBox(self, "Fullscreen failed: No image found")
             return
-        
-        
+        import matplotlib
+        matplotlib.use('Qt5Agg') 
+        import matplotlib.pyplot as plt
         
         fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
-
+        
         manager = plt.get_current_fig_manager()
 
-        axes[0].imshow(self.image, cmap='gray')
+        axes[0].imshow(self.image.pil_image, cmap='gray')
         axes[0].set_title("Image")
 
 
@@ -195,7 +196,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         
         self.select_scale_window = SelectScaleWindow()
-        qimage = ImageQt(self.image)
+        qimage = ImageQt(self.image.pil_image)
         pixmap = QPixmap.fromImage(qimage) 
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
         self.select_scale_window.image_scene.addItem(pixmap_item)
@@ -263,13 +264,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             "Image Files (*.png *.jpg *.jpeg *.tif *.dm3 *.dm4);;All Files (*)")
         
         self.image_path = file_path
-        if file_path: 
-            image = self.controller.process_command(Command.LOAD_IMAGE, file_path)
-            self.input_image_pixel_width = image.file_info.pixel_width
-            self.input_image_pixel_unit = image.file_info.unit
 
-            self.input_image_real_width = float(self.input_image_pixel_width*image.pil_image.width)
-            pixmap = self.load_pixmap(image)
+        if file_path: 
+            self.image = self.controller.process_command(Command.LOAD_IMAGE, file_path)
+            if self.image.pil_image.width > 256 or self.image.pil_image.height > 256:
+                self.image.pil_image.thumbnail((1024,1024))
+        
+            self.input_image_pixel_width = self.image.file_info.pixel_width
+            self.input_image_pixel_unit = self.image.file_info.unit
+
+            self.input_image_real_width = float(self.input_image_pixel_width*self.image.pil_image.width)
+
+            pixmap = self.load_pixmap(self.image.pil_image)
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.clear()
             self.graphicsView_scene.addItem(pixmap_item)
@@ -278,13 +284,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             image_height = str(pixmap.height())
             self.display_image_metadata_overlay(file_path, image_width, image_height)
 
-    def load_pixmap(self, image: ParticleImage):
-        self.image = image.pil_image
-
-        if self.image.width > 256 or self.image.height > 256:
-                self.image.thumbnail((1024,1024))
-
-        qimage = ImageQt(self.image)
+    def load_pixmap(self, image: Image) -> QPixmap:
+        qimage = ImageQt(image)
         return QPixmap.fromImage(qimage) 
 
     def on_test_model_clicked(self):
@@ -304,15 +305,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             messageBox(self, "Segmentation failed: No image found")
             return
-        if(self.barScaleInputField.text() == ""):
-            messageBox(self, "Please enter length of the scale bar and use the 'Select Bar Scale'")
-            return
-        if(not self.scale_is_selected):
-            messageBox(self, "Please use the ''Select Bar Scale''")
-            return
+        # if(self.barScaleInputField.text() == ""):
+        #     messageBox(self, "Please enter length of the scale bar and use the 'Select Bar Scale'")
+        #     return
+        # if(not self.scale_is_selected):
+        #     messageBox(self, "Please use the ''Select Bar Scale''")
+        #     return
         
-        self.on_calculate_input_image_size_clicked()
-        self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info, self.selected_unit)
+        #self.on_calculate_input_image_size_clicked()
+        #self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info, self.selected_unit)
+        self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image)
         self.set_table_data(table_data)
         self.update_segmented_image_view()
         self.display_histogram(histogram_fig)
