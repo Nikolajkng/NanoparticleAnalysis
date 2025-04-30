@@ -17,13 +17,11 @@ from gui.windows.TrainModelWindow import TrainModelWindow
 from gui.windows.SetScaleWindow import SetScaleWindow
 
 import numpy as np
-from shared.ScaleInfo import ScaleInfo
 from shared.ModelConfig import ModelConfig
 from gui.TableData import TableData
 from shared.ModelTrainingStats import ModelTrainingStats
 from PIL import Image
 from PIL.ImageQt import ImageQt
-from PyQt5.QtGui import QIntValidator
 from gui.windows.MessageBoxes import *
 from model.PlottingTools import plot_loss
 from shared.IOFunctions import is_dm_format, is_tiff_format
@@ -47,9 +45,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.annotated_image = None
         self.pixmap_item_count = None
         self.csv_file = None
-        self.select_scale_window = None
-        self.scale_start_x = 0
-        self.scale_end_x = 0
         self.scale_is_selected = False
         self.scale_input_set = False
         self.show_annotated_image = True  
@@ -61,7 +56,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.input_image_pixel_unit = "nm"
         self.selected_unit = " nm"   
         self.training_state = "not done"
-        self.validator = QIntValidator(0, 99999999, self)  
         self.standard_model_config = ModelConfig(images_path="data/images",
                                                  masks_path="data/masks",
                                                  epochs=5,
@@ -89,12 +83,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.action_load_model.triggered.connect(self.on_load_model_clicked)
         self.actionExport_Segmentation_2.triggered.connect(self.on_export_segmented_clicked)
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
-        self.selectBarScaleButton.clicked.connect(self.on_select_bar_scale_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
-        self.barScaleInputField.setValidator(self.validator)
         self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
-        self.unit_checkbox.currentIndexChanged.connect(self.on_unit_checkbox_changed)
         self.setScaleButton.clicked.connect(self.open_set_scale_window) 
     
     def open_set_scale_window(self):
@@ -184,26 +175,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         data = TableData(table_data)
         data.insertIn(self.table_widget)
 
-    def scale_bar_set_event(self, xcoords: list[int]):
-        #print(f"Recieved xcoords: [{xcoords[0]}, {xcoords[1]}]")
-        scale_window_width = self.select_scale_window.size().width()
-        graphics_view_width = self.graphicsView.size().width()
-        self.scale_start_x, self.scale_end_x = xcoords[0] / (scale_window_width/graphics_view_width), xcoords[1] / (scale_window_width/graphics_view_width)
-
-        #print(f"{self.scale_start_x}, {self.scale_end_x}")
-        self. scale_is_selected = True
-        self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
-        self.selectBarScaleButton.setStyleSheet("")
+    # def scale_bar_set_event(self, xcoords: list[int]):
+    #     self.selectBarScaleButton.setStyleSheet("background-color: yellow; color: black;")
+    #     self.selectBarScaleButton.setStyleSheet("")
         
 
-    def on_calculate_input_image_size_clicked(self):
-        selected_scale_info = ScaleInfo(
-                               self.scale_start_x, 
-                               self.scale_end_x, 
-                               self.barScaleInputField.text(), 
-                               self.graphicsView.size().width())
-
-        self.scale_info = self.controller.process_command(Command.CALCULATE_REAL_IMAGE_WIDTH, selected_scale_info)
 
     def on_segment_folder_clicked(self):
         input_folder_path = QFileDialog.getExistingDirectory(None, "Select an input folder", "")
@@ -213,23 +189,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         else:
             messageBox(self, "Error in uploading directory")
             return
-
-    def on_select_bar_scale_clicked(self):
-        if (self.image_path == None):
-            messageBox(self, "No image found. Please upload an image.")
-            return
-        
-        if(self.barScaleInputField.text() == ""):
-            messageBox(self, "Please enter length of the scale bar")
-            return
-        
-        self.select_scale_window = SelectScaleWindow()
-        qimage = ImageQt(self.image.pil_image)
-        pixmap = QPixmap.fromImage(qimage) 
-        pixmap_item = QGraphicsPixmapItem(pixmap.scaled(1024, 1024, aspectRatioMode=1))
-        self.select_scale_window.image_scene.addItem(pixmap_item)
-        self.select_scale_window.scale_bar_set_signal.connect(self.scale_bar_set_event)
-        self.select_scale_window.show()
 
     def on_train_model_custom_data_clicked(self):
         self.train_model_window = TrainModelWindow(self.update_train_model_values_signal)
@@ -330,15 +289,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if (self.image_path == None):
             messageBox(self, "Segmentation failed: No image found")
             return
-        # if(self.barScaleInputField.text() == ""):
-        #     messageBox(self, "Please enter length of the scale bar and use the 'Select Bar Scale'")
-        #     return
         # if(not self.scale_is_selected):
         #     messageBox(self, "Please use the ''Select Bar Scale''")
         #     return
         
-        #self.on_calculate_input_image_size_clicked()
-        #self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image_path, self.scale_info, self.selected_unit)
         self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image)
         self.set_table_data(table_data)
         self.update_segmented_image_view()

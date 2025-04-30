@@ -307,70 +307,6 @@
      <enum>QAbstractScrollArea::AdjustToContents</enum>
     </property>
    </widget>
-   <widget class="QLineEdit" name="barScaleInputField">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>80</y>
-      <width>131</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="inputMethodHints">
-     <set>Qt::ImhNone</set>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-    <property name="placeholderText">
-     <string> Enter scale bar</string>
-    </property>
-   </widget>
-   <widget class="QComboBox" name="unit_checkbox">
-    <property name="geometry">
-     <rect>
-      <x>160</x>
-      <y>80</y>
-      <width>51</width>
-      <height>22</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <item>
-     <property name="text">
-      <string>nm</string>
-     </property>
-    </item>
-    <item>
-     <property name="text">
-      <string>μm</string>
-     </property>
-    </item>
-   </widget>
-   <widget class="QPushButton" name="selectBarScaleButton">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>50</y>
-      <width>181</width>
-      <height>24</height>
-     </rect>
-    </property>
-    <property name="sizePolicy">
-     <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-      <horstretch>0</horstretch>
-      <verstretch>0</verstretch>
-     </sizepolicy>
-    </property>
-    <property name="text">
-     <string>Select scale bar on image</string>
-    </property>
-   </widget>
    <widget class="Line" name="line">
     <property name="geometry">
      <rect>
@@ -481,7 +417,7 @@
      <x>0</x>
      <y>0</y>
      <width>1326</width>
-     <height>24</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">

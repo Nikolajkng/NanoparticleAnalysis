@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'gui_prototype1.2_graphics_view.ui'
+# Form implementation generated from reading ui file '.\gui_prototype1.2_graphics_view.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -147,29 +147,6 @@ class Ui_MainWindow(object):
         self.graphicsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.graphicsView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         self.graphicsView.setObjectName("graphicsView")
-        self.barScaleInputField = QtWidgets.QLineEdit(self.centralwidget)
-        self.barScaleInputField.setGeometry(QtCore.QRect(30, 80, 131, 22))
-        self.barScaleInputField.setInputMethodHints(QtCore.Qt.ImhNone)
-        self.barScaleInputField.setText("")
-        self.barScaleInputField.setObjectName("barScaleInputField")
-        self.unit_checkbox = QtWidgets.QComboBox(self.centralwidget)
-        self.unit_checkbox.setGeometry(QtCore.QRect(160, 80, 51, 22))
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.unit_checkbox.sizePolicy().hasHeightForWidth())
-        self.unit_checkbox.setSizePolicy(sizePolicy)
-        self.unit_checkbox.setObjectName("unit_checkbox")
-        self.unit_checkbox.addItem("")
-        self.unit_checkbox.addItem("")
-        self.selectBarScaleButton = QtWidgets.QPushButton(self.centralwidget)
-        self.selectBarScaleButton.setGeometry(QtCore.QRect(30, 50, 181, 24))
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.selectBarScaleButton.sizePolicy().hasHeightForWidth())
-        self.selectBarScaleButton.setSizePolicy(sizePolicy)
-        self.selectBarScaleButton.setObjectName("selectBarScaleButton")
         self.line = QtWidgets.QFrame(self.centralwidget)
         self.line.setGeometry(QtCore.QRect(10, 30, 221, 20))
         self.line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -213,7 +190,7 @@ class Ui_MainWindow(object):
         self.setScaleButton.setObjectName("setScaleButton")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 24))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1326, 26))
         self.menubar.setObjectName("menubar")
         self.menu_file = QtWidgets.QMenu(self.menubar)
         self.menu_file.setObjectName("menu_file")
@@ -301,10 +278,6 @@ class Ui_MainWindow(object):
         self.table_widget.setSortingEnabled(__sortingEnabled)
         self.plots_tab_view.setTabText(self.plots_tab_view.indexOf(self.tab1), _translate("MainWindow", "Labeled"))
         self.plots_tab_view.setTabText(self.plots_tab_view.indexOf(self.tab2), _translate("MainWindow", "Graph"))
-        self.barScaleInputField.setPlaceholderText(_translate("MainWindow", " Enter scale bar"))
-        self.unit_checkbox.setItemText(0, _translate("MainWindow", "nm"))
-        self.unit_checkbox.setItemText(1, _translate("MainWindow", "μm"))
-        self.selectBarScaleButton.setText(_translate("MainWindow", "Select scale bar on image"))
         self.label.setText(_translate("MainWindow", "Analyze"))
         self.fullscreen_image_button.setText(_translate("MainWindow", "Fullscreen Image"))
         self.radioButton.setText(_translate("MainWindow", "Toggle count"))
