@@ -1,2 +1,23 @@
 __pycache__
 data/
+
+
+# PyInstaller build artifacts
+/build/
+/dist/
+__pycache__/
+/*.spec
+
+# PyInstaller temp files
+*.pyc
+*.pyo
+*.pyd
+
+# MacOS specific
+.DS_Store
+
+# Logs or temporary files
+*.log
+
+# Ignore any copied shared libraries (e.g., MKL binaries copied to root)
+libmkl*.so*
