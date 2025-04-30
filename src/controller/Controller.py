@@ -3,8 +3,8 @@ from src.model.RequestHandler import request_handler
 from src.model.UNet import UNet
 
 class Controller():
-    def __init__(self):
-        self.unet = UNet()
+    def __init__(self, pre_loaded_model_name=None):
+        self.unet = UNet(f"src/data/model/{pre_loaded_model_name}")
         self.request_handler = request_handler(self.unet)
         
         self.commands = {
