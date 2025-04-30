@@ -86,7 +86,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
-        self.unit_checkbox.currentIndexChanged.connect(self.on_unit_checkbox_changed)
         self.setScaleButton.clicked.connect(self.open_set_scale_window) 
     
     def open_set_scale_window(self):
