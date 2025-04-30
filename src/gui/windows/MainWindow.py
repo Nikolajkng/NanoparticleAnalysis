@@ -22,7 +22,6 @@ from gui.TableData import TableData
 from shared.ModelTrainingStats import ModelTrainingStats
 from PIL import Image
 from PIL.ImageQt import ImageQt
-from PyQt5.QtGui import QIntValidator
 from gui.windows.MessageBoxes import *
 from model.PlottingTools import plot_loss
 from shared.IOFunctions import is_dm_format, is_tiff_format
@@ -57,7 +56,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.input_image_pixel_unit = "nm"
         self.selected_unit = " nm"   
         self.training_state = "not done"
-        self.validator = QIntValidator(0, 99999999, self)  
         self.standard_model_config = ModelConfig(images_path="data/images",
                                                  masks_path="data/masks",
                                                  epochs=5,
@@ -87,7 +85,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
-        self.barScaleInputField.setValidator(self.validator)
         self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
         self.unit_checkbox.currentIndexChanged.connect(self.on_unit_checkbox_changed)
         self.setScaleButton.clicked.connect(self.open_set_scale_window) 
