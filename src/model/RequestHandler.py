@@ -62,12 +62,7 @@ class request_handler:
         print(iou)
         print(pixel_accuracy)
         return iou, pixel_accuracy
-    
-    def process_request_get_dm_image(self, file_path):
-        reader = dmFileReader()
-        size_info, image = reader.get_image_from_dm_file(file_path)
-        return size_info, image
-    
+        
     def process_request_segment_folder(self, input_folder, output_folder):
         
         for filename in os.listdir(input_folder):
