@@ -2,14 +2,16 @@
 Bachelor Project 2025
 
 
-# Run from unet directly from main from path=src/
-python -m model.UNet_old
+# Installation
+Install pyinstaller with 'pip install pyinstaller'
 
+## Windows:
+0. Navigate to root of project folder
+1. Run the following: 'pyinstaller --onefile main.py'
+3. To run the application, navigate to dist folder and execute/open: 'main.exe'
 
-# Flow for when user clicks "Train model"
-= FILE              FUNCTION 
--> GUI              (on_train_model_clicked) 
--> Controller       (process_command: RETRAIN) 
--> RequstHandler    (process_request_train)
--> CrossValidation  (cv_kfold || cv_holdout)
--> UNet             (train_model)
+## Linux (Ubuntu): 
+0. Navigate to root of project folder
+1. Give build script exec. permission: 'sudo chmod +x build_app_mkl.sh'
+2. Run the script 'build_exec_linux.sh'
+3. To run the application, navigate to dist folder and execute: './my_app'

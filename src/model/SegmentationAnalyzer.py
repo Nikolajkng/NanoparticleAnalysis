@@ -30,8 +30,6 @@ class SegmentationAnalyzer():
                 "Diameter": scaled_diameters
             }
 
-            # Smart selection of bins/steps, works? (TODO: manual choice instead?)
-            # https://medium.com/@maxmarkovvision/optimal-number-of-bins-for-histograms-3d7c48086fde
             rice_rule_steps = int(np.ceil(2 * len(histogram_data["Diameter"]) ** (1 / 3))) 
 
             fig, ax = plt.subplots()            
@@ -139,10 +137,12 @@ class SegmentationAnalyzer():
     def __get_pixel_areas(self, stats: np.ndarray):
         return stats[1:, cv2.CC_STAT_AREA] 
     
+
+    
     def _get_scaled_meassurements(self, stats: np.ndarray, file_info: FileInfo):
-        scale_factor = file_info.real_width / file_info.width if file_info else 1
-        scaled_areas = self.__get_pixel_areas(stats) * scale_factor
-        scaled_diameters = self.__get_diameters(stats) * scale_factor
+        pixel_area = file_info.pixel_width * file_info.pixel_height
+        scaled_areas = self.__get_pixel_areas(stats) * pixel_area
+        scaled_diameters = self.__get_diameters(stats) * file_info.pixel_width 
         return scaled_areas, scaled_diameters
 
     def format_table_data(self, stats: np.ndarray, file_info: FileInfo, particle_count: int):
