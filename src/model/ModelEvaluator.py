@@ -50,37 +50,7 @@ class ModelEvaluator():
         return predictions, labels
 
     @staticmethod
-    def plot_difference(prediction, label, iou, pixel_accuracy):
-        prediction_uint8 = (np.array(prediction) * 255).astype(np.uint8).squeeze(0)
-        label_uint8 = (np.array(label) * 255).astype(np.uint8).squeeze(0)
-
-        false_positives = ((prediction_uint8 == 255) & (label_uint8 == 0))  # FP: Red
-        false_negatives = ((prediction_uint8 == 0) & (label_uint8 == 255))  # FN: Blue
-
-        overlay = np.zeros((*false_positives.shape, 3), dtype=np.uint8)
-
-        overlay[..., 0] = false_positives * 255
-        overlay[..., 2] = false_negatives * 255  # Blue channel for FN
-        
-        fig, axes = plt.subplots(1, 3, figsize=(12, 5), sharex=True, sharey=True)
-
-        axes[0].imshow(prediction_uint8, cmap='gray')
-        axes[0].set_title("Prediction")
-
-        axes[1].imshow(label_uint8, cmap='gray')
-        axes[1].set_title("Label")
-
-        axes[2].imshow(overlay)
-        axes[2].set_title("Difference (FP: Red, FN: Blue)")
-
-        fig.text(0.5, 0.95, f"IoU: {iou:.2f}   Pixel Accuracy: {pixel_accuracy:.2f}",
-         ha='center', va='top', fontsize=14, bbox=dict(facecolor='white', alpha=0.7))
-        
-        plt.tight_layout()
-        plt.show()
-
-    @staticmethod
-    def evaluate_model(unet: UNet, test_dataloader: DataLoader) -> tuple[float, float]:
+    def evaluate_model(unet: UNet, test_dataloader: DataLoader, test_callback = None) -> tuple[float, float]:
         predictions, labels = ModelEvaluator.get_predictions(unet, test_dataloader)
 
         ious = ModelEvaluator.calculate_ious(predictions, labels)
@@ -89,9 +59,12 @@ class ModelEvaluator():
 
         number_of_predictions_to_show = np.min([4, len(predictions)]) 
         indicies = random.sample(range(len(predictions)), number_of_predictions_to_show)
+        if not test_callback:
+            return np.mean(ious), np.mean(pixel_accuracies)
+        
         try:
             for i in indicies:
-                ModelEvaluator.plot_difference(predictions[i], labels[i], ious[i], pixel_accuracies[i])
+                test_callback(predictions[i], labels[i], ious[i], pixel_accuracies[i])
         except Exception:
             return np.mean(ious), np.mean(pixel_accuracies)
 

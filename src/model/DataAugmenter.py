@@ -54,15 +54,15 @@ class DataAugmenter():
         for i in range(len(dataset)):
             image, mask = dataset[i]  # Works for both custom and standard datasets
 
-            cropped_images, cropped_masks = self.create_random_crops(image, mask, 15, input_size)
-            augmented_images = []
-            augmented_masks = []
+            cropped_images, cropped_masks = self.create_random_crops(image, mask, 20, input_size)
+            augmented_images = cropped_images
+            augmented_masks = cropped_masks
             if len(cropped_images) != 1: # Means we could crop the images
-                augmented_images, augmented_masks = cropped_images, cropped_masks
-                # rotated_images, rotated_masks = self.create_rotated_tensors(cropped_images[:2], cropped_masks[:2])
-                # flipped_images, flipped_masks = self.create_hflipped_tensors(cropped_images[2:4], cropped_masks[2:4])
+                rotated_images, rotated_masks = self.create_rotated_tensors(cropped_images, cropped_masks)
+                flipped_images, flipped_masks = self.create_hflipped_tensors(rotated_images, rotated_masks)
                 # augmented_images = rotated_images + flipped_images + cropped_images[4:]
                 # augmented_masks = rotated_masks + flipped_masks + cropped_masks[4:]
+                augmented_images, augmented_masks = flipped_images, flipped_masks
             else: # image was correct resolution already
                 rotated_images, rotated_masks = self.create_rotated_tensors(cropped_images, cropped_masks)
                 augmented_images, augmented_masks = self.create_hflipped_tensors(rotated_images, rotated_masks)
@@ -92,6 +92,7 @@ class DataAugmenter():
                     new_images.append(image)
                     new_masks.append(mask)
         return SegmentationDataset.from_image_set(new_images, new_masks)
+    
 
 
 if __name__ == '__main__':

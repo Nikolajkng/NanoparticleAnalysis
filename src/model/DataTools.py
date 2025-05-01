@@ -11,6 +11,7 @@ import sys
 from src.model.DataAugmenter import DataAugmenter
 from src.model.dmFileReader import dmFileReader
 from src.shared.IOFunctions import is_dm_format
+from src.model.SegmentationDataset import SegmentationDataset
 
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
@@ -18,8 +19,39 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     train_data, val_data, test_data = random_split(dataset, [train_data_size, validation_data_size, 1-train_data_size-validation_data_size])
     
     train_data = data_augmenter.augment_dataset(train_data, input_size)  
-    val_data = data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
-    test_data = data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
+    
+    # Helper to process val/test with mirror_fill and extract_slices
+    def process_and_slice(data_subset):
+        images = []
+        masks = []
+        for img, mask in data_subset:
+            images.append(img)
+            masks.append(mask)
+        
+        image_tensor = torch.stack(images)  # Shape: [N, C, H, W]
+        mask_tensor = torch.stack(masks)    # Shape: [N, C, H, W]
+
+        filled_images = mirror_fill(image_tensor, patch_size=input_size, stride_size=input_size)
+        filled_masks = mirror_fill(mask_tensor, patch_size=input_size, stride_size=input_size)
+
+        sliced_images = extract_slices(filled_images, patch_size=input_size, stride_size=input_size)
+        sliced_masks = extract_slices(filled_masks, patch_size=input_size, stride_size=input_size)
+
+        # Convert np.ndarray -> torch.Tensor if necessary
+        if isinstance(sliced_images, np.ndarray):
+            sliced_images = torch.from_numpy(sliced_images)
+        if isinstance(sliced_masks, np.ndarray):
+            sliced_masks = torch.from_numpy(sliced_masks)
+
+        # Create list of (image, mask) tensors
+        return SegmentationDataset.from_image_set(
+            [img for img in sliced_images], 
+            [mask for mask in sliced_masks]
+        )
+
+
+    val_data = process_and_slice(val_data)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
+    test_data = process_and_slice(test_data)#data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
 
     train_dataloader = DataLoader(train_data, batch_size=8, shuffle=True, drop_last=True)
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
@@ -56,12 +88,12 @@ def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
             img = img.convert("L")  
             if img.width == 256 and img.height == 256:
                 continue
-            img_resized = img.resize(output_size, Image.NEAREST)
+            img = img.resize(output_size)
             if is_masks:
-                img_binary = img_resized.point(lambda p: 255 if p > 20 else 0)
+                img_binary = img.point(lambda p: 255 if p > 20 else 0)
                 img_binary.save(os.path.join(folder_path,"new"+filename))
             else:    
-                img_resized.save(image_path)  # You can change this line to save it elsewhere
+                img.save(os.path.join(folder_path,"new"+filename))  # You can change this line to save it elsewhere
             print(image_path)
 
 def tensor_from_image_no_resize(image_path: str):
@@ -90,7 +122,7 @@ def load_image_as_tensor(image_path: str):
     return tensor
 
 # Made with help from https://www.programmersought.com/article/15316517340/
-def mirror_fill(images: Tensor, patch_size: tuple, stride_size: tuple):
+def mirror_fill(images: Tensor, patch_size: tuple, stride_size: tuple) -> Tensor:
     images_np = images.cpu().numpy()
     batch_size, channels, img_width, img_height = images_np.shape
     patch_height, patch_width = patch_size
@@ -140,7 +172,7 @@ def mirror_fill(images: Tensor, patch_size: tuple, stride_size: tuple):
 
 
 # Made with help from https://www.programmersought.com/article/15316517340/
-def extract_slices(images: Tensor, patch_size: tuple, stride_size: tuple):
+def extract_slices(images: Tensor, patch_size: tuple, stride_size: tuple) -> np.ndarray:
     images_np = images.cpu().numpy()
     batch_size, channels, img_width, img_height = images.shape
     patch_height, patch_width = patch_size
@@ -228,8 +260,8 @@ def showTensor(tensor: Tensor) -> None:
         img.show()
 
 if __name__ == '__main__':
-    folder_path = 'data/to_resize/'
-    resize_and_save_images(folder_path, is_masks=True, output_size=(4096, 4074))
+    folder_path = 'data/medres_masks/'
+    resize_and_save_images(folder_path, is_masks=True, output_size=(1024, 1024))
     # tensor = tensor_from_image('data/W. sample_0011.tif', (256, 256))
     # tensor = mirror_fill(tensor, (100,100), (100,100))
     # patches = extract_slices(tensor, (100,100), (100,100))
