@@ -53,7 +53,8 @@ class ModelEvaluator():
     @staticmethod
     def evaluate_model(unet: UNet, test_dataloader: DataLoader, test_callback = None) -> tuple[float, float]:
         predictions, labels = ModelEvaluator.get_predictions(unet, test_dataloader)
-
+        predictions = [pred.cpu() for pred in predictions]
+        labels = [label.cpu() for label in labels]
         ious = ModelEvaluator.calculate_ious(predictions, labels)
         pixel_accuracies = ModelEvaluator.calculate_pixel_accuracies(predictions, labels)
 
