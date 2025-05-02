@@ -8,7 +8,7 @@ Install pyinstaller with 'pip install pyinstaller'
 ## Windows:
 0. Navigate to root of project folder
 1. Run the following: 'pyinstaller --onefile main.py'
-3. To run the application, navigate to dist folder and execute/open: 'main.exe'
+2. To run the application, navigate to dist folder and execute/open: 'main.exe'
 
 ## Linux (Ubuntu): 
 0. Navigate to root of project folder
