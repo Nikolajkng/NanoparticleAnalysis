@@ -53,7 +53,7 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     val_data = process_and_slice(val_data)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
     test_data = process_and_slice(test_data)#data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
 
-    train_dataloader = DataLoader(train_data, batch_size=8, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True)
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(test_data, batch_size=1)
     return (train_dataloader, val_dataloader, test_dataloader)

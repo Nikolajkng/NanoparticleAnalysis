@@ -43,6 +43,7 @@ class ModelEvaluator():
         with torch.no_grad():
             for i, data in enumerate(dataloader):
                 input, label = data
+                input, label = input.to(unet.device), label.to(unet.device)
                 label = label.long().squeeze(1)
                 prediction = unet.segment(input)
                 predictions.append(prediction)
