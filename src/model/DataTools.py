@@ -13,9 +13,35 @@ from src.model.dmFileReader import dmFileReader
 from src.shared.IOFunctions import is_dm_format
 from src.model.SegmentationDataset import SegmentationDataset
 
+def slice_dataset_in_four(dataset):
+    images = []
+    masks = []
+    for img, mask in dataset:
+        width = img.shape[-1]
+        height = img.shape[-2]
+
+        new_width = width // 2
+        new_height = height // 2
+
+        image_slices = [
+            img[:, :new_width, :new_height],
+            img[:, new_width:, :new_height],
+            img[:, :new_width, new_height:],
+            img[:, new_width:, new_height:]
+        ]
+        mask_slices = [
+            mask[:, :new_width, :new_height],
+            mask[:, new_width:, :new_height],
+            mask[:, :new_width, new_height:],
+            mask[:, new_width:, new_height:]
+        ]
+        images.extend(image_slices)
+        masks.extend(mask_slices)
+    return SegmentationDataset.from_image_set(images, masks)
+
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
-    
+    dataset = slice_dataset_in_four(dataset)
     train_data, val_data, test_data = random_split(dataset, [train_data_size, validation_data_size, 1-train_data_size-validation_data_size])
     
     train_data = data_augmenter.augment_dataset(train_data, input_size)  
