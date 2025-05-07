@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import random
 
 from src.model.UNet import UNet
+from src.model.DataTools import center_crop, construct_image_from_patches, mirror_fill, extract_slices
 class ModelEvaluator():
     @staticmethod
     def __get_single_image_iou(prediction: np.ndarray, ground_truth: np.ndarray):
@@ -45,8 +46,18 @@ class ModelEvaluator():
                 input, label = data
                 input, label = input.to(unet.device), label.to(unet.device)
                 label = label.long().squeeze(1)
-                prediction = unet.segment(input)
-                predictions.append(prediction)
+                
+                stride_length = unet.preffered_input_size[0]*4//5
+                tensor_mirror_filled = mirror_fill(input, unet.preffered_input_size, (stride_length,stride_length))
+                patches = extract_slices(tensor_mirror_filled, unet.preffered_input_size, (stride_length,stride_length))
+                segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
+                unet.to(input.device)
+                patches_tensor = torch.tensor(patches, dtype=input.dtype, device=input.device)
+                segmentations = unet(patches_tensor).detach().numpy()
+                segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
+                segmented_image = center_crop(segmented_image, (input.shape[2], input.shape[3])).argmax(axis=1)
+                #prediction = unet.segment(input)
+                predictions.append(torch.tensor(segmented_image, dtype=input.dtype, device=input.device))
                 labels.append(label)
         return predictions, labels
 
