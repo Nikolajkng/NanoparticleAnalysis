@@ -30,6 +30,7 @@ class request_handler:
         segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
 
         self.unet.eval()
+        self.unet.to(tensor.device)
         patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
         with torch.no_grad():
             segmentations = self.unet(patches_tensor).detach().numpy()

@@ -182,7 +182,7 @@ class UNet(nn.Module):
         torch.save(self.state_dict(), path)
         
     def load_model(self, path):
-        state_dict = torch.load(path, map_location=self.device)
+        state_dict = torch.load(path, map_location=self.device, weights_only=True)
         self.load_state_dict(state_dict)
 
     def segment(self, tensor: Tensor):
