@@ -13,8 +13,8 @@ class SegmentationDataset(Dataset):
         self.mask_dir = mask_dir
         if not image_dir or not mask_dir:
             return
-        self.image_filenames = os.listdir(image_dir)
-        self.mask_filenames = os.listdir(mask_dir)
+        self.image_filenames = sorted(os.listdir(image_dir))
+        self.mask_filenames = sorted(os.listdir(mask_dir))
         self.transform = transform
         
         for index in range(len(self.image_filenames)):
