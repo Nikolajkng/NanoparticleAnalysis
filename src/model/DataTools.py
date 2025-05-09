@@ -43,7 +43,9 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     data_augmenter = DataAugmenter()
     dataset = slice_dataset_in_four(dataset)
     train_data, val_data, test_data = random_split(dataset, [train_data_size, validation_data_size, 1-train_data_size-validation_data_size])
-    
+    print(f"Train images: {train_data.indices}")
+    print(f"Validation images: {val_data.indices}")
+    print(f"Test images: {test_data.indices}")
     train_data = data_augmenter.augment_dataset(train_data, input_size)  
     
     # Helper to process val/test with mirror_fill and extract_slices
