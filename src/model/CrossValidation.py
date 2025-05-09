@@ -12,10 +12,10 @@ from src.model.UNet import UNet
 from src.model.ModelEvaluator import ModelEvaluator
 from src.shared.ModelConfig import ModelConfig
 
-def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None):
+def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None, test_callback = None):
     
     # Set parameters:
-    train_subset_size = 0.7
+    train_subset_size = 0.6
     validation_subset_size = 0.2
     print(f"Training model using holdout [train_split_size={train_subset_size}, epochs={model_config.epochs}, learnRate={model_config.learning_rate}]...")
     print("---------------------------------------------------------------------------------------")
@@ -41,6 +41,6 @@ def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_
         loss_callback=loss_callback
         )
     
-    iou, pixel_accuracy = ModelEvaluator.evaluate_model(unet, test_dataloader)
+    iou, pixel_accuracy = ModelEvaluator.evaluate_model(unet, test_dataloader, test_callback)
     return iou, pixel_accuracy
 

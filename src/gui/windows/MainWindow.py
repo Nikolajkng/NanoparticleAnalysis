@@ -25,23 +25,22 @@ from src.shared.ModelTrainingStats import ModelTrainingStats
 from PIL import Image
 from PIL.ImageQt import ImageQt
 from src.gui.windows.MessageBoxes import *
-from src.model.PlottingTools import plot_loss
 from src.shared.ParticleImage import ParticleImage
 from src.gui.windows.MessageBoxes import *
 from src.model.PlottingTools import plot_loss
 from src.shared.Formatters import _truncate
 from src.shared.ParticleImage import ParticleImage
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-
+from torch import Tensor
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
-
+    show_testing_difference_signal = QtCore.pyqtSignal(Tensor, Tensor, Tensor, Tensor)
     def __init__(self):
         super().__init__()
         self.MainWindow = QMainWindow()
         self.setupUi(self.MainWindow)
-        preloaded_model_name = "UNet_256_downsized.pt"
+        preloaded_model_name = "UNet_best_09-05.pt"
         self.current_model_label.setText(f"{preloaded_model_name}")
         self.controller = Controller(preloaded_model_name)
         self.image_path = None
@@ -176,7 +175,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
 
     def on_train_model_custom_data_clicked(self):
-        self.train_model_window = TrainModelWindow(self.update_train_model_values_signal)
+        self.train_model_window = TrainModelWindow(self.update_train_model_values_signal, self.show_testing_difference_signal)
         self.train_model_window.train_model_signal.connect(self.train_model_custom_data)
         self.train_model_window.show()
 
@@ -192,7 +191,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     self.controller.process_command, 
                     Command.RETRAIN, model_config, 
                     stop_training_event,
-                    self.update_training_model_stats),
+                    self.update_training_model_stats,
+                    self.show_testing_difference,
+                    ),
                 daemon=True)
             self.train_thread.start()
             # messageBoxTraining(self, "success")            
@@ -204,6 +205,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
+
+    def show_testing_difference(self, prediction: Tensor, label: Tensor, iou: Tensor, pixel_accuracy: Tensor):
+        self.show_testing_difference_signal.emit(prediction, label, iou, pixel_accuracy)
 
     def update_loss_values(self, stats: ModelTrainingStats):
         # Update the GUI with the training stats

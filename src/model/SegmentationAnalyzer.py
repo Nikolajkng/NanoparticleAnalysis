@@ -1,9 +1,8 @@
 import os
 import cv2
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
+
+
 from PIL import Image
 from datetime import datetime
 
@@ -15,6 +14,9 @@ class SegmentationAnalyzer():
         return num_labels, labels, area_stats, centroids
     
     def save_histogram_as_image(self, fig):
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
         hist_image_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "histogram", "diameter_histogram.png")
         os.makedirs(os.path.dirname(hist_image_path), exist_ok=True)
         fig.savefig(hist_image_path)
@@ -23,6 +25,9 @@ class SegmentationAnalyzer():
         return histogram_image
     
     def create_histogram(self, stats, file_info: FileInfo):
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
         try:
             scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, file_info)
             histogram_data = {

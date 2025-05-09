@@ -1,7 +1,10 @@
-import matplotlib.pyplot as plt
+import threading
 import numpy as np
 
 def plot_loss(training_loss_values: list[float], validation_loss_values: list[float]) -> None:
+    import matplotlib
+    matplotlib.use('QtAgg')
+    import matplotlib.pyplot as plt
     try:
         plt.clf()
         plt.yscale('log')
@@ -16,3 +19,36 @@ def plot_loss(training_loss_values: list[float], validation_loss_values: list[fl
     except Exception as e:
         print("Error when plotting!")
         print(e.with_traceback)
+
+def plot_difference(prediction, label, iou, pixel_accuracy):
+        import matplotlib
+        matplotlib.use('QtAgg')
+        import matplotlib.pyplot as plt
+
+        prediction_uint8 = (np.array(prediction) * 255).astype(np.uint8).squeeze(0)
+        label_uint8 = (np.array(label) * 255).astype(np.uint8).squeeze(0)
+
+        false_positives = ((prediction_uint8 == 255) & (label_uint8 == 0))  # FP: Red
+        false_negatives = ((prediction_uint8 == 0) & (label_uint8 == 255))  # FN: Blue
+
+        overlay = np.zeros((*false_positives.shape, 3), dtype=np.uint8)
+
+        overlay[..., 0] = false_positives * 255
+        overlay[..., 2] = false_negatives * 255  # Blue channel for FN
+        
+        fig, axes = plt.subplots(1, 3, figsize=(12, 5), sharex=True, sharey=True)
+
+        axes[0].imshow(prediction_uint8, cmap='gray')
+        axes[0].set_title("Prediction")
+
+        axes[1].imshow(label_uint8, cmap='gray')
+        axes[1].set_title("Label")
+
+        axes[2].imshow(overlay)
+        axes[2].set_title("Difference (FP: Red, FN: Blue)")
+
+        fig.text(0.5, 0.95, f"IoU: {iou:.2f}   Pixel Accuracy: {pixel_accuracy:.2f}",
+         ha='center', va='top', fontsize=14, bbox=dict(facecolor='white', alpha=0.7))
+        
+        plt.tight_layout()
+        plt.show()

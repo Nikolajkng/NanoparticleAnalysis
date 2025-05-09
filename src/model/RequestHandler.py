@@ -12,14 +12,18 @@ class request_handler:
     def __init__(self, unet):
         self.unet = unet
 
-    def process_request_train(self, model_config: ModelConfig, stop_training_event = None, loss_callback = None):  
-        iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preffered_input_size, stop_training_event, loss_callback)
+    def process_request_train(self, model_config: ModelConfig, stop_training_event = None, loss_callback = None, test_callback = None):  
+        # CHANGE CROSS VALIDATION HERE (uncomment):
+        self.unet = UNet()
+        iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preffered_input_size, stop_training_event, loss_callback, test_callback)
+        #cv_kfold(self.unet, images_path, masks_path)
         print(f"Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}")
         return iou, pixel_accuracy
 
 
     def process_request_segment(self, image: ParticleImage, output_folder):
         tensor = TF.to_tensor(image.pil_image).unsqueeze(0)
+        tensor = tensor.to(self.unet.device)
         stride_length = self.unet.preffered_input_size[0]*4//5
         tensor_mirror_filled = mirror_fill(tensor, self.unet.preffered_input_size, (stride_length,stride_length))
         patches = extract_slices(tensor_mirror_filled, self.unet.preffered_input_size, (stride_length,stride_length))
@@ -29,7 +33,7 @@ class request_handler:
         self.unet.eval()
         patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
         with torch.no_grad():
-            segmentations = self.unet(patches_tensor).detach().numpy()
+            segmentations = self.unet(patches_tensor).cpu().detach().numpy()
 
             
         segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
