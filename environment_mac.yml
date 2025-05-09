@@ -1,0 +1,27 @@
+name: bachelor_environment
+channels:
+  - conda-forge
+  - pytorch
+dependencies:
+  - python=3.12
+  - pip
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - tqdm
+  - pytorch
+  - torchaudio
+  - torchvision
+  - opencv
+  - qt  
+  - pyqt
+  - tesseract
+  - pip:
+      - h5py
+      - pyinstaller
+      - pyinstaller-hooks-contrib
+      - ncempy
+      - tifffile
+      - pillow==9.5.0
