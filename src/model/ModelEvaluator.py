@@ -55,7 +55,7 @@ class ModelEvaluator():
                 segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
                 unet.to(input.device)
                 patches_tensor = torch.tensor(patches, dtype=input.dtype, device=input.device)
-                segmentations = unet(patches_tensor).detach().numpy()
+                segmentations = unet(patches_tensor).cpu().detach().numpy()
                 segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
                 segmented_image = center_crop(segmented_image, (input.shape[2], input.shape[3])).argmax(axis=1)
                 #prediction = unet.segment(input)

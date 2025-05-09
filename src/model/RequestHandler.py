@@ -23,6 +23,7 @@ class request_handler:
 
     def process_request_segment(self, image: ParticleImage, output_folder):
         tensor = TF.to_tensor(image.pil_image).unsqueeze(0)
+        tensor = tensor.to(self.unet.device)
         stride_length = self.unet.preffered_input_size[0]*4//5
         tensor_mirror_filled = mirror_fill(tensor, self.unet.preffered_input_size, (stride_length,stride_length))
         patches = extract_slices(tensor_mirror_filled, self.unet.preffered_input_size, (stride_length,stride_length))
@@ -30,10 +31,9 @@ class request_handler:
         segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
 
         self.unet.eval()
-        self.unet.to(tensor.device)
         patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
         with torch.no_grad():
-            segmentations = self.unet(patches_tensor).detach().numpy()
+            segmentations = self.unet(patches_tensor).cpu().detach().numpy()
 
             
         segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
