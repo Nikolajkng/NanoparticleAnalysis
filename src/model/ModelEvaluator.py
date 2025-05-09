@@ -12,6 +12,8 @@ class ModelEvaluator():
         assert np.isin(prediction, [0, 1]).all(), "prediction must be binary image"
         assert np.isin(ground_truth, [0, 1]).all(), "ground truth must be binary image"
 
+        if ground_truth.sum() == 0: # No ground truth / only background -> use pixel accuracy instead
+            return ModelEvaluator.__get_single_image_pixel_accuracy(prediction, ground_truth)
         intersection = np.logical_and(prediction, ground_truth).sum()
         union = np.logical_or(prediction, ground_truth).sum()
         
