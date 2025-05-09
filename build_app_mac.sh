@@ -27,4 +27,4 @@ else
   exit 1
 fi
 
-echo "🎉 Done! You can
+echo "🎉 Done! You can"
