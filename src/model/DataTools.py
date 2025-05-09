@@ -39,6 +39,35 @@ def slice_dataset_in_four(dataset):
         masks.extend(mask_slices)
     return SegmentationDataset.from_image_set(images, masks)
 
+# Helper to process val/test with mirror_fill and extract_slices
+def process_and_slice(data_subset, input_size=(256, 256)):
+    images = []
+    masks = []
+    for img, mask in data_subset:
+        images.append(img)
+        masks.append(mask)
+    
+    image_tensor = torch.stack(images)  # Shape: [N, C, H, W]
+    mask_tensor = torch.stack(masks)    # Shape: [N, C, H, W]
+
+    filled_images = mirror_fill(image_tensor, patch_size=input_size, stride_size=input_size)
+    filled_masks = mirror_fill(mask_tensor, patch_size=input_size, stride_size=input_size)
+
+    sliced_images = extract_slices(filled_images, patch_size=input_size, stride_size=input_size)
+    sliced_masks = extract_slices(filled_masks, patch_size=input_size, stride_size=input_size)
+
+    # Convert np.ndarray -> torch.Tensor if necessary
+    if isinstance(sliced_images, np.ndarray):
+        sliced_images = torch.from_numpy(sliced_images)
+    if isinstance(sliced_masks, np.ndarray):
+        sliced_masks = torch.from_numpy(sliced_masks)
+
+    # Create list of (image, mask) tensors
+    return SegmentationDataset.from_image_set(
+        [img for img in sliced_images], 
+        [mask for mask in sliced_masks]
+    )
+
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
     dataset = slice_dataset_in_four(dataset)
@@ -47,39 +76,9 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     print(f"Validation images: {val_data.indices}")
     print(f"Test images: {test_data.indices}")
     train_data = data_augmenter.augment_dataset(train_data, input_size)  
-    
-    # Helper to process val/test with mirror_fill and extract_slices
-    def process_and_slice(data_subset):
-        images = []
-        masks = []
-        for img, mask in data_subset:
-            images.append(img)
-            masks.append(mask)
-        
-        image_tensor = torch.stack(images)  # Shape: [N, C, H, W]
-        mask_tensor = torch.stack(masks)    # Shape: [N, C, H, W]
 
-        filled_images = mirror_fill(image_tensor, patch_size=input_size, stride_size=input_size)
-        filled_masks = mirror_fill(mask_tensor, patch_size=input_size, stride_size=input_size)
-
-        sliced_images = extract_slices(filled_images, patch_size=input_size, stride_size=input_size)
-        sliced_masks = extract_slices(filled_masks, patch_size=input_size, stride_size=input_size)
-
-        # Convert np.ndarray -> torch.Tensor if necessary
-        if isinstance(sliced_images, np.ndarray):
-            sliced_images = torch.from_numpy(sliced_images)
-        if isinstance(sliced_masks, np.ndarray):
-            sliced_masks = torch.from_numpy(sliced_masks)
-
-        # Create list of (image, mask) tensors
-        return SegmentationDataset.from_image_set(
-            [img for img in sliced_images], 
-            [mask for mask in sliced_masks]
-        )
-
-
-    val_data = process_and_slice(val_data)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
-    test_data = process_and_slice(test_data)#data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
+    val_data = process_and_slice(val_data, input_size)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
+    test_data = process_and_slice(test_data, input_size)#data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
 
     train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True)
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
@@ -88,15 +87,15 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
 
 
 def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader]:
-    
+    data_augmenter = DataAugmenter()
+    dataset = slice_dataset_in_four(dataset)
     train_data, val_data = random_split(dataset, [train_data_size, 1-train_data_size])
 
-    data_augmenter = DataAugmenter()
     train_data = data_augmenter.augment_dataset(train_data, input_size)
 
-    val_data = data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
+    val_data = process_and_slice(val_data, input_size)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
 
-    train_dataloader = DataLoader(train_data, batch_size=8, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True)
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
     return (train_dataloader, val_dataloader)
 
