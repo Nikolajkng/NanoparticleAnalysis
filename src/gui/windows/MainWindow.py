@@ -77,7 +77,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
 
         # Other connections
-        self.action_train_model.triggered.connect(self.on_train_model_clicked)
         self.action_test_model.triggered.connect(self.on_test_model_clicked)
         self.action_open_image.triggered.connect(self.on_open_image_clicked)
         self.actionRun_Segmentation_on_Current_Image.triggered.connect(self.on_segment_image_clicked)
@@ -306,30 +305,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
         self.plot_segmentation_scene.clear()
         self.plot_segmentation_scene.addItem(pixmap_item)
-
-    def on_train_model_clicked(self):
-        result = confirmTrainingMessageBox(self, "Training a new model may take a while, do you want to continue?")
-        if not result:
-            return
-
-        try:
-            self.train_thread = threading.Thread(
-                target=partial(
-                    self.controller.process_command,
-                    Command.RETRAIN,
-                    self.standard_model_config,
-                    None,
-                    self.update_loss_values 
-                ),
-                daemon=True
-            )
-            self.train_thread.start()
-            #messageBoxTraining(self, True)
-        except Exception as e:
-            messageBoxTraining(self, False)
-            print(f"Error during training: {e}")
             
-
 
     def on_load_model_clicked(self):        
         default_models_path = os.path.abspath(os.path.join(os.getcwd(), 'data', 'models'))
