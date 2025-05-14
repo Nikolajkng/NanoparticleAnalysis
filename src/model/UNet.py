@@ -65,7 +65,7 @@ class UNet(nn.Module):
 
         self.optimizer = None
         
-        # self.criterion = None
+        self.criterion = None
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using {self.device}")

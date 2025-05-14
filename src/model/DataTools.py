@@ -13,13 +13,16 @@ from src.model.dmFileReader import dmFileReader
 from src.shared.IOFunctions import is_dm_format
 from src.model.SegmentationDataset import SegmentationDataset
 
-def slice_dataset_in_four(dataset):
+def slice_dataset_in_four(dataset, input_size=(256, 256)):
     images = []
     masks = []
     for img, mask in dataset:
         width = img.shape[-1]
         height = img.shape[-2]
-
+        if width <= input_size[0] or height <= input_size[1]:
+            images.append(img)
+            masks.append(mask)
+            continue
         new_width = width // 2
         new_height = height // 2
 
@@ -70,7 +73,7 @@ def process_and_slice(data_subset, input_size=(256, 256)):
 
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
-    dataset = slice_dataset_in_four(dataset)
+    dataset = slice_dataset_in_four(dataset, input_size)
     train_data, val_data, test_data = random_split(dataset, [train_data_size, validation_data_size, 1-train_data_size-validation_data_size])
     print(f"Train images: {train_data.indices}")
     print(f"Validation images: {val_data.indices}")
@@ -88,7 +91,7 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
 
 def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
-    dataset = slice_dataset_in_four(dataset)
+    dataset = slice_dataset_in_four(dataset, input_size)
     train_data, val_data = random_split(dataset, [train_data_size, 1-train_data_size])
 
     train_data = data_augmenter.augment_dataset(train_data, input_size)
@@ -148,11 +151,16 @@ def load_image_as_tensor(image_path: str):
         tensor = TF.resize(tensor, 1024)
     return tensor
 
-# From https://stackoverflow.com/questions/65754703/pillow-converting-a-tiff-from-greyscale-16-bit-to-8-bit-results-in-fully-white
+# Made with help from https://stackoverflow.com/questions/65754703/pillow-converting-a-tiff-from-greyscale-16-bit-to-8-bit-results-in-fully-white
 def tiff_force_8bit(image, **kwargs):
-    if image.format == 'TIFF' and image.mode == 'I;16':
+    if image.format == 'TIFF' and image.mode in ('I;16', 'I;16B', 'I;16L'):
         array = np.array(image)
         normalized = (array.astype(np.uint16) - array.min()) * 255.0 / (array.max() - array.min())
+        range_val = array.max() - array.min()
+        if range_val == 0:
+            normalized = np.zeros_like(array, dtype=np.uint8)
+        else:
+            normalized = (array.astype(np.uint16) - array.min()) * 255.0 / range_val
         image = Image.fromarray(normalized.astype(np.uint8))
 
     return image
