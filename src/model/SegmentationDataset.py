@@ -5,7 +5,7 @@ import torchvision.transforms.functional as TF
 
 
 class SegmentationDataset(Dataset):
-    def __init__(self, image_dir=None, mask_dir=None, transform=None):
+    def __init__(self, image_dir=None, mask_dir=None, normalizer=None, transform=None):
 
         self.images = []
         self.masks = []
@@ -16,6 +16,7 @@ class SegmentationDataset(Dataset):
         self.image_filenames = sorted(os.listdir(image_dir))
         self.mask_filenames = sorted(os.listdir(mask_dir))
         self.transform = transform
+        self.normalizer = normalizer
         
         for index in range(len(self.image_filenames)):
             img_path = os.path.join(self.image_dir, self.image_filenames[index])
@@ -31,14 +32,18 @@ class SegmentationDataset(Dataset):
             self.masks.append(mask)
 
     @classmethod
-    def from_image_set(cls, images, masks):
+    def from_image_set(cls, images, masks, normalizer=None):
         res = cls()
         res.images = images
         res.masks = masks
+        res.normalizer = normalizer
         return res
 
     def __len__(self):
         return len(self.images)
     
     def __getitem__(self, index):
-        return self.images[index], self.masks[index]
+        image, mask = self.images[index], self.masks[index]
+        # if self.normalizer:
+        #     image = self.normalizer(image)
+        return image, mask

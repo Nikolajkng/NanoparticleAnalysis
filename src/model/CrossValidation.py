@@ -1,4 +1,5 @@
 import datetime
+import torch
 from torch.utils.data import DataLoader, Subset
 import numpy as np
 from sklearn.model_selection import KFold
@@ -6,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from src.model.SegmentationDataset import SegmentationDataset
 from src.model.PlottingTools import *
-from src.model.DataTools import get_dataloaders, get_dataloaders_without_testset
+from src.model.DataTools import get_dataloaders, get_dataloaders_without_testset, get_normalizer
 from src.model.DataAugmenter import DataAugmenter
 from src.model.UNet import UNet
 from src.model.ModelEvaluator import ModelEvaluator
@@ -28,7 +29,7 @@ def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_
         test_dataloader = DataLoader(test_dataset, batch_size=1)
     else:
         train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(dataset, train_subset_size, validation_subset_size, unet.preffered_input_size)
-
+    unet.normalizer = get_normalizer(torch.stack(train_dataloader.dataset.images))
     unet.train_model(
         training_dataloader=train_dataloader, 
         validation_dataloader=validation_dataloader, 

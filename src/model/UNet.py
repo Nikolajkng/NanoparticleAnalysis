@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 from threading import Event
 import os
+from torchvision.transforms import Normalize
 
 # Model-related imports
 from src.model.PlottingTools import *
@@ -71,12 +72,15 @@ class UNet(nn.Module):
         print(f"Using {self.device}")
 
         self.preffered_input_size = (256, 256)
+        self.normalizer = None
     
         if pre_loaded_model_path:
             model_path = resource_path(pre_loaded_model_path)
             self.load_model(model_path)
 
     def forward(self, input):
+        if self.normalizer:
+            input = self.normalizer(input)
         e1 = self.encoder1(input)
         pooled = nn.MaxPool2d(2,2)(e1)
         e2 = self.encoder2(pooled)
@@ -179,11 +183,15 @@ class UNet(nn.Module):
         path = folder_path + model_name
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        torch.save(self.state_dict(), path)
+        torch.save({"model_state_dict": self.state_dict(),
+                    "normalizer_mean": self.normalizer.mean,
+                    "normalizer_std": self.normalizer.std}, 
+                    path)
         
     def load_model(self, path):
-        state_dict = torch.load(path, map_location=self.device, weights_only=True)
-        self.load_state_dict(state_dict)
+        model_params = torch.load(path, map_location=self.device, weights_only=True)
+        self.load_state_dict(model_params["model_state_dict"])
+        self.normalizer = Normalize(model_params["normalizer_mean"], model_params["normalizer_std"])
 
     def segment(self, tensor: Tensor):
         output = self(tensor)

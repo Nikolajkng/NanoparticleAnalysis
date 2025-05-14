@@ -5,6 +5,7 @@ import os
 from PIL import Image
 from torch import Tensor
 import torchvision.transforms.functional as TF
+import torchvision.transforms as v2
 import numpy as np
 import sys
 
@@ -73,7 +74,6 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     print(f"Validation images: {val_data.indices}")
     print(f"Test images: {test_data.indices}")
     train_data = data_augmenter.augment_dataset(train_data, input_size)  
-
     val_data = process_and_slice(val_data, input_size)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
     test_data = process_and_slice(test_data, input_size)#data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
 
@@ -296,6 +296,11 @@ def showTensor(tensor: Tensor) -> None:
     
         img = TF.to_pil_image(pixels.byte())
         img.show()
+
+def get_normalizer(X):
+    mu = X.mean(axis=(0, 2, 3)).tolist()
+    std = X.std(axis=(0, 2, 3)).tolist()
+    return v2.Normalize(mean=mu, std=std)
 
 if __name__ == '__main__':
     folder_path = 'data/medres_masks/'
