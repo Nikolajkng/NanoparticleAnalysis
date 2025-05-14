@@ -412,7 +412,7 @@
      <x>0</x>
      <y>0</y>
      <width>1328</width>
-     <height>26</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_file">
@@ -436,6 +436,7 @@
     </property>
     <addaction name="actionExport_Segmentation_2"/>
     <addaction name="actionExport_Data_as_csv"/>
+    <addaction name="actionExport_Statistics_as_CSV"/>
    </widget>
    <widget class="QMenu" name="menuRun">
     <property name="title">
@@ -486,7 +487,7 @@
   </action>
   <action name="actionExport_Data_as_csv">
    <property name="text">
-    <string>Export Data as csv</string>
+    <string>Export Table Data as CSV</string>
    </property>
   </action>
   <action name="actionRun_Segmentation_on_Current_Image">
@@ -510,6 +511,11 @@
   <action name="actionRun_Segmentation_on_folder">
    <property name="text">
     <string>Run Segmentation on folder</string>
+   </property>
+  </action>
+  <action name="actionExport_Statistics_as_CSV">
+   <property name="text">
+    <string>Export Statistics as CSV</string>
    </property>
   </action>
  </widget>

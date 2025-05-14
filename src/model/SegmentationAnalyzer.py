@@ -80,7 +80,6 @@ class SegmentationAnalyzer():
                             f"{np.mean(scaled_areas):>20.6f}{np.mean(scaled_diameters):>20.6f}"
                             f"{np.max(scaled_areas):>20.6f}{np.max(scaled_diameters):>20.6f}"
                             f"{np.min(scaled_areas):>20.6f}{np.min(scaled_diameters):>20.6f}\n")
-
         except Exception as e:
             print("Error in writing statistics to txt file: ", e)
 

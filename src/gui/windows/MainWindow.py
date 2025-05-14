@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene, QGraphicsPixmapItem, QVBoxLayout
 )
 from PIL import ImageQt
+from PyQt5.QtCore import QDir
 import os
 import csv
 import threading
@@ -83,6 +84,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.action_load_model.triggered.connect(self.on_load_model_clicked)
         self.actionExport_Segmentation_2.triggered.connect(self.on_export_segmented_clicked)
         self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
+        self.actionExport_Statistics_as_CSV.triggered.connect(self.on_export_statistics_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
         self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
@@ -421,3 +423,52 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         except Exception as error:
             messageBox(self, f"Failed to export data: {str(error)}")
 
+    def on_export_statistics_clicked(self):
+        if self.image is None:
+            messageBox(self, "Export failed: No image found")
+            return
+
+        # OBS: Uses the txt file generated during segmentation
+        txt_path = os.path.abspath(os.path.join("data", "statistics", f"{self.image.file_info.file_name}_statistics.txt"))
+        file_path, selected_filter = QFileDialog.getSaveFileName(
+        None,
+        "Save Statistics as CSV",
+        QDir.homePath(), 
+        "CSV Files (*.csv);;All Files (*)"
+        )
+
+        if not file_path:
+            messageBox(self, "Error: No save path selected.")
+            return
+
+        if not os.path.splitext(file_path)[1]:
+            file_path += ".csv"
+
+        try:
+            # Parse particle data from TXT
+            with open(txt_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+
+            data_started = False
+            particle_data = []
+
+            for line in lines:
+                if 'Particle No.' in line:
+                    data_started = True
+                    continue
+                if '_______________________________' in line:
+                    break
+                if data_started:
+                    parts = line.strip().split()
+                    if len(parts) == 3:
+                        particle_data.append(parts)
+
+            # Write to CSV
+            with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['Particle No.', 'Area', 'Diameter'])
+                writer.writerows(particle_data)
+
+            messageBox(self, "success", "Statistics exported successfully")
+        except Exception as e:
+            messageBox(self, f"Export failed: {str(e)}")

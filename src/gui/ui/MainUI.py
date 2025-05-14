@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\gui_prototype1.2_graphics_view.ui'
+# Form implementation generated from reading ui file 'gui_prototype1.2_graphics_view.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -184,7 +184,7 @@ class Ui_MainWindow(object):
         self.current_model_label_2.setObjectName("current_model_label_2")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1328, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1328, 24))
         self.menubar.setObjectName("menubar")
         self.menu_file = QtWidgets.QMenu(self.menubar)
         self.menu_file.setObjectName("menu_file")
@@ -222,6 +222,8 @@ class Ui_MainWindow(object):
         self.action_load_model.setObjectName("action_load_model")
         self.actionRun_Segmentation_on_folder = QtWidgets.QAction(MainWindow)
         self.actionRun_Segmentation_on_folder.setObjectName("actionRun_Segmentation_on_folder")
+        self.actionExport_Statistics_as_CSV = QtWidgets.QAction(MainWindow)
+        self.actionExport_Statistics_as_CSV.setObjectName("actionExport_Statistics_as_CSV")
         self.menu_file.addAction(self.action_open_image)
         self.menu_model.addAction(self.action_load_model)
         self.menu_model.addAction(self.action_train_model)
@@ -229,6 +231,7 @@ class Ui_MainWindow(object):
         self.menu_model.addAction(self.action_test_model)
         self.menuTools.addAction(self.actionExport_Segmentation_2)
         self.menuTools.addAction(self.actionExport_Data_as_csv)
+        self.menuTools.addAction(self.actionExport_Statistics_as_CSV)
         self.menuRun.addAction(self.actionRun_Segmentation_on_Current_Image)
         self.menuRun.addAction(self.actionRun_Segmentation_on_folder)
         self.menubar.addAction(self.menu_file.menuAction())
@@ -278,9 +281,10 @@ class Ui_MainWindow(object):
         self.action_open_image.setText(_translate("MainWindow", "Open Image"))
         self.actionExport_Segmentation.setText(_translate("MainWindow", "Export Segmentation"))
         self.actionExport_Segmentation_2.setText(_translate("MainWindow", "Export Segmentation"))
-        self.actionExport_Data_as_csv.setText(_translate("MainWindow", "Export Data as csv"))
+        self.actionExport_Data_as_csv.setText(_translate("MainWindow", "Export Table Data as CSV"))
         self.actionRun_Segmentation_on_Current_Image.setText(_translate("MainWindow", "Run Segmentation on Current Image"))
         self.actionRun_Segmentation_on_Current_Image.setIconText(_translate("MainWindow", "Run Segmentation"))
         self.action_test_model.setText(_translate("MainWindow", "Test Model"))
         self.action_load_model.setText(_translate("MainWindow", "Load Model"))
         self.actionRun_Segmentation_on_folder.setText(_translate("MainWindow", "Run Segmentation on folder"))
+        self.actionExport_Statistics_as_CSV.setText(_translate("MainWindow", "Export Statistics as CSV"))
