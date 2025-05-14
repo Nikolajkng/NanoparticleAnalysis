@@ -47,29 +47,23 @@ def process_and_slice(data_subset, input_size=(256, 256)):
     images = []
     masks = []
     for img, mask in data_subset:
-        images.append(img)
-        masks.append(mask)
-    
-    image_tensor = torch.stack(images)  # Shape: [N, C, H, W]
-    mask_tensor = torch.stack(masks)    # Shape: [N, C, H, W]
+        img = img.unsqueeze(0) if img.dim() == 3 else img
+        mask = mask.unsqueeze(0) if mask.dim() == 3 else mask
+        filled_image = mirror_fill(img, patch_size=input_size, stride_size=input_size)
+        filled_mask = mirror_fill(mask, patch_size=input_size, stride_size=input_size)
 
-    filled_images = mirror_fill(image_tensor, patch_size=input_size, stride_size=input_size)
-    filled_masks = mirror_fill(mask_tensor, patch_size=input_size, stride_size=input_size)
-
-    sliced_images = extract_slices(filled_images, patch_size=input_size, stride_size=input_size)
-    sliced_masks = extract_slices(filled_masks, patch_size=input_size, stride_size=input_size)
-
-    # Convert np.ndarray -> torch.Tensor if necessary
-    if isinstance(sliced_images, np.ndarray):
-        sliced_images = torch.from_numpy(sliced_images)
-    if isinstance(sliced_masks, np.ndarray):
-        sliced_masks = torch.from_numpy(sliced_masks)
+        sliced_images = extract_slices(filled_image, patch_size=input_size, stride_size=input_size)
+        sliced_masks = extract_slices(filled_mask, patch_size=input_size, stride_size=input_size)
+        # Convert np.ndarray -> torch.Tensor if necessary
+        if isinstance(sliced_masks[0], np.ndarray):
+            sliced_images = [torch.from_numpy(img) for img in sliced_images]
+        if isinstance(sliced_masks[0], np.ndarray):
+            sliced_masks = [torch.from_numpy(mask) for mask in sliced_masks]
+        images.extend(sliced_images)
+        masks.extend(sliced_masks)
 
     # Create list of (image, mask) tensors
-    return SegmentationDataset.from_image_set(
-        [img for img in sliced_images], 
-        [mask for mask in sliced_masks]
-    )
+    return SegmentationDataset.from_image_set(images, masks)
 
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
