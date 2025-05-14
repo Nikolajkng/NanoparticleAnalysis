@@ -113,8 +113,4 @@ class ParticleImage:
     
     def resize(self, new_size: tuple[int, int]):
         self.pil_image.thumbnail(new_size)
-
-        self.file_info.pixel_width = self.file_info.pixel_width * self.file_info.width / self.pil_image.width
-        self.file_info.pixel_height = self.file_info.pixel_height * self.file_info.height / self.pil_image.height
-        self.file_info.width, self.file_info.height = self.pil_image.width, self.pil_image.height
-
+        self.file_info.downsize_factor =  self.file_info.width / self.pil_image.width

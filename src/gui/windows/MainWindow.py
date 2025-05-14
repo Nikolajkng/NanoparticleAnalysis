@@ -240,8 +240,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if self.file_path_image: 
             self.image = self.controller.process_command(Command.LOAD_IMAGE, self.file_path_image)
-            if self.image.pil_image.width > 1024 or self.image.pil_image.height > 1024:
-                self.image.resize((1024, 1024))
             pixmap = self.load_pixmap(self.image.pil_image)
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.clear()

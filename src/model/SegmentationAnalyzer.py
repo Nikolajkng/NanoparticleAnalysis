@@ -146,8 +146,8 @@ class SegmentationAnalyzer():
     
     def _get_scaled_meassurements(self, stats: np.ndarray, file_info: FileInfo):
         pixel_area = file_info.pixel_width * file_info.pixel_height
-        scaled_areas = self.__get_pixel_areas(stats) * pixel_area
-        scaled_diameters = self.__get_diameters(stats) * file_info.pixel_width 
+        scaled_areas = self.__get_pixel_areas(stats) * file_info.downsize_factor * pixel_area
+        scaled_diameters = self.__get_diameters(stats) * file_info.downsize_factor * file_info.pixel_width 
         return scaled_areas, scaled_diameters
 
     def format_table_data(self, stats: np.ndarray, file_info: FileInfo, particle_count: int):

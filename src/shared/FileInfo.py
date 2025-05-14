@@ -10,5 +10,5 @@ class FileInfo():
         self.unit = None
         self.real_width = None #In unit
         self.real_height = None
-
+        self.downsize_factor = 1.0
     

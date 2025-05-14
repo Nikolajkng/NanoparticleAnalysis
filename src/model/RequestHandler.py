@@ -47,6 +47,7 @@ class request_handler:
         annotated_image_pil = Image.fromarray(annotated_image)
         segmented_image_pil = Image.fromarray(segmented_image_2d)
 
+        
         table_data = analyzer.format_table_data(stats, image.file_info, particle_count)
         analyzer.write_stats_to_txt(stats, image.file_info, particle_count, output_folder)
         histogram_fig = analyzer.create_histogram(stats, image.file_info) 
@@ -79,4 +80,6 @@ class request_handler:
     def process_request_load_image(self, image_path):
         image = ParticleImage(image_path)
         image.file_info = image.get_file_info(image_path)
+        if image.pil_image.width > 1024 or image.pil_image.height > 1024:
+                image.resize((1024, 1024))
         return image
