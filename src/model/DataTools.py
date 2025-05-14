@@ -148,6 +148,15 @@ def load_image_as_tensor(image_path: str):
         tensor = TF.resize(tensor, 1024)
     return tensor
 
+# From https://stackoverflow.com/questions/65754703/pillow-converting-a-tiff-from-greyscale-16-bit-to-8-bit-results-in-fully-white
+def tiff_force_8bit(image, **kwargs):
+    if image.format == 'TIFF' and image.mode == 'I;16':
+        array = np.array(image)
+        normalized = (array.astype(np.uint16) - array.min()) * 255.0 / (array.max() - array.min())
+        image = Image.fromarray(normalized.astype(np.uint8))
+
+    return image
+
 # Made with help from https://www.programmersought.com/article/15316517340/
 def mirror_fill(images: Tensor, patch_size: tuple, stride_size: tuple) -> Tensor:
     images_np = images.cpu().numpy()
