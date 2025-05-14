@@ -52,6 +52,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.csv_file = None
         self.file_path_image = None
         self.scale_is_selected = False
+        self.table_data_set = False
         self.scale_input_set = False
         self.show_annotated_image = True  
         self.graphicsView_scene = QGraphicsScene(self)
@@ -83,7 +84,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.actionRun_Segmentation_on_folder.triggered.connect(self.on_segment_folder_clicked)
         self.action_load_model.triggered.connect(self.on_load_model_clicked)
         self.actionExport_Segmentation_2.triggered.connect(self.on_export_segmented_clicked)
-        self.actionExport_Data_as_csv.triggered.connect(self.on_export_data_csv_clicked)
+        self.actionExport_Data_as_csv.triggered.connect(self.on_export_table_data_csv_clicked)
         self.actionExport_Statistics_as_CSV.triggered.connect(self.on_export_statistics_clicked)
         self.action_new_data_train_model.triggered.connect(self.on_train_model_custom_data_clicked)
         self.fullscreen_image_button.clicked.connect(self.on_fullscreen_image_clicked)
@@ -166,6 +167,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def set_table_data(self, table_data: np.ndarray):
         data = TableData(table_data)
         data.insertIn(self.table_widget)
+        self.table_data_set = True
 
     def on_segment_folder_clicked(self):
         input_folder_path = QFileDialog.getExistingDirectory(None, "Select an input folder", "")
@@ -373,50 +375,54 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             messageBox(self, "success", "Segmented image exported successfully")
         else:
             messageBox(self, "Error: File path is not selected.")
+               # Check if the table is empty
+ 
             
+        
           
-    def on_export_data_csv_clicked(self):
-        options = QFileDialog.Options()
+    def on_export_table_data_csv_clicked(self):
+        if not self.table_data_set:
+            messageBox(self, f"Failed to export data: No table data found")
+            return
+
         file_dialog = QFileDialog(self)
         file_dialog.setWindowTitle("Save CSV")
         file_dialog.setNameFilter("CSV Files (*.csv);;All Files (*)")
-        file_dialog.setOptions(options)
-        file_path, selected_filter = file_dialog.getSaveFileName()
+        file_path, selected_filter = file_dialog.getSaveFileName(
+            options=QFileDialog.Options()
+        )
 
-
-        if file_path is None: return
-        
-        if not file_path.lower().endswith(".csv"):
-            file_path += ".csv"
-
-        # Center the box
+        # Center the dialog (optional, after showing it)
         dialog_geometry = file_dialog.geometry()
         screen_geometry = QApplication.desktop().screenGeometry() 
         screen_center = screen_geometry.center()
         dialog_center = dialog_geometry.center()
         file_dialog.move(screen_center - dialog_center)
-        
-        if not file_path: 
+
+        # If user canceled
+        if not file_path:
             return
 
+        # Ensure .csv extension
         if not file_path.lower().endswith(".csv"):
             file_path += ".csv"
-
 
         try:
             with open(file_path, mode='w', newline='', encoding='utf-8') as file:
                 writer = csv.writer(file)
 
-                headers = []
-                for column in range(self.table_widget.columnCount()):
-                    headers.append(self.table_widget.horizontalHeaderItem(column).text())
+                headers = [
+                    self.table_widget.horizontalHeaderItem(col).text()
+                    for col in range(self.table_widget.columnCount())
+                ]
                 writer.writerow(headers)
 
                 for row in range(self.table_widget.rowCount()):
-                    row_data = []
-                    for column in range(self.table_widget.columnCount()):
-                        item = self.table_widget.item(row, column)
-                        row_data.append(item.text() if item else "")
+                    row_data = [
+                        self.table_widget.item(row, col).text()
+                        if self.table_widget.item(row, col) else ""
+                        for col in range(self.table_widget.columnCount())
+                    ]
                     writer.writerow(row_data)
 
             messageBox(self, "success", "Data exported successfully")
