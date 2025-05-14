@@ -423,6 +423,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         except Exception as error:
             messageBox(self, f"Failed to export data: {str(error)}")
 
+
+    def parse_fixed_width_line(self, line):
+        # Adds units to the header metrics
+        return [
+            line[0:12].strip(),
+            line[12:32].strip(),
+            line[32:52].strip()
+        ]
+        
     def on_export_statistics_clicked(self):
         if self.image is None:
             messageBox(self, "Export failed: No image found")
@@ -449,26 +458,29 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             with open(txt_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
 
-            data_started = False
-            particle_data = []
+                header = None
+                data_started = False
+                particle_data = []
 
-            for line in lines:
-                if 'Particle No.' in line:
-                    data_started = True
-                    continue
-                if '_______________________________' in line:
-                    break
-                if data_started:
-                    parts = line.strip().split()
-                    if len(parts) == 3:
-                        particle_data.append(parts)
-
+                for line in lines:
+                    if 'Particle No.' in line:
+                        header = self.parse_fixed_width_line(line)
+                        data_started = True
+                        continue
+                    if '_______________________________' in line:
+                        break
+                    if data_started:
+                        parts = self.parse_fixed_width_line(line)
+                        if len(parts) == 3:
+                            particle_data.append(parts)
+                        
             # Write to CSV
             with open(file_path, 'w', newline='', encoding='utf-8') as csvfile:
                 writer = csv.writer(csvfile)
-                writer.writerow(['Particle No.', 'Area', 'Diameter'])
+                writer.writerow(header)                 
                 writer.writerows(particle_data)
 
             messageBox(self, "success", "Statistics exported successfully")
         except Exception as e:
             messageBox(self, f"Export failed: {str(e)}")
+            
