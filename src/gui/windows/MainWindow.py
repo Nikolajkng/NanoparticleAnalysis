@@ -227,7 +227,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self.scale_is_selected = False
             self.scale_input_set = False
             self.segmented_image = None
-            
+             
         
         default_image_path = os.path.abspath(os.path.join(os.getcwd(), 'data', 'images'))
         
