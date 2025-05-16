@@ -50,47 +50,61 @@ def cv_kfold(images_path, masks_path):
     fold_results = []   
     
     # Set parameters:
-    K1 = 2  
-    K2 = 2 
+    K1 = 3  
+    K2 = 5
     learning_rates = [0.001, 0.0001, 0.00001]  
     S = len(learning_rates)
     models = [UNet() for _ in range(S)]
-    epochs = 2  
+    epochs = 15  
     print(f"\nTraining model using two-level cross-validation with K1={K1} and K2={K2}")
 
     # Load data
     dataset = SegmentationDataset(images_path, masks_path)
     dataset = slice_dataset_in_four(dataset)
     dataset_size = len(dataset)
+    sliced_dataset_size = len(process_and_slice(dataset))
 
     cv_outer = KFold(n_splits=K1, shuffle=True, random_state=42)
 
-    fold_results = []
-
+    fold_results = {"test_sizes": [], "test_losses": []}
+    model_losses = {s+1: [] for s in range(S)}
+    best_models = []
     for outerfold, (par_idx, test_idx) in enumerate(cv_outer.split(np.arange(dataset_size))): 
-        outer_fold(outerfold, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, S, models, fold_results)
+        fold_model_losses, best_model = outer_fold(outerfold, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, S, models, fold_results)
+        best_models.append(best_model)
+        for i, loss in enumerate(fold_model_losses):
+            model_losses[i+1].append(loss) 
 
     # **Final Generalization Error Computation**
-    gen_error_estimate = sum(test_size * test_loss for test_size, test_loss in fold_results) / dataset_size
+
+    #print(inner_test_results)
+    
+    test_sizes = fold_results["test_sizes"]
+    test_losses = fold_results["test_losses"]
+    gen_error_estimate = sum(test_size * test_loss for test_size, test_loss in zip(test_sizes, test_losses)) / sliced_dataset_size 
 
     print(f"\n############## K-Fold Cross Validation Summary ##############")
-    for i, (size, loss) in enumerate(fold_results):
-        print(f"Outer Fold {i+1}: Test Loss = {loss:.5f}")
+    for i, loss in enumerate(fold_results["test_losses"]):
+        print(f"Outer Fold {i+1}: Test Loss = {loss:.5f}, Best Learning Rate = {learning_rates[best_models[i]]}")
+
+    print("############## Model Losses ##############")
+    for idx, (key, value) in enumerate(model_losses.items()):
+        print(f"Model {key} (learning rate={learning_rates[key-1]}): {value}")
 
     print(f"\n############## Estimated Generalization Error: {gen_error_estimate:.5f} ##############")
-
 
 def outer_fold(idx, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, S, models, fold_results):
     print(f"\n ---------------- Outer Fold {idx+1}/{K1} ----------------") 
     cv_inner = KFold(n_splits=K2, shuffle=True, random_state=42)
     # Outer split: partition & test set
     par_split = Subset(dataset, par_idx.tolist())
+    sliced_par_split_size = len(process_and_slice(par_split))
     test_split = Subset(dataset, test_idx.tolist())
 
     # Inner CV: Find the best learning rate
     best_val_loss = np.inf
     best_s = None
-    inner_test_results = {s: [] for s in range(1, S+1)}
+    inner_test_results = {s: {"test_sizes": [], "test_losses": []} for s in range(1, S+1)}
 
     for innerfold, (train_idx, inner_test_idx) in enumerate(cv_inner.split(par_idx)): 
         inner_fold(innerfold, K2, par_split, learning_rates, epochs, train_idx, inner_test_idx, inner_test_results, models)
@@ -98,9 +112,10 @@ def outer_fold(idx, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, 
     # Compute weighted validation loss
     E_gen_s = []
     for s in range(1, S+1):
-        gen_error_estimate = sum(test_size * test_loss for test_size, test_loss in inner_test_results[s]) / len(par_split)
+        test_sizes = inner_test_results[s]["test_sizes"]
+        test_losses = inner_test_results[s]["test_losses"]
+        gen_error_estimate = sum(test_size * test_loss for test_size, test_loss in zip(test_sizes, test_losses)) / sliced_par_split_size
         E_gen_s.append(gen_error_estimate)
-
     best_s = E_gen_s.index(min(E_gen_s))
     best_learning_rate = learning_rates[best_s]
     print(f"\nSelected best model: UNet{best_s+1} with weighted validation loss: {E_gen_s[best_s]:.5f} and learning rate {best_learning_rate}")
@@ -118,12 +133,16 @@ def outer_fold(idx, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, 
         epochs=epochs,
         learningRate=best_learning_rate,
         model_name=f"Best_UNet_Outer{idx+1}",
-        cross_validation="kfold"
+        cross_validation="kfold",
+        with_early_stopping=False
     )
 
     # **NEW STEP: Evaluate best model on the test set**
     test_loss = best_model.get_validation_loss(outer_test_dataloader)
-    fold_results.append((len(test_split), test_loss))  # Store test errors
+    fold_results["test_sizes"].append(len(test_split))
+    fold_results["test_losses"].append(test_loss)
+
+    return E_gen_s, best_s
 
 def inner_fold(idx, K2, par_split, learning_rates, epochs, train_idx, test_idx, test_results, models):
     print(f"\n ------------ Inner Fold {idx+1}/{K2} -------------") 
@@ -152,4 +171,5 @@ def inner_fold(idx, K2, par_split, learning_rates, epochs, train_idx, test_idx, 
         )
 
         test_loss = unet.get_validation_loss(inner_test_dataloader)
-        test_results[s].append((len(inner_test_data), test_loss))
+        test_results[s]["test_sizes"].append(len(inner_test_data))
+        test_results[s]["test_losses"].append(test_loss)
