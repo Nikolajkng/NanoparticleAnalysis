@@ -1,3 +1,4 @@
+import threading
 import numpy as np
 
 def plot_loss(training_loss_values: list[float], validation_loss_values: list[float]) -> None:
@@ -23,7 +24,7 @@ def plot_difference(prediction, label, iou, pixel_accuracy):
         import matplotlib
         matplotlib.use('QtAgg')
         import matplotlib.pyplot as plt
-        
+
         prediction_uint8 = (np.array(prediction) * 255).astype(np.uint8).squeeze(0)
         label_uint8 = (np.array(label) * 255).astype(np.uint8).squeeze(0)
 

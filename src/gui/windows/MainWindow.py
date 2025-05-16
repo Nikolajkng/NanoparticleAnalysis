@@ -15,7 +15,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from threading import Event
 from functools import partial 
 import numpy as np
-import torch
 
 from src.gui.ui.MainUI import Ui_MainWindow
 from src.controller.Controller import Controller
@@ -197,7 +196,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     Command.RETRAIN, model_config, 
                     stop_training_event,
                     self.update_training_model_stats,
-                    self.show_testing_difference_trainingwindow,
+                    self.show_testing_difference,
                     ),
                 daemon=True)
             self.train_thread.start()
@@ -211,7 +210,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
 
-    def show_testing_difference_trainingwindow(self, prediction: Tensor, label: Tensor, iou: Tensor, pixel_accuracy: Tensor):
+    def show_testing_difference(self, prediction: Tensor, label: Tensor, iou: Tensor, pixel_accuracy: Tensor):
         self.show_testing_difference_signal.emit(prediction, label, iou, pixel_accuracy)
 
     def update_loss_values(self, stats: ModelTrainingStats):
@@ -255,41 +254,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         qimage = ImageQt(image)
         return QPixmap.fromImage(qimage) 
 
-
-    def show_testing_difference_mainwindow(self, prediction, label, iou, pixel_accuracy):
-        from src.model.PlottingTools import plot_difference
-        plot_difference(prediction, label, iou, pixel_accuracy)
-
-
-    def show_metrics_popup(self, iou, pixel_accuracy):
-        dialog = QDialog()
-        dialog.setWindowTitle("Model Evaluation Metrics")
-        dialog.resize(400, 200)  # width, height
-
-        layout = QVBoxLayout()
-        label = QLabel(f"<h3>Model IOU:</h3> {iou:.4f}<br><h3>Pixel Accuracy:</h3> {pixel_accuracy:.4f}")
-        label.setWordWrap(True)
-
-        layout.addWidget(label)
-        dialog.setLayout(layout)
-        dialog.exec_()
-
-
     def on_test_model_clicked(self):
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")
         mask_folder_path = QFileDialog.getExistingDirectory(None, "Select test masks folder", "")
 
-
         if image_folder_path and mask_folder_path:
-            predictions, labels, iou, pixel_accuracy = self.controller.process_command(
-                Command.TEST_MODEL, 
-                image_folder_path, 
-                mask_folder_path,
-                self.show_testing_difference_mainwindow)
+            iou, pixel_accuracy = self.controller.process_command(Command.TEST_MODEL, image_folder_path, mask_folder_path)
             print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
-        
-            self.show_metrics_popup(iou, pixel_accuracy)
-            
         else:
             messageBox(self, "Error in uploading directories")
             return

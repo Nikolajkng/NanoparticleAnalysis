@@ -41,6 +41,6 @@ def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_
         loss_callback=loss_callback
         )
     
-    predictions, labels, iou, pixel_accuracy = ModelEvaluator.evaluate_model(unet, test_dataloader, test_callback)
-    return predictions, labels, iou, pixel_accuracy
+    iou, pixel_accuracy = ModelEvaluator.evaluate_model(unet, test_dataloader, test_callback)
+    return iou, pixel_accuracy
 

@@ -23,7 +23,7 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.validation_loss_values = []
         
         update_data_signal.connect(self.update_loss_values)
-        show_testing_difference_signal.connect(self.show_testing_difference_trainingwindow)
+        show_testing_difference_signal.connect(self.show_testing_difference)
         self.training_images_button.clicked.connect(self.select_training_images_clicked)
         self.training_labels_button.clicked.connect(self.select_training_labels_clicked)
         self.test_images_button.clicked.connect(self.select_test_images_clicked)
@@ -103,5 +103,5 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.validation_loss_values.append(stats.validation_loss)
         plot_loss(self.training_loss_values, self.validation_loss_values)
 
-    def show_testing_difference_trainingwindow(self, prediction, label, iou, pixel_accuracy):
+    def show_testing_difference(self, prediction, label, iou, pixel_accuracy):
         plot_difference(prediction, label, iou, pixel_accuracy)
