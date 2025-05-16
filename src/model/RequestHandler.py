@@ -15,7 +15,7 @@ class request_handler:
     def process_request_train(self, model_config: ModelConfig, stop_training_event = None, loss_callback = None, test_callback = None):  
         # CHANGE CROSS VALIDATION HERE (uncomment):
         self.unet = UNet()
-        iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preffered_input_size, stop_training_event, loss_callback, test_callback)
+        predictions, labels, iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preffered_input_size, stop_training_event, loss_callback, test_callback)
         #cv_kfold(self.unet, images_path, masks_path)
         print(f"Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}")
         return iou, pixel_accuracy
@@ -58,13 +58,14 @@ class request_handler:
         self.unet.load_model(model_path)
         return None
     
-    def process_request_test_model(self, test_data_image_dir, test_data_mask_dir):
+    # Controller.py
+    def process_request_test_model(self, test_data_image_dir, test_data_mask_dir, test_callback=None):
         dataset = SegmentationDataset(test_data_image_dir, test_data_mask_dir)
         test_dataloader = DataLoader(dataset, batch_size=1)
-        iou, pixel_accuracy = ModelEvaluator.evaluate_model(self.unet, test_dataloader)
-        print(iou)
-        print(pixel_accuracy)
-        return iou, pixel_accuracy
+        predictions, labels, iou, pixel_accuracy = ModelEvaluator.evaluate_model(
+            self.unet, test_dataloader, test_callback
+        )
+        return predictions, labels, iou, pixel_accuracy
         
     def process_request_segment_folder(self, input_folder, output_parent_folder):
         for filename in os.listdir(input_folder):
