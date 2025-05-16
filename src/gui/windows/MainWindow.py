@@ -3,7 +3,8 @@ from PyQt5 import QtCore
 from PyQt5.QtWidgets import QVBoxLayout
 from PyQt5.QtWidgets import (
     QFileDialog, QMainWindow, QMessageBox, QApplication, 
-    QGraphicsScene, QGraphicsPixmapItem, QVBoxLayout
+    QGraphicsScene, QGraphicsPixmapItem, QVBoxLayout,
+    QDialog, QLabel
 )
 from PIL import ImageQt
 from PyQt5.QtCore import QDir
@@ -14,7 +15,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from threading import Event
 from functools import partial 
 import numpy as np
-import torch
 
 from src.gui.ui.MainUI import Ui_MainWindow
 from src.controller.Controller import Controller
@@ -259,6 +259,19 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         from src.model.PlottingTools import plot_difference
         plot_difference(prediction, label, iou, pixel_accuracy)
 
+    def show_metrics_popup(self, iou, pixel_accuracy):
+        dialog = QDialog()
+        dialog.setWindowTitle("Model Evaluation Metrics")
+        dialog.resize(400, 200)  # width, height
+
+        layout = QVBoxLayout()
+        label = QLabel(f"<h3>Model IOU:</h3> {iou:.4f}<br><h3>Pixel Accuracy:</h3> {pixel_accuracy:.4f}")
+        label.setWordWrap(True)
+
+        layout.addWidget(label)
+        dialog.setLayout(layout)
+        dialog.exec_()
+
 
     def on_test_model_clicked(self):
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")
@@ -272,7 +285,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 mask_folder_path,
                 self.show_testing_difference_mainwindow)
             print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
-            
+            self.show_metrics_popup(iou, pixel_accuracy)
             
         else:
             messageBox(self, "Error in uploading directories")
