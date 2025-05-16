@@ -72,18 +72,18 @@ class ModelEvaluator():
         pixel_accuracies = ModelEvaluator.calculate_pixel_accuracies(predictions, labels)
 
 
-        number_of_predictions_to_show = np.min([4, len(predictions)]) 
+        number_of_predictions_to_show = np.min([5, len(predictions)]) 
         indicies = random.sample(range(len(predictions)), number_of_predictions_to_show)
         if not test_callback:
-            return np.mean(ious), np.mean(pixel_accuracies)
+            return predictions, labels, np.mean(ious), np.mean(pixel_accuracies)
         
         try:
             for i in indicies:
                 test_callback(predictions[i], labels[i], ious[i], pixel_accuracies[i])
         except Exception:
-            return np.mean(ious), np.mean(pixel_accuracies)
+            return predictions, labels, np.mean(ious), np.mean(pixel_accuracies)
 
-        return np.mean(ious), np.mean(pixel_accuracies)
+        return predictions, labels, np.mean(ious), np.mean(pixel_accuracies)
 
-        
+
         
