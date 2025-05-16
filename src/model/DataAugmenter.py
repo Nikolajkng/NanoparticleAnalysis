@@ -54,7 +54,7 @@ class DataAugmenter():
         for i in range(len(dataset)):
             image, mask = dataset[i]  # Works for both custom and standard datasets
 
-            cropped_images, cropped_masks = self.create_random_crops(image, mask, 20, input_size)
+            cropped_images, cropped_masks = self.create_random_crops(image, mask, 2, input_size)
             augmented_images = cropped_images
             augmented_masks = cropped_masks
             if len(cropped_images) != 1: # Means we could crop the images

@@ -96,6 +96,20 @@ def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, in
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
     return (train_dataloader, val_dataloader)
 
+
+def get_dataloaders_kfold(dataset: Dataset, train_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader]:
+    data_augmenter = DataAugmenter()
+    torch.manual_seed(42)
+    train_data, val_data = random_split(dataset, [train_data_size, 1-train_data_size])
+    torch.manual_seed(torch.initial_seed())
+
+    train_data = data_augmenter.augment_dataset(train_data, input_size)
+    val_data = process_and_slice(val_data, input_size)
+
+    train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True)
+    val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
+    return (train_dataloader, val_dataloader)
+
 def center_crop(image, target_size: tuple[int, int]):
     _, _, h, w = image.shape
     th, tw = target_size
