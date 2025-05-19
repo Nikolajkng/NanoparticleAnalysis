@@ -9,10 +9,10 @@ import numpy as np
 import sys
 import torchvision.transforms.v2 as v2
 
-from src.model.DataAugmenter import DataAugmenter
-from src.model.dmFileReader import dmFileReader
-from src.shared.IOFunctions import is_dm_format
-from src.model.SegmentationDataset import SegmentationDataset
+# from src.model.DataAugmenter import DataAugmenter
+# from src.model.dmFileReader import dmFileReader
+# from src.shared.IOFunctions import is_dm_format
+# from src.model.SegmentationDataset import SegmentationDataset
 
 def slice_dataset_in_four(dataset, input_size=(256, 256)):
     images = []
@@ -317,10 +317,31 @@ def showTensor(tensor: Tensor) -> None:
     
         img = TF.to_pil_image(pixels.byte())
         img.show()
+        
+def calculate_class_imbalance(masks_dir: str) -> dict:
+    class_counts = {}
+    for filename in os.listdir(masks_dir):
+        if filename.endswith(('.tif')):
+            mask_path = os.path.join(masks_dir, filename)
+            mask = Image.open(mask_path).convert("L")
+            mask_np = np.array(mask)
+            unique, counts = np.unique(mask_np, return_counts=True)
+            for u, c in zip(unique, counts):
+                if int(u) not in class_counts:
+                    class_counts[int(u)] = 0
+                class_counts[int(u)] += int(c)
+    for class_id, count in class_counts.items():
+        print(f"Class {class_id}: {count} pixels")
+    print("Total pixels:", sum(class_counts.values()))
+    print("Class imbalance ratio:", {k: v / sum(class_counts.values()) for k, v in class_counts.items()})
+    
+    return class_counts
+
 
 if __name__ == '__main__':
-    folder_path = 'data/to_resize/'
-    resize_and_save_images(folder_path, is_masks=True, output_size=(1024, 1024))
+    folder_path = 'data/medres_masks/'
+    print(calculate_class_imbalance(folder_path))
+    #resize_and_save_images(folder_path, is_masks=True, output_size=(1024, 1024))
     # tensor = tensor_from_image('data/W. sample_0011.tif', (256, 256))
     # tensor = mirror_fill(tensor, (100,100), (100,100))
     # patches = extract_slices(tensor, (100,100), (100,100))
