@@ -37,6 +37,7 @@ def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_
         model_name="UNet_" + datetime.datetime.now().strftime('%d.%m.%Y_%H-%M-%S')+".pt",
         cross_validation="holdout",
         with_early_stopping=model_config.with_early_stopping,
+        loss_function="dice",
         stop_training_event=stop_training_event,
         loss_callback=loss_callback
         )
@@ -135,7 +136,8 @@ def outer_fold(idx, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, 
         learningRate=best_learning_rate,
         model_name=f"Best_UNet_Outer{idx+1}",
         cross_validation="kfold",
-        with_early_stopping=False
+        with_early_stopping=False,
+        loss_function="cross_entropy"
     )
 
     # **NEW STEP: Evaluate best model on the test set**
@@ -171,6 +173,7 @@ def inner_fold(idx, K2, par_split, learning_rates, epochs, train_idx, test_idx, 
             model_name=model_name,
             cross_validation="kfold",
             with_early_stopping=False,
+            loss_function="cross_entropy"
         )
 
         test_loss = unet.get_validation_loss(inner_test_dataloader)

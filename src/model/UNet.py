@@ -13,6 +13,7 @@ from src.model.PlottingTools import *
 from src.model.CrossValidation import *
 from src.shared.ModelTrainingStats import ModelTrainingStats
 from src.model.DataTools import resource_path
+from src.model.DiceLoss import DiceLoss
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -96,11 +97,17 @@ class UNet(nn.Module):
         m = self.mappingConvolution(d4)
         return m
 
-    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, stop_training_event: Event = None, loss_callback = None):
+    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event = None, loss_callback = None):
         self.to(self.device)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
-        self.criterion = nn.CrossEntropyLoss()
-
+        if loss_function == "dice":
+            self.criterion = DiceLoss()
+        elif loss_function == "weighted_cross_entropy":
+            self.criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.0, 2.0], device=self.device))
+        elif loss_function == "cross_entropy":
+            self.criterion = nn.CrossEntropyLoss()
+        else:
+            raise ValueError(f"Unknown loss function: {loss_function}, use 'dice', 'weighted_cross_entropy' or 'cross_entropy'")
 
         training_loss_values = []
         validation_loss_values = []
