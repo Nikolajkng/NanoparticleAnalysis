@@ -9,10 +9,10 @@ import numpy as np
 import sys
 import torchvision.transforms.v2 as v2
 
-# from src.model.DataAugmenter import DataAugmenter
-# from src.model.dmFileReader import dmFileReader
-# from src.shared.IOFunctions import is_dm_format
-# from src.model.SegmentationDataset import SegmentationDataset
+from src.model.DataAugmenter import DataAugmenter
+from src.model.dmFileReader import dmFileReader
+from src.shared.IOFunctions import is_dm_format
+from src.model.SegmentationDataset import SegmentationDataset
 
 def slice_dataset_in_four(dataset, input_size=(256, 256)):
     images = []
