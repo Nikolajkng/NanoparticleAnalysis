@@ -75,9 +75,9 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     train_data = data_augmenter.augment_dataset(train_data, input_size)  
 
     val_data = process_and_slice(val_data, input_size)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
-    test_data = process_and_slice(test_data, input_size)#data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
+    #test_data = process_and_slice(test_data, input_size)#data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
 
-    train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(train_data, batch_size=4, shuffle=True, drop_last=True)
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
     test_dataloader = DataLoader(test_data, batch_size=1)
     return (train_dataloader, val_dataloader, test_dataloader)
@@ -97,7 +97,7 @@ def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, in
     return (train_dataloader, val_dataloader)
 
 
-def get_dataloaders_kfold(dataset: Dataset, train_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader]:
+def get_dataloaders_kfold(dataset: Dataset, train_data_size: float, batch_size: int, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
     torch.manual_seed(42)
     train_data, val_data = random_split(dataset, [train_data_size, 1-train_data_size])
@@ -106,7 +106,7 @@ def get_dataloaders_kfold(dataset: Dataset, train_data_size: float, input_size: 
     train_data = data_augmenter.augment_dataset(train_data, input_size)
     val_data = process_and_slice(val_data, input_size)
 
-    train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True)
+    train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True)
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
     return (train_dataloader, val_dataloader)
 
@@ -124,7 +124,7 @@ def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
             image_path = os.path.join(folder_path, filename)
             img = Image.open(image_path)
             img = img.convert("L")  
-            if img.width == 256 and img.height == 256:
+            if img.width == output_size[0] and img.height == output_size[1]:
                 continue
             img = img.resize(output_size)
             if is_masks:
@@ -312,7 +312,7 @@ def showTensor(tensor: Tensor) -> None:
         img.show()
 
 if __name__ == '__main__':
-    folder_path = 'data/medres_masks/'
+    folder_path = 'data/to_resize/'
     resize_and_save_images(folder_path, is_masks=True, output_size=(1024, 1024))
     # tensor = tensor_from_image('data/W. sample_0011.tif', (256, 256))
     # tensor = mirror_fill(tensor, (100,100), (100,100))

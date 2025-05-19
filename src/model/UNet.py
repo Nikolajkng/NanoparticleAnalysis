@@ -39,7 +39,6 @@ class DecoderBlock(nn.Module):
         x: Tensor = self.upconv(input)
 
         x = torch.cat((concat_map, x), dim=1)
-    
         x = F.relu(self.bn(self.conv1(x)))
         x = F.relu(self.bn2(self.conv2(x)))
         return x
@@ -70,7 +69,7 @@ class UNet(nn.Module):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"Using {self.device}")
 
-        self.preffered_input_size = (256, 256)
+        self.preferred_input_size = (256, 256)
     
         if pre_loaded_model_path:
             model_path = resource_path(pre_loaded_model_path)
@@ -97,6 +96,7 @@ class UNet(nn.Module):
         self.to(self.device)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
         self.criterion = nn.CrossEntropyLoss()
+
 
         training_loss_values = []
         validation_loss_values = []

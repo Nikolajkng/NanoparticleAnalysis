@@ -1,12 +1,46 @@
 from torch import Tensor
 from torchvision.transforms.functional import rotate, hflip
+import torchvision.transforms.v2 as transforms
 import numpy as np
 from torch.utils.data import Dataset
+import torchvision.transforms.functional as TF
+import random
 
-from src.model.SegmentationDataset import SegmentationDataset
+from src.model.SegmentationDataset import RepeatDataset, SegmentationDataset
 class DataAugmenter():
     def __init__(self):
         return
+    
+    def transform(self, image, mask):
+        # Random crop
+        i, j, h, w = transforms.RandomCrop.get_params(
+            image, output_size=(256, 256))
+        image = TF.crop(image, i, j, h, w)
+        mask = TF.crop(mask, i, j, h, w)
+
+        # Random rotation
+        angle = random.choice([0, 90, 180, 270])
+        image = TF.rotate(image, angle)
+        mask = TF.rotate(mask, angle)
+
+        
+        # Random horizontal flipping
+        if random.random() > 0.5:
+            image = TF.hflip(image)
+            mask = TF.hflip(mask)
+
+        # Brightness adjustment
+        brightness_limit = 0.2
+        brightness_factor = random.uniform(1 - brightness_limit, 1 + brightness_limit)
+        image = TF.adjust_brightness(image, brightness_factor)
+
+        # # Contrast adjustment
+        # contrast_limit = 0.5
+        # contrast_factor = random.uniform(1 - contrast_limit, 1 + contrast_limit)
+        # image = TF.adjust_contrast(image, contrast_factor)
+
+        return image, mask
+
         
     def create_rotated_tensors(self, images: list[Tensor], masks: list[Tensor]) -> tuple[list[Tensor], list[Tensor]]:
         rotated_images, rotated_masks = [], []
@@ -54,20 +88,20 @@ class DataAugmenter():
         for i in range(len(dataset)):
             image, mask = dataset[i]  # Works for both custom and standard datasets
 
-            cropped_images, cropped_masks = self.create_random_crops(image, mask, 2, input_size)
-            augmented_images = cropped_images
-            augmented_masks = cropped_masks
-            if len(cropped_images) != 1: # Means we could crop the images
-                rotated_images, rotated_masks = self.create_rotated_tensors(cropped_images, cropped_masks)
-                flipped_images, flipped_masks = self.create_hflipped_tensors(rotated_images, rotated_masks)
-                # augmented_images = rotated_images + flipped_images + cropped_images[4:]
-                # augmented_masks = rotated_masks + flipped_masks + cropped_masks[4:]
-                augmented_images, augmented_masks = flipped_images, flipped_masks
-            else: # image was correct resolution already
-                rotated_images, rotated_masks = self.create_rotated_tensors(cropped_images, cropped_masks)
-                augmented_images, augmented_masks = self.create_hflipped_tensors(rotated_images, rotated_masks)
-            new_images.extend(augmented_images)
-            new_masks.extend(augmented_masks)
+            # cropped_images, cropped_masks = self.create_random_crops(image, mask, 10, input_size)
+            # augmented_images = cropped_images
+            # augmented_masks = cropped_masks
+            # if len(cropped_images) != 1: # Means we could crop the images
+            #     rotated_images, rotated_masks = self.create_rotated_tensors(cropped_images, cropped_masks)
+            #     flipped_images, flipped_masks = self.create_hflipped_tensors(rotated_images, rotated_masks)
+            #     # augmented_images = rotated_images + flipped_images + cropped_images[4:]
+            #     # augmented_masks = rotated_masks + flipped_masks + cropped_masks[4:]
+            #     augmented_images, augmented_masks = flipped_images, flipped_masks
+            # else: # image was correct resolution already
+            #     rotated_images, rotated_masks = self.create_rotated_tensors(cropped_images, cropped_masks)
+            #     augmented_images, augmented_masks = self.create_hflipped_tensors(rotated_images, rotated_masks)
+            new_images.extend(image.unsqueeze(0))
+            new_masks.extend(mask.unsqueeze(0))
        
        
 
@@ -78,7 +112,7 @@ class DataAugmenter():
                 print("Error with data augment: Final size doesn't match")
 
         # Wrap in a new SegmentationDataset or another compatible Dataset
-        return SegmentationDataset.from_image_set(new_images, new_masks)
+        return RepeatDataset(dataset=SegmentationDataset.from_image_set(new_images, new_masks, transforms=self.transform), repeat_factor=5)
 
     def get_crops_for_dataset(self, dataset: Dataset, amount_to_crop, crop_size):
         new_images, new_masks = [], []

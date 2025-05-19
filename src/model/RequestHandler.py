@@ -15,7 +15,7 @@ class request_handler:
     def process_request_train(self, model_config: ModelConfig, stop_training_event = None, loss_callback = None, test_callback = None):  
         # CHANGE CROSS VALIDATION HERE (uncomment):
         self.unet = UNet()
-        iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preffered_input_size, stop_training_event, loss_callback, test_callback)
+        iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
         #cv_kfold(self.unet, images_path, masks_path)
         print(f"Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}")
         return iou, pixel_accuracy
@@ -24,9 +24,9 @@ class request_handler:
     def process_request_segment(self, image: ParticleImage, output_folder):
         tensor = TF.to_tensor(image.pil_image).unsqueeze(0)
         tensor = tensor.to(self.unet.device)
-        stride_length = self.unet.preffered_input_size[0]*4//5
-        tensor_mirror_filled = mirror_fill(tensor, self.unet.preffered_input_size, (stride_length,stride_length))
-        patches = extract_slices(tensor_mirror_filled, self.unet.preffered_input_size, (stride_length,stride_length))
+        stride_length = self.unet.preferred_input_size[0]*4//5
+        tensor_mirror_filled = mirror_fill(tensor, self.unet.preferred_input_size, (stride_length,stride_length))
+        patches = extract_slices(tensor_mirror_filled, self.unet.preferred_input_size, (stride_length,stride_length))
 
         segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
 
@@ -58,10 +58,10 @@ class request_handler:
         self.unet.load_model(model_path)
         return None
     
-    def process_request_test_model(self, test_data_image_dir, test_data_mask_dir):
+    def process_request_test_model(self, test_data_image_dir, test_data_mask_dir, testing_callback = None):
         dataset = SegmentationDataset(test_data_image_dir, test_data_mask_dir)
         test_dataloader = DataLoader(dataset, batch_size=1)
-        iou, pixel_accuracy = ModelEvaluator.evaluate_model(self.unet, test_dataloader)
+        iou, pixel_accuracy = ModelEvaluator.evaluate_model(self.unet, test_dataloader, testing_callback)
         print(iou)
         print(pixel_accuracy)
         return iou, pixel_accuracy

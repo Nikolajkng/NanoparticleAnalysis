@@ -11,13 +11,11 @@ class ModelEvaluator():
     def __get_single_image_iou(prediction: np.ndarray, ground_truth: np.ndarray):
         assert np.isin(prediction, [0, 1]).all(), "prediction must be binary image"
         assert np.isin(ground_truth, [0, 1]).all(), "ground truth must be binary image"
-
-        if ground_truth.sum() == 0: # No ground truth / only background -> use pixel accuracy instead
-            return ModelEvaluator.__get_single_image_pixel_accuracy(prediction, ground_truth)
+        epsilon = 1e-6
         intersection = np.logical_and(prediction, ground_truth).sum()
         union = np.logical_or(prediction, ground_truth).sum()
         
-        iou = intersection / union if union > 0 else 0.0
+        iou = (intersection + epsilon) / (union + epsilon)
         return iou
     @staticmethod
     def __get_single_image_pixel_accuracy(prediction: np.ndarray, ground_truth: np.ndarray):
@@ -49,9 +47,9 @@ class ModelEvaluator():
                 input, label = input.to(unet.device), label.to(unet.device)
                 label = label.long().squeeze(1)
                 
-                stride_length = unet.preffered_input_size[0]*4//5
-                tensor_mirror_filled = mirror_fill(input, unet.preffered_input_size, (stride_length,stride_length))
-                patches = extract_slices(tensor_mirror_filled, unet.preffered_input_size, (stride_length,stride_length))
+                stride_length = unet.preferred_input_size[0]*4//5
+                tensor_mirror_filled = mirror_fill(input, unet.preferred_input_size, (stride_length,stride_length))
+                patches = extract_slices(tensor_mirror_filled, unet.preferred_input_size, (stride_length,stride_length))
                 segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
                 unet.to(input.device)
                 patches_tensor = torch.tensor(patches, dtype=input.dtype, device=input.device)

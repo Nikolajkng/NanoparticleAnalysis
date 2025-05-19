@@ -4,7 +4,7 @@ from src.model.UNet import UNet
 
 class Controller():
     def __init__(self, pre_loaded_model_name=None):
-        self.unet = UNet(f"src/data/model/{pre_loaded_model_name}")
+        self.unet = UNet(pre_loaded_model_path=f"src/data/model/{pre_loaded_model_name}")
         self.request_handler = request_handler(self.unet)
         
         self.commands = {

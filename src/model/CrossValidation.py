@@ -13,22 +13,21 @@ from src.model.UNet import UNet
 from src.model.ModelEvaluator import ModelEvaluator
 from src.shared.ModelConfig import ModelConfig
 
-def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None):
-    
+def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None, testing_callback = None):
     # Set parameters:
     train_subset_size = 0.7
-    validation_subset_size = 0.2
+    validation_subset_size = 0.1
     print(f"Training model using holdout [train_split_size={train_subset_size}, epochs={model_config.epochs}, learnRate={model_config.learning_rate}]...")
     print("---------------------------------------------------------------------------------------")
     dataset = SegmentationDataset(model_config.images_path, model_config.masks_path)
     train_dataloader, validation_dataloader, test_dataloader = None, None, None
 
     if model_config.test_images_path and model_config.test_masks_path:
-        train_dataloader, validation_dataloader = get_dataloaders_without_testset(dataset, train_subset_size, unet.preffered_input_size)
+        train_dataloader, validation_dataloader = get_dataloaders_without_testset(dataset, train_subset_size, unet.preferred_input_size)
         test_dataset = SegmentationDataset(model_config.test_images_path, model_config.test_masks_path)
         test_dataloader = DataLoader(test_dataset, batch_size=1)
     else:
-        train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(dataset, train_subset_size, validation_subset_size, unet.preffered_input_size)
+        train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(dataset, train_subset_size, validation_subset_size, unet.preferred_input_size)
 
     unet.train_model(
         training_dataloader=train_dataloader, 
@@ -42,7 +41,7 @@ def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_
         loss_callback=loss_callback
         )
     
-    iou, pixel_accuracy = ModelEvaluator.evaluate_model(unet, test_dataloader)
+    iou, pixel_accuracy = ModelEvaluator.evaluate_model(unet, test_dataloader, testing_callback)
     return iou, pixel_accuracy
 
 
@@ -66,7 +65,7 @@ def cv_kfold(images_path, masks_path):
 
     cv_outer = KFold(n_splits=K1, shuffle=True, random_state=42)
 
-    fold_results = {"test_sizes": [], "test_losses": []}
+    fold_results = {"test_sizes": [], "test_losses": [], "test_ious": []}
     model_losses = {s+1: [] for s in range(S)}
     best_models = []
     for outerfold, (par_idx, test_idx) in enumerate(cv_outer.split(np.arange(dataset_size))): 
@@ -81,6 +80,7 @@ def cv_kfold(images_path, masks_path):
     
     test_sizes = fold_results["test_sizes"]
     test_losses = fold_results["test_losses"]
+    test_ious = fold_results["test_ious"]
     gen_error_estimate = sum(test_size * test_loss for test_size, test_loss in zip(test_sizes, test_losses)) / sliced_dataset_size 
 
     print(f"\n############## K-Fold Cross Validation Summary ##############")
@@ -104,7 +104,7 @@ def outer_fold(idx, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, 
     # Inner CV: Find the best learning rate
     best_val_loss = np.inf
     best_s = None
-    inner_test_results = {s: {"test_sizes": [], "test_losses": []} for s in range(1, S+1)}
+    inner_test_results = {s: {"test_sizes": [], "test_losses": [], "test_ious": []} for s in range(1, S+1)}
 
     for innerfold, (train_idx, inner_test_idx) in enumerate(cv_inner.split(par_idx)): 
         inner_fold(innerfold, K2, par_split, learning_rates, epochs, train_idx, inner_test_idx, inner_test_results, models)
@@ -114,6 +114,7 @@ def outer_fold(idx, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, 
     for s in range(1, S+1):
         test_sizes = inner_test_results[s]["test_sizes"]
         test_losses = inner_test_results[s]["test_losses"]
+        test_ious = inner_test_results[s]["test_ious"]
         gen_error_estimate = sum(test_size * test_loss for test_size, test_loss in zip(test_sizes, test_losses)) / sliced_par_split_size
         E_gen_s.append(gen_error_estimate)
     best_s = E_gen_s.index(min(E_gen_s))
@@ -139,8 +140,10 @@ def outer_fold(idx, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, 
 
     # **NEW STEP: Evaluate best model on the test set**
     test_loss = best_model.get_validation_loss(outer_test_dataloader)
+    test_iou = ModelEvaluator.evaluate_model(best_model, outer_test_dataloader)[0]
     fold_results["test_sizes"].append(len(test_split))
     fold_results["test_losses"].append(test_loss)
+    fold_results["test_ious"].append(test_iou)
 
     return E_gen_s, best_s
 
@@ -171,5 +174,7 @@ def inner_fold(idx, K2, par_split, learning_rates, epochs, train_idx, test_idx, 
         )
 
         test_loss = unet.get_validation_loss(inner_test_dataloader)
+        test_iou = ModelEvaluator.evaluate_model(unet, inner_test_dataloader)[0]
         test_results[s]["test_sizes"].append(len(inner_test_data))
         test_results[s]["test_losses"].append(test_loss)
+        test_results[s]["test_ious"].append(test_iou)

@@ -28,7 +28,7 @@ from PIL.ImageQt import ImageQt
 from src.gui.windows.MessageBoxes import *
 from src.shared.ParticleImage import ParticleImage
 from src.gui.windows.MessageBoxes import *
-from src.model.PlottingTools import plot_loss
+from src.model.PlottingTools import plot_loss, plot_difference
 from src.shared.Formatters import _truncate
 from src.shared.ParticleImage import ParticleImage
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -258,7 +258,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         mask_folder_path = QFileDialog.getExistingDirectory(None, "Select test masks folder", "")
 
         if image_folder_path and mask_folder_path:
-            iou, pixel_accuracy = self.controller.process_command(Command.TEST_MODEL, image_folder_path, mask_folder_path)
+            self.show_testing_difference_signal.connect(plot_difference)
+            iou, pixel_accuracy = self.controller.process_command(Command.TEST_MODEL, image_folder_path, mask_folder_path, self.show_testing_difference)
             print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
         else:
             messageBox(self, "Error in uploading directories")
