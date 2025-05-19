@@ -7,6 +7,7 @@ from torch import Tensor
 import torchvision.transforms.functional as TF
 import numpy as np
 import sys
+import torchvision.transforms.v2 as v2
 
 from src.model.DataAugmenter import DataAugmenter
 from src.model.dmFileReader import dmFileReader
@@ -284,6 +285,12 @@ def construct_image_from_patches(patches: np.ndarray, img_size: tuple, stride_si
     images /= weights
 
     return images
+
+def get_normalizer(dataset: SegmentationDataset):
+    X = torch.stack(dataset.images)
+    mu = X.mean(axis=(0, 2, 3)).tolist()
+    std = X.std(axis=(0, 2, 3)).tolist()
+    return v2.Normalize(mean=mu, std=std)
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""

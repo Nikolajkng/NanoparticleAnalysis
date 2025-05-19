@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from torch.utils.data import DataLoader
+import torchvision.transforms.v2 as v2
 import numpy as np
 from threading import Event
 import os
@@ -45,7 +46,7 @@ class DecoderBlock(nn.Module):
         
 
 class UNet(nn.Module):
-    def __init__(self, pre_loaded_model_path = None):
+    def __init__(self, pre_loaded_model_path = None, normalizer = None):
         super().__init__()
 
         self.encoder1 = EncoderBlock(1, 64)
@@ -70,12 +71,15 @@ class UNet(nn.Module):
         print(f"Using {self.device}")
 
         self.preferred_input_size = (256, 256)
-    
+        self.normalizer = normalizer
+
         if pre_loaded_model_path:
             model_path = resource_path(pre_loaded_model_path)
             self.load_model(model_path)
 
     def forward(self, input):
+        if self.normalizer:
+            input = self.normalizer(input)
         e1 = self.encoder1(input)
         pooled = nn.MaxPool2d(2,2)(e1)
         e2 = self.encoder2(pooled)
@@ -179,11 +183,15 @@ class UNet(nn.Module):
         path = folder_path + model_name
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
-        torch.save(self.state_dict(), path)
+        torch.save({
+        "model_state_dict": self.state_dict(),
+        "normalizer_mean": self.normalizer.mean,
+        "normalizer_std": self.normalizer.std,}, path)
         
     def load_model(self, path):
-        state_dict = torch.load(path, map_location=self.device, weights_only=True)
-        self.load_state_dict(state_dict)
+        model = torch.load(path, map_location=self.device)
+        self.normalizer = v2.Normalize(mean=model["normalizer_mean"], std=model["normalizer_std"])
+        self.load_state_dict(model["model_state_dict"])
 
     def segment(self, tensor: Tensor):
         output = self(tensor)
