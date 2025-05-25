@@ -1,3 +1,4 @@
+import torch
 from torch.nn import Module, Conv2d, ConvTranspose2d, BatchNorm2d, MaxPool2d, CrossEntropyLoss
 import torch.nn.functional as F
 from torch import Tensor, cat, device, cuda, no_grad, save, load
