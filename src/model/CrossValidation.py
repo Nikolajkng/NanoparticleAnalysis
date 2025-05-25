@@ -9,11 +9,10 @@ from src.model.SegmentationDataset import SegmentationDataset
 from src.model.PlottingTools import *
 from src.model.DataTools import get_dataloaders, get_dataloaders_kfold, get_dataloaders_kfold_already_split, get_dataloaders_without_testset, process_and_slice, slice_dataset_in_four, get_normalizer
 from src.model.DataAugmenter import DataAugmenter
-from src.model.UNet import UNet
 from src.model.ModelEvaluator import ModelEvaluator
 from src.shared.ModelConfig import ModelConfig
 
-def cv_holdout(unet: UNet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None, testing_callback = None):
+def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None, testing_callback = None):
     # Set parameters:
     train_subset_size = 0.6
     validation_subset_size = 0.2
@@ -182,6 +181,8 @@ def outer_fold(idx, dataset, par_idx, test_idx, K1, K2, parameters, epochs, S, f
     outer_test_dataloader = DataLoader(test_split, batch_size=1, shuffle=False)
 
     # Train best model on the full partitioned dataset
+    from src.model.UNet import UNet
+
     best_model = UNet()
     best_model.normalizer = get_normalizer(outer_train_dataloader.dataset.dataset)
     best_model.train_model(
@@ -215,6 +216,8 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
     inner_test_data = process_and_slice(inner_test_data)
     inner_test_dataloader = DataLoader(inner_test_data, batch_size=1, shuffle=False)
     data_augmenter = DataAugmenter()
+    from src.model.UNet import UNet
+
     for s in range(1, len(parameters)+1):
         unet = UNet()
         inner_train_dataloader, inner_validation_dataloader = get_dataloaders_kfold_already_split(train_data, val_data, 32, (256, 256))

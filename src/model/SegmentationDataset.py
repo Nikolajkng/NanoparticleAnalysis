@@ -1,10 +1,6 @@
-import random
-import torch
 from torch.utils.data import Dataset
 import os
 from PIL import Image
-import torchvision.transforms.functional as TF
-import torchvision.transforms.v2 as transforms
 import numpy as np
 import cv2
 
@@ -31,6 +27,8 @@ class SegmentationDataset(Dataset):
         self.image_filenames = sorted(os.listdir(image_dir))
         self.mask_filenames = sorted(os.listdir(mask_dir))
         self.transform = transform
+
+        import torchvision.transforms.functional as TF
 
         for index in range(len(self.image_filenames)):
             img_path = os.path.join(self.image_dir, self.image_filenames[index])

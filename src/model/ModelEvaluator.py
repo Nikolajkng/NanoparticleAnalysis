@@ -4,8 +4,6 @@ import torch
 import matplotlib.pyplot as plt
 import random
 
-from src.model.UNet import UNet
-from src.model.DataTools import center_crop, construct_image_from_patches, mirror_fill, extract_slices
 class ModelEvaluator():
     @staticmethod
     def __get_single_image_iou(prediction: np.ndarray, ground_truth: np.ndarray):
@@ -41,7 +39,8 @@ class ModelEvaluator():
             dice_scores.append(ModelEvaluator.__get_single_image_dice_score(prediction, ground_truth))
         return dice_scores
     
-    def get_predictions(unet: UNet, dataloader: DataLoader):
+    def get_predictions(unet, dataloader: DataLoader):
+        from src.model.DataTools import center_crop, construct_image_from_patches, mirror_fill, extract_slices
         predictions = []
         labels = []
         unet.eval()
@@ -70,7 +69,7 @@ class ModelEvaluator():
         return predictions, labels
 
     @staticmethod
-    def evaluate_model(unet: UNet, test_dataloader: DataLoader, test_callback = None) -> tuple[float, float]:
+    def evaluate_model(unet, test_dataloader: DataLoader, test_callback = None) -> tuple[float, float]:
         predictions, labels = ModelEvaluator.get_predictions(unet, test_dataloader)
         predictions = [pred.cpu() for pred in predictions]
         labels = [label.cpu() for label in labels]

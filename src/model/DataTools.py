@@ -4,10 +4,8 @@ from torch.utils.data import DataLoader, random_split
 import os
 from PIL import Image
 from torch import Tensor
-import torchvision.transforms.functional as TF
 import numpy as np
 import sys
-import torchvision.transforms.v2 as v2
 
 from src.model.DataAugmenter import DataAugmenter
 from src.model.dmFileReader import dmFileReader
@@ -154,11 +152,14 @@ def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
             print(image_path)
 
 def tensor_from_image_no_resize(image_path: str):
+    import torchvision.transforms.functional as TF
     image = Image.open(image_path).convert("L")
     image = TF.to_tensor(image).unsqueeze(0)
     return image
 
 def tensor_from_image(image_path: str, resize=(256,256)) -> Tensor:
+    import torchvision.transforms.functional as TF
+
     image = Image.open(image_path).convert("L")
     image.thumbnail(resize)
     image = TF.to_tensor(image).unsqueeze(0)
@@ -168,6 +169,8 @@ def to_2d_image_array(array: np.ndarray) -> np.ndarray:
     return (np.squeeze(array) * 255).astype(np.uint8)
 
 def load_image_as_tensor(image_path: str):
+    import torchvision.transforms.functional as TF
+
     reader = dmFileReader()
     tensor = None
     if is_dm_format(image_path):
@@ -308,7 +311,8 @@ def get_normalizer(dataset: SegmentationDataset):
     X = torch.stack(dataset.images)
     mu = X.mean(axis=(0, 2, 3)).tolist()
     std = X.std(axis=(0, 2, 3)).tolist()
-    return v2.Normalize(mean=mu, std=std)
+    from torchvision.transforms.v2 import Normalize
+    return Normalize(mean=mu, std=std)
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
@@ -326,6 +330,8 @@ def normalizeTensorToPixels(tensor: Tensor) -> Tensor:
     return tensor
     
 def showTensor(tensor: Tensor) -> None:
+    import torchvision.transforms.functional as TF
+
     #probabilities = F.softmax(tensor, dim=1)  
     if tensor.dim == 4:
         tensor = tensor.squeeze(1)

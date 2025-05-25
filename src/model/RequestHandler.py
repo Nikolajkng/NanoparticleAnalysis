@@ -1,20 +1,24 @@
 from PIL import Image
-import numpy as np
-from torch import autocast
-
-from src.model.DataTools import *
+import threading
+#from src.model.DataTools import *
 from src.model.PlottingTools import *
-from src.model.CrossValidation import *
-from src.model.SegmentationAnalyzer import SegmentationAnalyzer
-from src.model.ModelEvaluator import ModelEvaluator
-from src.shared.ModelConfig import ModelConfig
-from src.shared.ParticleImage import ParticleImage
+#from src.model.CrossValidation import *
 class request_handler:
-    def __init__(self, unet):
-        self.unet = unet
+    def __init__(self, pre_loaded_model_name=None):
+        self.unet = None
+        self.load_model_async(pre_loaded_model_name)
 
-    def process_request_train(self, model_config: ModelConfig, stop_training_event = None, loss_callback = None, test_callback = None):  
+    def load_model_async(self, model_name):
+        def load():
+            from src.model.UNet import UNet
+            self.unet = UNet()  # or UNet(pre_loaded_model_path=...)
+            print("Model loaded")
+
+        threading.Thread(target=load, daemon=True).start()
+    def process_request_train(self, model_config, stop_training_event = None, loss_callback = None, test_callback = None):  
         # CHANGE CROSS VALIDATION HERE (uncomment):
+        from src.model.CrossValidation import cv_holdout
+        from src.model.UNet import UNet
         self.unet = UNet()
         iou, dice_score = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
         #cv_kfold(self.unet, images_path, masks_path)
@@ -22,7 +26,12 @@ class request_handler:
         return iou, dice_score
 
 
-    def process_request_segment(self, image: ParticleImage, output_folder):
+    def process_request_segment(self, image, output_folder):
+        from src.model.DataTools import mirror_fill, extract_slices, construct_image_from_patches, center_crop, to_2d_image_array
+        import torch
+        import torchvision.transforms.functional as TF
+        import numpy as np
+
         tensor = TF.to_tensor(image.pil_image).unsqueeze(0)
         tensor = tensor.to(self.unet.device)
         stride_length = self.unet.preferred_input_size[0]*4//5
@@ -36,6 +45,8 @@ class request_handler:
         patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
         with torch.no_grad():
             if self.unet.device.type == 'cuda':
+                from torch import autocast
+                
                 with autocast("cuda"):
                     segmentations = self.unet(patches_tensor).cpu().detach().numpy()
             else:
@@ -45,7 +56,8 @@ class request_handler:
         segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
         segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3])).argmax(axis=1)
         segmented_image_2d = to_2d_image_array(segmented_image)
-        
+
+        from src.model.SegmentationAnalyzer import SegmentationAnalyzer
         analyzer = SegmentationAnalyzer()
         num_labels, _, stats, centroids = analyzer.get_connected_components(segmented_image_2d)
         particle_count = num_labels - 1
@@ -65,14 +77,19 @@ class request_handler:
         return None
     
     def process_request_test_model(self, test_data_image_dir, test_data_mask_dir, testing_callback = None):
+        from src.model.SegmentationDataset import SegmentationDataset
+        from torch.utils.data import DataLoader
         dataset = SegmentationDataset(test_data_image_dir, test_data_mask_dir)
         test_dataloader = DataLoader(dataset, batch_size=1)
+        from src.model.ModelEvaluator import ModelEvaluator
+
         iou, dice_score = ModelEvaluator.evaluate_model(self.unet, test_dataloader, testing_callback)
         print(iou)
         print(dice_score)
         return iou, dice_score
         
     def process_request_segment_folder(self, input_folder, output_parent_folder):
+        import os
         for filename in os.listdir(input_folder):
             file_path = os.path.join(input_folder, filename)
             image = self.process_request_load_image(file_path)
@@ -84,6 +101,7 @@ class request_handler:
             annotated_image_pil.save(os.path.join(output_folder, f"{image.file_info.file_name}_annotated.tif"))
             
     def process_request_load_image(self, image_path):
+        from src.shared.ParticleImage import ParticleImage
         image = ParticleImage(image_path)
         image.file_info = image.get_file_info(image_path)
         if image.pil_image.width > 1024 or image.pil_image.height > 1024:

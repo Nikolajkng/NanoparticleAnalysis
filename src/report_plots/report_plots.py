@@ -409,34 +409,56 @@ def array_to_tensor(array: np.ndarray):
     import torch
     return torch.tensor(array, dtype=torch.float32).unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions
 
+def plot_memory_usage(memory_usages, labels, title='Memory Usage by Batch Size and Precision'):
+    """
+    Plots a bar graph of memory usage.
+
+    Parameters:
+    - memory_usages (list of int): Memory usage values in MB.
+    - labels (list of str): Labels corresponding to each memory usage value.
+    - title (str): Title of the plot.
+    """
+    plt.figure(figsize=(8, 5))
+    bars = plt.bar(labels, memory_usages, color=['skyblue', 'orange', 'green'])
+
+    # Add value labels on top of bars
+    for bar in bars:
+        yval = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2, yval + 300, f'{yval} MB', ha='center', va='bottom')
+
+    plt.title(title)
+    plt.ylabel('Memory Usage (MB)')
+    plt.tight_layout()
+    plt.show()
+
 if __name__ == "__main__":
     #show_example_images(images[0:6])
 
-    image_paths = get_image_paths("data/highres_images/")
-    histogram = compute_collected_histogram(image_paths)
-    # Print or plot the histogram
-    import matplotlib.pyplot as plt
-    plt.plot(histogram)
-    plt.title("Collected Pixel Value Histogram")
-    plt.xlabel("Pixel Value (0-255)")
-    plt.ylabel("Frequency")
-    plt.grid(True)
-    plt.show()
+    # image_paths = get_image_paths("data/highres_images/")
+    # histogram = compute_collected_histogram(image_paths)
+    # # Print or plot the histogram
+    # import matplotlib.pyplot as plt
+    # plt.plot(histogram)
+    # plt.title("Collected Pixel Value Histogram")
+    # plt.xlabel("Pixel Value (0-255)")
+    # plt.ylabel("Frequency")
+    # plt.grid(True)
+    # plt.show()
 
 
-    image_paths, mask_paths = get_sorted_image_mask_paths("data/highres_images", "data/highres_masks")
+    # image_paths, mask_paths = get_sorted_image_mask_paths("data/highres_images", "data/highres_masks")
     
-    fg_hist, bg_hist = compute_foreground_background_histograms(image_paths, mask_paths)
-    # Plotting the histograms
-    import matplotlib.pyplot as plt
-    plt.plot(fg_hist, label='Foreground', color='red')
-    plt.plot(bg_hist, label='Background', color='blue')
-    plt.title("Foreground vs Background Pixel Histograms")
-    plt.xlabel("Pixel Value (0-255)")
-    plt.ylabel("Frequency")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    # fg_hist, bg_hist = compute_foreground_background_histograms(image_paths, mask_paths)
+    # # Plotting the histograms
+    # import matplotlib.pyplot as plt
+    # plt.plot(fg_hist, label='Foreground', color='red')
+    # plt.plot(bg_hist, label='Background', color='blue')
+    # plt.title("Foreground vs Background Pixel Histograms")
+    # plt.xlabel("Pixel Value (0-255)")
+    # plt.ylabel("Frequency")
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
 
 
 
@@ -459,38 +481,47 @@ if __name__ == "__main__":
     # plot_paired_bar(iou_B, iou_C, dice_B, dice_C)
     # diff = iou_B - iou_A
     # bootstrap_compare(iou_A, iou_B)
-    images = []
-    masks = []
-    from PIL import Image
-    image_dir = "data/highres_images/"
-    masks_dir = "data/highres_masks/"
-    image_filenames = sorted(os.listdir(image_dir))
-    mask_filenames = sorted(os.listdir(masks_dir))
-    indices = [4, 0, 11]#, 9, 2, 10]#[0, 2, 4, 9, 10, 11]
-    selected_filenames = selected_items = [image_filenames[i] for i in indices]
-    import torchvision.transforms.functional as TF
-    for image_name, mask_name in zip(image_filenames, mask_filenames):
-        img_path = os.path.join(image_dir, image_name)
-        mask_path = os.path.join(masks_dir, mask_name)
 
-
-        image = Image.open(img_path).convert("L")
-        image2 = contrast_stretch(image)
-        mask = Image.open(mask_path).convert("L")
     
-        #image = TF.to_tensor(image)
-        #image2 = TF.to_tensor(image2)
-        #images.append(image)
-        images.append(image2)
-        masks.append(mask)
-    #show_example_images(images)
-    fg_hist, bg_hist = compute_foreground_background_histograms2(images, masks)
-    plt.plot(fg_hist, label='Foreground', color='red')
-    plt.plot(bg_hist, label='Background', color='blue')
-    plt.title("Foreground vs Background Pixel Histograms")
-    plt.xlabel("Pixel Value (0-255)")
-    plt.ylabel("Frequency")
-    plt.legend()
-    plt.grid(True)
-    plt.show()
+    # images = []
+    # masks = []
+    # from PIL import Image
+    # image_dir = "data/highres_images/"
+    # masks_dir = "data/highres_masks/"
+    # image_filenames = sorted(os.listdir(image_dir))
+    # mask_filenames = sorted(os.listdir(masks_dir))
+    # indices = [4, 0, 11]#, 9, 2, 10]#[0, 2, 4, 9, 10, 11]
+    # selected_filenames = selected_items = [image_filenames[i] for i in indices]
+    # import torchvision.transforms.functional as TF
+    # for image_name, mask_name in zip(image_filenames, mask_filenames):
+    #     img_path = os.path.join(image_dir, image_name)
+    #     mask_path = os.path.join(masks_dir, mask_name)
+
+
+    #     image = Image.open(img_path).convert("L")
+    #     image2 = contrast_stretch(image)
+    #     mask = Image.open(mask_path).convert("L")
+    
+    #     #image = TF.to_tensor(image)
+    #     #image2 = TF.to_tensor(image2)
+    #     #images.append(image)
+    #     images.append(image2)
+    #     masks.append(mask)
+    # #show_example_images(images)
+    # fg_hist, bg_hist = compute_foreground_background_histograms2(images, masks)
+    # plt.plot(fg_hist, label='Foreground', color='red')
+    # plt.plot(bg_hist, label='Background', color='blue')
+    # plt.title("Foreground vs Background Pixel Histograms")
+    # plt.xlabel("Pixel Value (0-255)")
+    # plt.ylabel("Frequency")
+    # plt.legend()
+    # plt.grid(True)
+    # plt.show()
+    init_times_before = [12.9041, 12.2768, 12.1893, 12.1012, 12.4508, 11.6724, 11.5952, 11.6920, 11.6894, 12.0990]
+    init_times_after = [0.6642, 0.4200, 0.4553, 0.4453, 0.4193, 0.4202, 0.4153, 0.4380, 0.4465, 0.4230]
+    print(np.mean(init_times_before), np.mean(init_times_after))
+
+    memory_usages = [5119, 18359, 9083]
+    labels = ['Batch size 8', 'Batch size 32', 'Batch size 32 (mixed precision)']
+    plot_memory_usage(memory_usages, labels, title='Memory Usage by Batch Size and Precision')
 

@@ -1,7 +1,7 @@
-import threading
-import numpy as np
 
 def plot_loss(training_loss_values: list[float], validation_loss_values: list[float]) -> None:
+    import numpy as np
+
     import matplotlib
     matplotlib.use('QtAgg')
     import matplotlib.pyplot as plt
@@ -22,6 +22,8 @@ def plot_loss(training_loss_values: list[float], validation_loss_values: list[fl
 
 def plot_difference(prediction, label, iou, dice_score):
         import matplotlib
+        import numpy as np
+
         matplotlib.use('QtAgg')
         import matplotlib.pyplot as plt
 

@@ -1,10 +1,6 @@
 from torch import Tensor
-from torchvision.transforms.functional import rotate, hflip
-import torchvision.transforms.v2 as transforms
 import numpy as np
 from torch.utils.data import Dataset
-import torchvision.transforms.functional as TF
-from torchvision.transforms import InterpolationMode
 import random
 
 from src.model.SegmentationDataset import RepeatDataset, SegmentationDataset
@@ -15,44 +11,47 @@ class DataAugmenter():
     @staticmethod
     def get_transformer(crop: bool, rotate: bool, flip: bool, deform: bool, adjust_brightness: bool, blur: bool):
         def transformer(image, mask):
+            from torchvision.transforms.v2 import ElasticTransform, RandomCrop, GaussianBlur
+            from torchvision.transforms.functional import elastic_transform, crop, rotate, hflip, adjust_brightness
+            from torchvision.transforms import InterpolationMode
 
             # Elastic deformation
             if deform:
                 size = image.shape[-1]
-                params = transforms.ElasticTransform.get_params(
+                params = ElasticTransform.get_params(
                     size=[512,512],
                     alpha=(20.0, 60), 
                     sigma=(4.0, 6.0)
                 )
                 
-                image = TF.elastic_transform(image, params)
-                mask = TF.elastic_transform(mask, params, interpolation=InterpolationMode.NEAREST)
+                image = elastic_transform(image, params)
+                mask = elastic_transform(mask, params, interpolation=InterpolationMode.NEAREST)
 
             # Random crop
             if crop:
-                i, j, h, w = transforms.RandomCrop.get_params(
+                i, j, h, w = RandomCrop.get_params(
                     image, output_size=(256, 256))
-                image = TF.crop(image, i, j, h, w)
-                mask = TF.crop(mask, i, j, h, w)
+                image = crop(image, i, j, h, w)
+                mask = crop(mask, i, j, h, w)
 
             # Random rotation
             if rotate:
                 angle = random.randint(-30, 30)
                 #angle = random.choice([0, 90, 180, 270])
-                image = TF.rotate(image, angle)
-                mask = TF.rotate(mask, angle)
+                image = rotate(image, angle)
+                mask = rotate(mask, angle)
 
             # Random horizontal flipping
             if flip and random.random() > 0.5:
-                image = TF.hflip(image)
-                mask = TF.hflip(mask)
+                image = hflip(image)
+                mask = hflip(mask)
             
             if adjust_brightness:
                 brightness_factor = random.uniform(0.8, 1.2)
-                TF.adjust_brightness(image, brightness_factor)
+                adjust_brightness(image, brightness_factor)
 
             if blur:
-                blur_transform = transforms.GaussianBlur(kernel_size=3, sigma=(0.5, 1.5))
+                blur_transform = GaussianBlur(kernel_size=3, sigma=(0.5, 1.5))
                 if random.random() < 0.5:
                     image = blur_transform(image)
 
@@ -61,6 +60,8 @@ class DataAugmenter():
 
         
     def create_rotated_tensors(self, images: list[Tensor], masks: list[Tensor]) -> tuple[list[Tensor], list[Tensor]]:
+        from torchvision.transforms.functional import rotate
+
         rotated_images, rotated_masks = [], []
         for image, mask in zip(images, masks):
             internal_rotated_images = [image]
@@ -92,6 +93,8 @@ class DataAugmenter():
         return images, masks
     
     def create_hflipped_tensors(self, images: list[Tensor], masks: list[Tensor]) -> tuple[list[Tensor], list[Tensor]]:
+        from torchvision.transforms.functional import hflip
+
         final_flipped_images = []
         final_flipped_masks = []
         for image, mask in zip(images, masks):

@@ -10,10 +10,8 @@ from PyQt5.QtCore import QDir
 import os
 import csv
 import threading
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from threading import Event
 from functools import partial 
-import numpy as np
 
 from src.gui.ui.MainUI import Ui_MainWindow
 from src.controller.Controller import Controller
@@ -31,12 +29,10 @@ from src.gui.windows.MessageBoxes import *
 from src.model.PlottingTools import plot_loss, plot_difference
 from src.shared.Formatters import _truncate
 from src.shared.ParticleImage import ParticleImage
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from torch import Tensor
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
-    show_testing_difference_signal = QtCore.pyqtSignal(Tensor, Tensor, Tensor, Tensor)
+    show_testing_difference_signal = QtCore.pyqtSignal(object, object, object, object)
     def __init__(self):
         super().__init__()
         self.MainWindow = QMainWindow()
@@ -163,7 +159,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         #fig.tight_layout()
         #plt.show()
 
-    def set_table_data(self, table_data: np.ndarray):
+    def set_table_data(self, table_data):
         data = TableData(table_data)
         data.insertIn(self.table_widget)
         self.table_data_set = True
@@ -209,7 +205,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
 
-    def show_testing_difference(self, prediction: Tensor, label: Tensor, iou: Tensor, pixel_accuracy: Tensor):
+    def show_testing_difference(self, prediction, label, iou, pixel_accuracy):
         self.show_testing_difference_signal.emit(prediction, label, iou, pixel_accuracy)
 
     def update_loss_values(self, stats: ModelTrainingStats):
@@ -281,7 +277,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if histogram_fig is not None:
             if hasattr(self, 'histogram_canvas') and self.histogram_canvas:
                 self.histogram_canvas.setParent(None)
-
+            from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
             self.histogram_canvas = FigureCanvas(histogram_fig)
             self.plot_graph_layout.addWidget(self.histogram_canvas)
             self.histogram_canvas.draw()
