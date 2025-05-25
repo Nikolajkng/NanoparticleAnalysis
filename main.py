@@ -12,8 +12,6 @@ def preload_torch():
     import ncempy
     import sklearn
 
-
-#from src.model.CrossValidation import cv_kfold
 def main():
     start_time = time.perf_counter()
     threading.Thread(target=preload_torch, daemon=True).start()
@@ -30,21 +28,3 @@ def main():
 if __name__ == "__main__":
     main()
     #cv_kfold("data/medres_images", "data/medres_masks")
-    # import subprocess
-
-    # threshold_us = 1_000_00  # 1000 ms
-
-    # result = subprocess.run(
-    #     [sys.executable, "-X", "importtime", "-c", "from src.gui.windows.MainWindow import MainWindow"],
-    #     capture_output=True, text=True
-    # )
-
-    # for line in result.stderr.splitlines():
-    #     parts = line.strip().split('|')
-    #     if len(parts) == 3:
-    #         try:
-    #             cumulative_us = int(parts[1].strip())
-    #             if cumulative_us > threshold_us:
-    #                 print(line)
-    #         except ValueError:
-    #             pass

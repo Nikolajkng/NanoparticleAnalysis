@@ -6,19 +6,22 @@ from src.model.PlottingTools import *
 class request_handler:
     def __init__(self, pre_loaded_model_name=None):
         self.unet = None
+        self.model_ready_event = threading.Event()
         self.load_model_async(pre_loaded_model_name)
 
     def load_model_async(self, model_name):
         def load():
             from src.model.UNet import UNet
             self.unet = UNet()  # or UNet(pre_loaded_model_path=...)
-            print("Model loaded")
+            self.model_ready_event.set()
+            print("Model ready")
 
         threading.Thread(target=load, daemon=True).start()
     def process_request_train(self, model_config, stop_training_event = None, loss_callback = None, test_callback = None):  
         # CHANGE CROSS VALIDATION HERE (uncomment):
         from src.model.CrossValidation import cv_holdout
         from src.model.UNet import UNet
+        self.model_ready_event.wait()
         self.unet = UNet()
         iou, dice_score = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
         #cv_kfold(self.unet, images_path, masks_path)
@@ -31,6 +34,8 @@ class request_handler:
         import torch
         import torchvision.transforms.functional as TF
         import numpy as np
+
+        self.model_ready_event.wait()
 
         tensor = TF.to_tensor(image.pil_image).unsqueeze(0)
         tensor = tensor.to(self.unet.device)
@@ -73,12 +78,16 @@ class request_handler:
         return segmented_image_pil, annotated_image_pil, table_data, histogram_fig
     
     def process_request_load_model(self, model_path):
+        self.model_ready_event.wait()
         self.unet.load_model(model_path)
         return None
     
     def process_request_test_model(self, test_data_image_dir, test_data_mask_dir, testing_callback = None):
         from src.model.SegmentationDataset import SegmentationDataset
         from torch.utils.data import DataLoader
+
+        self.model_ready_event.wait()
+
         dataset = SegmentationDataset(test_data_image_dir, test_data_mask_dir)
         test_dataloader = DataLoader(dataset, batch_size=1)
         from src.model.ModelEvaluator import ModelEvaluator
@@ -90,6 +99,9 @@ class request_handler:
         
     def process_request_segment_folder(self, input_folder, output_parent_folder):
         import os
+
+        self.model_ready_event.wait()
+
         for filename in os.listdir(input_folder):
             file_path = os.path.join(input_folder, filename)
             image = self.process_request_load_image(file_path)
