@@ -20,7 +20,7 @@ def plot_loss(training_loss_values: list[float], validation_loss_values: list[fl
         print("Error when plotting!")
         print(e.with_traceback)
 
-def plot_difference(prediction, label, iou, pixel_accuracy):
+def plot_difference(prediction, label, iou, dice_score):
         import matplotlib
         matplotlib.use('QtAgg')
         import matplotlib.pyplot as plt
@@ -47,7 +47,7 @@ def plot_difference(prediction, label, iou, pixel_accuracy):
         axes[2].imshow(overlay)
         axes[2].set_title("Difference (FP: Red, FN: Blue)")
 
-        fig.text(0.5, 0.95, f"IoU: {iou:.2f}   Pixel Accuracy: {pixel_accuracy:.2f}",
+        fig.text(0.5, 0.95, f"IoU: {iou:.2f}   Dice Score: {dice_score:.2f}",
          ha='center', va='top', fontsize=14, bbox=dict(facecolor='white', alpha=0.7))
         
         plt.tight_layout()

@@ -5,6 +5,8 @@ import os
 from PIL import Image
 import torchvision.transforms.functional as TF
 import torchvision.transforms.v2 as transforms
+import numpy as np
+import cv2
 
 class RepeatDataset(Dataset):
     def __init__(self, dataset, repeat_factor):
@@ -63,3 +65,10 @@ class SegmentationDataset(Dataset):
             mask = self.masks[index]
         
         return image, mask
+    
+    @staticmethod
+    def apply_clahe(image):
+        img = np.array(image)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        equalized = clahe.apply(img)
+        return equalized

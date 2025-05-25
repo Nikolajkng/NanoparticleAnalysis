@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow
 from src.gui.windows.MainWindow import MainWindow
 
-from src.model.CrossValidation import cv_kfold
+#from src.model.CrossValidation import cv_kfold
 def main():
     app = QApplication(sys.argv)
     ui = MainWindow()

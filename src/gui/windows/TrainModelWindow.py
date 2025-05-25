@@ -103,5 +103,5 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         self.validation_loss_values.append(stats.validation_loss)
         plot_loss(self.training_loss_values, self.validation_loss_values)
 
-    def show_testing_difference(self, prediction, label, iou, pixel_accuracy):
-        plot_difference(prediction, label, iou, pixel_accuracy)
+    def show_testing_difference(self, prediction, label, iou, dice_score):
+        plot_difference(prediction, label, iou, dice_score)

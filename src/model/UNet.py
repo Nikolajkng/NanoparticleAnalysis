@@ -7,13 +7,14 @@ import torchvision.transforms.v2 as v2
 import numpy as np
 from threading import Event
 import os
+from torch import autocast, GradScaler
 
 # Model-related imports
 from src.model.PlottingTools import *
 from src.model.CrossValidation import *
 from src.shared.ModelTrainingStats import ModelTrainingStats
 from src.model.DataTools import resource_path
-from src.model.DiceLoss import DiceLoss
+from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, BinarySymmetricDiceLoss
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -96,12 +97,20 @@ class UNet(nn.Module):
         d4 = self.decoder4(d3, e1)
         m = self.mappingConvolution(d4)
         return m
-
+    
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event = None, loss_callback = None):
         self.to(self.device)
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
+
+        self.optimizer = torch.optim.Adam(self.parameters(), learningRate)
+        if self.device.type == 'cuda':
+            scaler = GradScaler("cuda")
+
         if loss_function == "dice":
             self.criterion = DiceLoss()
+        elif loss_function == "dice2":
+            self.criterion = BinarySymmetricDiceLoss()
+        elif loss_function == "weighted_dice":
+            self.criterion = WeightedDiceLoss(class_weights=[1.0, 2.0])
         elif loss_function == "weighted_cross_entropy":
             self.criterion = nn.CrossEntropyLoss(weight=torch.tensor([1.0, 2.0], device=self.device))
         elif loss_function == "cross_entropy":
@@ -121,22 +130,33 @@ class UNet(nn.Module):
             for i, data in enumerate(training_dataloader):
                 if (stop_training_event is not None) and stop_training_event.is_set():
                     print("Training stopped by user.")
+                    self.load_model("data/models/" + model_name)
                     return training_loss_values, validation_loss_values
                 
                 inputs, labels = data
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.long().squeeze(1)
-                outputs = self(inputs)
-                
-                self.optimizer.zero_grad()
-                loss = self.criterion(outputs, labels)
-                loss.backward()
 
-                torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
-                self.optimizer.step()
+                self.optimizer.zero_grad()
+
+                if self.device.type == 'cuda':
+                    with autocast("cuda"):
+                        outputs = self(inputs)
+                        loss = self.criterion(outputs, labels)
+                else:
+                    outputs = self(inputs)
+                    loss = self.criterion(outputs, labels)
+                
+                if self.device.type == 'cuda':
+                    scaler.scale(loss).backward()
+                    scaler.step(self.optimizer)
+                    scaler.update()
+                else:
+                    loss.backward()
+                    self.optimizer.step()
                 
                 running_loss += loss.item()
-                print(f"Epoch {epoch + 1}: Finished batch {i + 1} of {batches_in_epoch}")
+                #print(f"Epoch {epoch + 1}: Finished batch {i + 1} of {batches_in_epoch}")
             epoch_training_loss = running_loss / len(training_dataloader)
             training_loss_values.append(epoch_training_loss)
 
@@ -146,14 +166,13 @@ class UNet(nn.Module):
             
             
             print(f'---Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}---')
-
             if epoch_validation_loss < best_loss:
                 self.save_model("data/models/", model_name)
                 best_loss = epoch_validation_loss
                 no_improvement_epochs = 0
             else:
                 no_improvement_epochs += 1
-                if with_early_stopping and no_improvement_epochs >= 50:
+                if with_early_stopping and no_improvement_epochs >= 15:
                     break
             
             if loss_callback:
@@ -179,9 +198,13 @@ class UNet(nn.Module):
                 inputs, labels = data
                 inputs, labels = inputs.to(self.device), labels.to(self.device)
                 labels = labels.long().squeeze(1)
-
-                outputs = self(inputs)
-                loss = self.criterion(outputs, labels)
+                if self.device.type == 'cuda':
+                    with autocast("cuda"):
+                        outputs = self(inputs)
+                        loss = self.criterion(outputs, labels)
+                else:
+                    outputs = self(inputs)
+                    loss = self.criterion(outputs, labels)
                 running_loss += loss.item()
 
         return running_loss / len(validation_dataloader)
@@ -196,7 +219,7 @@ class UNet(nn.Module):
         "normalizer_std": self.normalizer.std,}, path)
         
     def load_model(self, path):
-        model = torch.load(path, map_location=self.device)
+        model = torch.load(path, map_location=self.device, weights_only=True)
         self.normalizer = v2.Normalize(mean=model["normalizer_mean"], std=model["normalizer_std"])
         self.load_state_dict(model["model_state_dict"])
 

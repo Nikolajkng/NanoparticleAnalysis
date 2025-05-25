@@ -1,5 +1,6 @@
 from PIL import Image
 import numpy as np
+from torch import autocast
 
 from src.model.DataTools import *
 from src.model.PlottingTools import *
@@ -15,10 +16,10 @@ class request_handler:
     def process_request_train(self, model_config: ModelConfig, stop_training_event = None, loss_callback = None, test_callback = None):  
         # CHANGE CROSS VALIDATION HERE (uncomment):
         self.unet = UNet()
-        iou, pixel_accuracy = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
+        iou, dice_score = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
         #cv_kfold(self.unet, images_path, masks_path)
-        print(f"Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}")
-        return iou, pixel_accuracy
+        print(f"Model IOU: {iou}\nModel Dice Score: {dice_score}")
+        return iou, dice_score
 
 
     def process_request_segment(self, image: ParticleImage, output_folder):
@@ -31,11 +32,16 @@ class request_handler:
         segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
 
         self.unet.eval()
+        self.unet.to(self.unet.device)
         patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
         with torch.no_grad():
-            segmentations = self.unet(patches_tensor).cpu().detach().numpy()
+            if self.unet.device.type == 'cuda':
+                with autocast("cuda"):
+                    segmentations = self.unet(patches_tensor).cpu().detach().numpy()
+            else:
+                segmentations = self.unet(patches_tensor).cpu().detach().numpy()
 
-            
+
         segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
         segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3])).argmax(axis=1)
         segmented_image_2d = to_2d_image_array(segmented_image)
@@ -61,10 +67,10 @@ class request_handler:
     def process_request_test_model(self, test_data_image_dir, test_data_mask_dir, testing_callback = None):
         dataset = SegmentationDataset(test_data_image_dir, test_data_mask_dir)
         test_dataloader = DataLoader(dataset, batch_size=1)
-        iou, pixel_accuracy = ModelEvaluator.evaluate_model(self.unet, test_dataloader, testing_callback)
+        iou, dice_score = ModelEvaluator.evaluate_model(self.unet, test_dataloader, testing_callback)
         print(iou)
-        print(pixel_accuracy)
-        return iou, pixel_accuracy
+        print(dice_score)
+        return iou, dice_score
         
     def process_request_segment_folder(self, input_folder, output_parent_folder):
         for filename in os.listdir(input_folder):

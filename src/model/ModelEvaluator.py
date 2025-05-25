@@ -17,43 +17,51 @@ class ModelEvaluator():
         
         iou = (intersection + epsilon) / (union + epsilon)
         return iou
-    @staticmethod
-    def __get_single_image_pixel_accuracy(prediction: np.ndarray, ground_truth: np.ndarray):
-        correct_pixels = (prediction == ground_truth).sum()
-        total_pixels = ground_truth.numel()
-        return correct_pixels.float() / total_pixels
     
+    @staticmethod
+    def __get_single_image_dice_score(prediction: np.ndarray, ground_truth: np.ndarray):
+        assert np.isin(prediction, [0, 1]).all(), "prediction must be binary image"
+        assert np.isin(ground_truth, [0, 1]).all(), "ground truth must be binary image"
+        epsilon = 1e-6
+        intersection = np.logical_and(prediction, ground_truth).sum()
+        dice_score = (2 * intersection + epsilon) / (prediction.sum() + ground_truth.sum() + epsilon)
+        return dice_score
+
     @staticmethod
     def calculate_ious(predictions, ground_truths):
         ious = []
         for prediction, ground_truth in zip(predictions, ground_truths):
             ious.append(ModelEvaluator.__get_single_image_iou(prediction, ground_truth))
         return ious
+
     @staticmethod
-    def calculate_pixel_accuracies(predictions, ground_truths):
-        accuracies = []
+    def calculate_dice_scores(predictions, ground_truths):
+        dice_scores = []
         for prediction, ground_truth in zip(predictions, ground_truths):
-            accuracies.append(ModelEvaluator.__get_single_image_pixel_accuracy(prediction, ground_truth))
-        return accuracies
+            dice_scores.append(ModelEvaluator.__get_single_image_dice_score(prediction, ground_truth))
+        return dice_scores
     
-    @staticmethod
     def get_predictions(unet: UNet, dataloader: DataLoader):
         predictions = []
         labels = []
         unet.eval()
         with torch.no_grad():
             for i, data in enumerate(dataloader):
-                input, label = data
+                input, label = data           
                 input, label = input.to(unet.device), label.to(unet.device)
-                label = label.long().squeeze(1)
-                
+                label = (label > 0.5).long().squeeze(1)
                 stride_length = unet.preferred_input_size[0]*4//5
                 tensor_mirror_filled = mirror_fill(input, unet.preferred_input_size, (stride_length,stride_length))
                 patches = extract_slices(tensor_mirror_filled, unet.preferred_input_size, (stride_length,stride_length))
                 segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
                 unet.to(input.device)
                 patches_tensor = torch.tensor(patches, dtype=input.dtype, device=input.device)
-                segmentations = unet(patches_tensor).cpu().detach().numpy()
+
+                if unet.device.type == 'cuda':
+                    with torch.autocast("cuda"):
+                        segmentations = unet(patches_tensor).cpu().detach().numpy()
+                else:
+                    segmentations = unet(patches_tensor).cpu().detach().numpy()
                 segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
                 segmented_image = center_crop(segmented_image, (input.shape[2], input.shape[3])).argmax(axis=1)
                 #prediction = unet.segment(input)
@@ -67,21 +75,23 @@ class ModelEvaluator():
         predictions = [pred.cpu() for pred in predictions]
         labels = [label.cpu() for label in labels]
         ious = ModelEvaluator.calculate_ious(predictions, labels)
-        pixel_accuracies = ModelEvaluator.calculate_pixel_accuracies(predictions, labels)
+        dice_scores = ModelEvaluator.calculate_dice_scores(predictions, labels)
 
+        print(f"IOUS: {ious}")
+        print(f"Dice scores: {dice_scores}")
 
         number_of_predictions_to_show = np.min([4, len(predictions)]) 
         indicies = random.sample(range(len(predictions)), number_of_predictions_to_show)
         if not test_callback:
-            return np.mean(ious), np.mean(pixel_accuracies)
+            return np.mean(ious), np.mean(dice_scores)
         
         try:
             for i in indicies:
-                test_callback(predictions[i], labels[i], ious[i], pixel_accuracies[i])
+                test_callback(predictions[i], labels[i], ious[i], dice_scores[i])
         except Exception:
-            return np.mean(ious), np.mean(pixel_accuracies)
+            return np.mean(ious), np.mean(dice_scores)
 
-        return np.mean(ious), np.mean(pixel_accuracies)
+        return np.mean(ious), np.mean(dice_scores)
 
         
         
