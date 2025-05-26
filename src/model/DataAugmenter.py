@@ -135,7 +135,7 @@ class DataAugmenter():
         #         print("Error with data augment: Final size doesn't match")
 
         # Wrap in a new SegmentationDataset or another compatible Dataset
-        return RepeatDataset(dataset=SegmentationDataset.from_image_set(new_images, new_masks, transforms=DataAugmenter.get_transformer(*augmentations)), repeat_factor=80 if augmentations[0] else 20)
+        return RepeatDataset(dataset=SegmentationDataset.from_image_set(new_images, new_masks, transforms=DataAugmenter.get_transformer(*augmentations)), repeat_factor=10 if augmentations[0] else 20)
 
     def get_crops_for_dataset(self, dataset: Dataset, amount_to_crop, crop_size):
         new_images, new_masks = [], []

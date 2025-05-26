@@ -1,5 +1,5 @@
-import torch #This import is necessary for other torch imports to work correctly.
-from torch.nn import Module, Conv2d, ConvTranspose2d, BatchNorm2d, MaxPool2d, CrossEntropyLoss
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor, cat, device, cuda, no_grad, save, load
 from torch.utils.data import DataLoader
@@ -7,33 +7,31 @@ import numpy as np
 from threading import Event
 import os
 from torch import autocast, GradScaler
-from torch.optim import Adam
-
 # Model-related imports
 from src.model.PlottingTools import *
 from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, BinarySymmetricDiceLoss
 
-class EncoderBlock(Module):
+class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.conv1 = Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-        self.conv2 = Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
-        self.bn = BatchNorm2d(out_channels)
-        self.bn2 = BatchNorm2d(out_channels)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.bn2 = nn.BatchNorm2d(out_channels)
 
     def forward(self, input):
         x = F.relu(self.bn(self.conv1(input)))
         x = F.relu(self.bn2(self.conv2(x)))
         return x
 
-class DecoderBlock(Module):
+class DecoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.upconv = ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
-        self.conv1 = Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
-        self.conv2 = Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
-        self.bn = BatchNorm2d(out_channels)
-        self.bn2 = BatchNorm2d(out_channels)
+        self.upconv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.bn2 = nn.BatchNorm2d(out_channels)
     
     def forward(self, input, concat_map):
         x: Tensor = self.upconv(input)
@@ -44,7 +42,7 @@ class DecoderBlock(Module):
         return x
         
 
-class UNet(Module):
+class UNet(nn.Module):
     def __init__(self, pre_loaded_model_path = None, normalizer = None):
         super().__init__()
 
@@ -60,7 +58,7 @@ class UNet(Module):
         self.decoder3 = DecoderBlock(256, 128)
         self.decoder4 = DecoderBlock(128, 64)
 
-        self.mappingConvolution = Conv2d(64, 2, 1)
+        self.mappingConvolution = nn.Conv2d(64, 2, 1)
 
         self.optimizer = None
         
@@ -82,13 +80,13 @@ class UNet(Module):
         if self.normalizer:
             input = self.normalizer(input)
         e1 = self.encoder1(input)
-        pooled = MaxPool2d(2,2)(e1)
+        pooled = nn.MaxPool2d(2,2)(e1)
         e2 = self.encoder2(pooled)
-        pooled = MaxPool2d(2,2)(e2)
+        pooled = nn.MaxPool2d(2,2)(e2)
         e3 = self.encoder3(pooled)
-        pooled = MaxPool2d(2,2)(e3)
+        pooled = nn.MaxPool2d(2,2)(e3)
         e4 = self.encoder4(pooled)
-        pooled = MaxPool2d(2,2)(e4)
+        pooled = nn.MaxPool2d(2,2)(e4)
         b = self.bottleneck(pooled)
         d1 = self.decoder1(b, e4)
         d2 = self.decoder2(d1, e3)
@@ -100,7 +98,7 @@ class UNet(Module):
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event = None, loss_callback = None):
         self.to(self.device)
 
-        self.optimizer = Adam(self.parameters(), learningRate)
+        self.optimizer = torch.optim.Adam(self.parameters(), learningRate)
         if self.device.type == 'cuda':
             scaler = GradScaler("cuda")
 
@@ -111,9 +109,9 @@ class UNet(Module):
         elif loss_function == "weighted_dice":
             self.criterion = WeightedDiceLoss(class_weights=[1.0, 2.0])
         elif loss_function == "weighted_cross_entropy":
-            self.criterion = CrossEntropyLoss(weight=Tensor([1.0, 2.0], device=self.device))
+            self.criterion = nn.CrossEntropyLoss(weight=Tensor([1.0, 2.0], device=self.device))
         elif loss_function == "cross_entropy":
-            self.criterion = CrossEntropyLoss()
+            self.criterion = nn.CrossEntropyLoss()
         else:
             raise ValueError(f"Unknown loss function: {loss_function}, use 'dice', 'weighted_cross_entropy' or 'cross_entropy'")
 
@@ -122,7 +120,9 @@ class UNet(Module):
         best_loss = np.inf
         no_improvement_epochs = 0
         batches_in_epoch = len(training_dataloader.dataset)//training_dataloader.batch_size
+        import time
         for epoch in range(epochs):
+            start_time = time.perf_counter()
             self.train()
             running_loss = 0.0
             
@@ -183,6 +183,8 @@ class UNet(Module):
                                            epoch=epoch+1,
                                            best_epoch=epoch+1 - no_improvement_epochs)
                 loss_callback(stats)
+            end_time = time.perf_counter()
+            print(f"Time: {end_time - start_time:.4f} seconds")
 
             
         

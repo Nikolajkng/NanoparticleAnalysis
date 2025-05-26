@@ -1,8 +1,6 @@
 from PIL import Image
 import threading
-#from src.model.DataTools import *
 from src.model.PlottingTools import *
-#from src.model.CrossValidation import *
 class request_handler:
     def __init__(self, pre_loaded_model_name=None):
         self.unet = None
@@ -17,17 +15,16 @@ class request_handler:
             print("Model ready")
 
         threading.Thread(target=load, daemon=True).start()
+
     def process_request_train(self, model_config, stop_training_event = None, loss_callback = None, test_callback = None):  
-        # CHANGE CROSS VALIDATION HERE (uncomment):
         from src.model.CrossValidation import cv_holdout
         from src.model.UNet import UNet
         self.model_ready_event.wait()
-        self.unet = UNet()
-        iou, dice_score = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
-        #cv_kfold(self.unet, images_path, masks_path)
+        unet = UNet()
+        iou, dice_score = cv_holdout(unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
+        self.unet = unet
         print(f"Model IOU: {iou}\nModel Dice Score: {dice_score}")
         return iou, dice_score
-
 
     def process_request_segment(self, image, output_folder):
         from src.model.DataTools import mirror_fill, extract_slices, construct_image_from_patches, center_crop, to_2d_image_array
@@ -61,7 +58,6 @@ class request_handler:
         segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
         segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3])).argmax(axis=1)
         segmented_image_2d = to_2d_image_array(segmented_image)
-
         from src.model.SegmentationAnalyzer import SegmentationAnalyzer
         analyzer = SegmentationAnalyzer()
         num_labels, _, stats, centroids = analyzer.get_connected_components(segmented_image_2d)
@@ -70,11 +66,9 @@ class request_handler:
         annotated_image_pil = Image.fromarray(annotated_image)
         segmented_image_pil = Image.fromarray(segmented_image_2d)
 
-        
         table_data = analyzer.format_table_data(stats, image.file_info, particle_count)
         analyzer.write_stats_to_txt(stats, image.file_info, particle_count, output_folder)
         histogram_fig = analyzer.create_histogram(stats, image.file_info) 
-        
         return segmented_image_pil, annotated_image_pil, table_data, histogram_fig
     
     def process_request_load_model(self, model_path):
