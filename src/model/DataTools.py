@@ -26,16 +26,16 @@ def slice_dataset_in_four(dataset, input_size=(256, 256)):
         new_height = height // 2
 
         image_slices = [
-            img[:, :new_width, :new_height],
-            img[:, new_width:, :new_height],
-            img[:, :new_width, new_height:],
-            img[:, new_width:, new_height:]
+            img[:, :new_height, :new_width],
+            img[:, new_height:, :new_width],
+            img[:, :new_height, new_width:],
+            img[:, new_height:, new_width:]
         ]
         mask_slices = [
-            mask[:, :new_width, :new_height],
-            mask[:, new_width:, :new_height],
-            mask[:, :new_width, new_height:],
-            mask[:, new_width:, new_height:]
+            mask[:, :new_height, :new_width],
+            mask[:, new_height:, :new_width],
+            mask[:, :new_height, new_width:],
+            mask[:, new_height:, new_width:]
         ]
         images.extend(image_slices)
         masks.extend(mask_slices)
