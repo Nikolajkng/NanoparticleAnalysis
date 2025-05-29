@@ -15,14 +15,13 @@ class request_handler:
             print("Model ready")
 
         threading.Thread(target=load, daemon=True).start()
-
+        
     def process_request_train(self, model_config, stop_training_event = None, loss_callback = None, test_callback = None):  
         from src.model.CrossValidation import cv_holdout
         from src.model.UNet import UNet
         self.model_ready_event.wait()
-        unet = UNet()
-        iou, dice_score = cv_holdout(unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
-        self.unet = unet
+        self.unet = UNet()
+        iou, dice_score = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
         print(f"Model IOU: {iou}\nModel Dice Score: {dice_score}")
         return iou, dice_score
 
