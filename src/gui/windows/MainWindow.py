@@ -206,7 +206,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
 
-    def show_testing_difference(self, prediction: Tensor, label: Tensor, iou: Tensor, pixel_accuracy: Tensor):
+    def show_testing_difference(self, prediction, label, iou, pixel_accuracy):
         self.show_testing_difference_signal.emit(prediction, label, iou, pixel_accuracy)
 
     def update_loss_values(self, stats: ModelTrainingStats):

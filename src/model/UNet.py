@@ -7,18 +7,10 @@ from torch.utils.data import DataLoader
 import numpy as np
 from threading import Event
 import os
-<<<<<<< HEAD
-
-# Import only what is needed to avoid circular dependencies
-from src.model.PlottingTools import plot_loss
-from src.shared.ModelTrainingStats import ModelTrainingStats
-from src.model.DataTools import resource_path
-=======
 from torch import autocast, GradScaler
 # Model-related imports
 from src.model.PlottingTools import *
 from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, BinarySymmetricDiceLoss
->>>>>>> new_augments
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
