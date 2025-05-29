@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,9 +8,8 @@ import numpy as np
 from threading import Event
 import os
 
-# Model-related imports
-from src.model.PlottingTools import *
-from src.model.CrossValidation import *
+# Import only what is needed to avoid circular dependencies
+from src.model.PlottingTools import plot_loss
 from src.shared.ModelTrainingStats import ModelTrainingStats
 from src.model.DataTools import resource_path
 
@@ -75,24 +75,83 @@ class UNet(nn.Module):
         if pre_loaded_model_path:
             model_path = resource_path(pre_loaded_model_path)
             self.load_model(model_path)
-
+            
     def forward(self, input):
+        # Encoder
         e1 = self.encoder1(input)
-        pooled = nn.MaxPool2d(2,2)(e1)
-        e2 = self.encoder2(pooled)
-        pooled = nn.MaxPool2d(2,2)(e2)
-        e3 = self.encoder3(pooled)
-        pooled = nn.MaxPool2d(2,2)(e3)
-        e4 = self.encoder4(pooled)
-        pooled = nn.MaxPool2d(2,2)(e4)
-        b = self.bottleneck(pooled)
-        d1 = self.decoder1(b, e4)
-        d2 = self.decoder2(d1, e3)
-        d3 = self.decoder3(d2, e2)
-        d4 = self.decoder4(d3, e1)
-        m = self.mappingConvolution(d4)
-        return m
+        #self._visualize_feature_map(e1, "Encoder Block 1")
+        pooled = nn.MaxPool2d(2, 2)(e1)
 
+        e2 = self.encoder2(pooled)
+        #self._visualize_feature_map(e2, "Encoder Block 2")
+        pooled = nn.MaxPool2d(2, 2)(e2)
+
+        e3 = self.encoder3(pooled)
+        #self._visualize_feature_map(e3, "Encoder Block 3")
+        pooled = nn.MaxPool2d(2, 2)(e3)
+
+        e4 = self.encoder4(pooled)
+        #self._visualize_feature_map(e4, "Encoder Block 4")
+        pooled = nn.MaxPool2d(2, 2)(e4)
+
+        # Bottleneck
+        b = self.bottleneck(pooled)
+        #self._visualize_feature_map(b, "Bottleneck")
+
+        # Decoder
+        d1 = self.decoder1(b, e4)
+        #self._visualize_feature_map(d1, "Decoder Block 1")
+
+        d2 = self.decoder2(d1, e3)
+        #self._visualize_feature_map(d2, "Decoder Block 2")
+
+        d3 = self.decoder3(d2, e2)
+        #self._visualize_feature_map(d3, "Decoder Block 3")
+
+        d4 = self.decoder4(d3, e1)
+        #self._visualize_feature_map(d4, "Decoder Block 4")
+
+        # Final Mapping
+        m = self.mappingConvolution(d4)
+        self._visualize_feature_map(m, "Segmentation Map", is_output=True)
+
+        return m
+    
+        
+    def _visualize_feature_map(self, feature_map: Tensor, title: str, is_output: bool = False):
+        """
+        Helper function to visualize feature maps with a color bar.
+        """
+        feature_map = feature_map.detach().cpu().numpy()
+        num_channels = feature_map.shape[1]
+
+        # Plot the first few feature maps
+        num_to_plot = min(8, num_channels)  
+        fig, axes = plt.subplots(1, num_to_plot, figsize=(15, 5))
+        fig.suptitle(title, fontsize=16)
+
+        vmin = min(feature_map[0, 0, :, :].min(), feature_map[0, 1, :, :].min())
+        vmax = max(feature_map[0, 0, :, :].max(), feature_map[0, 1, :, :].max())
+
+        for i in range(num_to_plot):
+            ax = axes[i]
+            im = ax.imshow(feature_map[0, i, :, :], cmap='jet', vmin=vmin, vmax=vmax)
+            ax.axis('off')
+            if i == 0:
+                ax.set_title(f"Class {i + 1} = Background", fontsize=16, weight='bold')
+            else:
+                ax.set_title(f"Class {i + 1} = Foreground (Nanoparticle)", fontsize=16, weight='bold')
+
+            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            cbar.ax.tick_params(labelsize=14)  # Increase tick label size
+
+
+        plt.tight_layout()
+        plt.show()
+
+
+
+    
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, stop_training_event: Event = None, loss_callback = None):
         self.to(self.device)
         self.optimizer = torch.optim.Adam(self.parameters(), lr=learningRate)
