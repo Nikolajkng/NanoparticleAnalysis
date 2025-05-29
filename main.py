@@ -13,15 +13,12 @@ def preload_torch():
     import sklearn
 
 def main():
-    start_time = time.perf_counter()
     threading.Thread(target=preload_torch, daemon=True).start()
     from src.gui.windows.MainWindow import MainWindow
+    
     app = QApplication(sys.argv)
     ui = MainWindow()
     ui.MainWindow.show()
-
-    end_time = time.perf_counter()
-    print(f"Startup time: {end_time - start_time:.4f} seconds")
 
     sys.exit(app.exec_())
 

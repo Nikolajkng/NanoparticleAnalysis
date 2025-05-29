@@ -431,6 +431,38 @@ def plot_memory_usage(memory_usages, labels, title='Memory Usage by Batch Size a
     plt.tight_layout()
     plt.show()
 
+def plot_cpu_gpu_times(cpu_seg_time, cpu_post_process_time, gpu_seg_time, gpu_post_process_time):
+    n = len(cpu_seg_time)
+    ind = np.arange(n)  # x locations for groups
+    width = 0.2  # narrower bars to fit all 4 side by side
+
+    fig, ax = plt.subplots(figsize=(14, 7))
+
+    # Bar positions
+    cpu_seg_pos = ind - 1.5 * width
+    cpu_post_pos = ind - 0.5 * width
+    gpu_seg_pos = ind + 0.5 * width
+    gpu_post_pos = ind + 1.5 * width
+
+    # Plot bars
+    ax.bar(cpu_seg_pos, cpu_seg_time, width, label='CPU Segmentation', color='steelblue')
+    ax.bar(cpu_post_pos, cpu_post_process_time, width, label='CPU Post-Processing', color='lightblue')
+    ax.bar(gpu_seg_pos, gpu_seg_time, width, label='GPU Segmentation', color='darkorange')
+    ax.bar(gpu_post_pos, gpu_post_process_time, width, label='GPU Post-Processing', color='peachpuff')
+
+    ax.set_xlabel('Sample Index')
+    ax.set_ylabel('Time (seconds)')
+    ax.set_yscale('log')  # Log scale for better visibility of differences
+    ax.set_title('CPU vs GPU Segmentation and Post-Processing Times')
+    ax.set_xticks(ind)
+    ax.set_xticklabels([str(i+1) for i in range(n)])
+    ax.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
+
 if __name__ == "__main__":
     #show_example_images(images[0:6])
 
@@ -468,7 +500,36 @@ if __name__ == "__main__":
     # show_example_images([image, mask, image2, mask2])
     # show_annotation(image, mask)
     # import pandas as pd
-    
+    from scipy import stats
+    grid_crop = np.array([0.7131133079528809, 0.6165486574172974, 0.695585310459137, 0.750266432762146, 0.6702269911766052])
+    grid_crop_dice = np.array([0.8043874502182007, 0.719517171382904, 0.7841572165489197, 0.8046627044677734, 0.7735413312911987])
+    random_crop = np.array([0.7233980894088745, 0.7153764367103577, 0.7172026634216309, 0.8553881645202637, 0.6702863574028015])
+    random_crop_dice = np.array([0.8049336075782776, 0.8148965239524841, 0.7979193925857544, 0.897874653339386, 0.7769970893859863])
+    no_rotation = np.array([0.7658917903900146, 0.7825559377670288, 0.7103096842765808, 0.6605923771858215, 0.7762061357498169])
+    no_rotation_dice = np.array([0.8141549825668335, 0.8586778044700623, 0.8082917928695679, 0.7635799646377563, 0.8573122024536133])
+    rotation = np.array([0.837924063205719, 0.7863498330116272, 0.7245765924453735, 0.695385217666626, 0.832563579082489])
+    rotation_dice = np.array([0.8792867064476013, 0.8558564782142639, 0.8175121545791626, 0.7972359657287598, 0.9039480090141296])
+
+
+    no_flip = np.array([0.7106041312217712, 0.7450249195098877, 0.7225610613822937, 0.7385781407356262, 0.7855268716812134])
+    no_flip_dice = np.array([0.7884710431098938, 0.8103492856025696, 0.8125852346420288, 0.8322637677192688, 0.8616784811019897])
+    flip = np.array([0.7667941451072693, 0.6404618620872498, 0.7248525619506836, 0.7824148535728455, 0.8072212338447571])
+    flip_dice = np.array([0.8451998233795166, 0.7093654274940491, 0.8108140826225281, 0.8679991960525513, 0.8851615786552429])
+
+    print(stats.shapiro(grid_crop-random_crop))
+    print(stats.shapiro(random_crop_dice-grid_crop_dice))
+    print(stats.shapiro(no_rotation - rotation))
+    print(stats.shapiro(no_rotation_dice - rotation_dice))
+    print(stats.shapiro(no_flip - flip))
+    print(stats.shapiro(no_flip_dice - flip_dice))
+
+    # print(stats.ttest_rel(grid_crop, random_crop))
+    # print(stats.ttest_rel(grid_crop_dice, random_crop_dice))
+    # print(stats.ttest_rel(no_rotation, rotation))
+    # print(stats.ttest_rel(no_rotation_dice, rotation_dice))
+
+    # print(stats.ttest_rel(no_flip, flip))
+    # print(stats.ttest_rel(no_flip_dice, flip_dice))
     # iou_A = np.array([0.7106041312217712, 0.7450249195098877, 0.7225610613822937, 0.7385781407356262, 0.7855268716812134])
     # iou_B = np.array([0.7667941451072693, 0.6404618620872498, 0.7248525619506836, 0.7824148535728455, 0.8072212338447571] )
     # iou_C = np.array([0.7660102844238281, 0.786454975605011, 0.749537467956543, 0.759172797203064, 0.7851026654243469])
@@ -517,11 +578,28 @@ if __name__ == "__main__":
     # plt.legend()
     # plt.grid(True)
     # plt.show()
-    init_times_before = [12.9041, 12.2768, 12.1893, 12.1012, 12.4508, 11.6724, 11.5952, 11.6920, 11.6894, 12.0990]
-    init_times_after = [0.6642, 0.4200, 0.4553, 0.4453, 0.4193, 0.4202, 0.4153, 0.4380, 0.4465, 0.4230]
-    print(np.mean(init_times_before), np.mean(init_times_after))
+    # startup_times_before = [12.9041, 12.2768, 12.1893, 12.1012, 12.4508, 11.6724, 11.5952, 11.6920, 11.6894, 12.0990]
+    # startup_times_after = [0.6642, 0.4200, 0.4553, 0.4453, 0.4193, 0.4202, 0.4153, 0.4380, 0.4465, 0.4230]
+    # print(np.mean(startup_times_before), np.mean(startup_times_after))
 
-    memory_usages = [5119, 18359, 9083]
-    labels = ['Batch size 8', 'Batch size 32', 'Batch size 32 (mixed precision)']
-    plot_memory_usage(memory_usages, labels, title='Memory Usage by Batch Size and Precision')
+    cpu_seg_time = np.array([10.1272, 10.4156, 9.9943, 9.9314, 9.7927, 9.9107, 9.6871, 9.9212, 9.9013, 9.7655, 10.4376, 10.0092, 9.7280])
+    cpu_post_process_time = np.array([0.1420, 0.1515, 0.2147, 0.1513, 0.1493, 0.1472, 0.1504, 0.1561, 0.1345, 0.1676, 0.1566, 0.1357, 0.1443])
 
+    gpu_seg_time = np.array([0.1400, 0.1271, 0.1183, 0.1162, 0.1238, 0.1303, 0.1261, 0.1280, 0.1269, 0.1258, 0.1287, 0.1272, 0.1257])
+    gpu_post_process_time = np.array([0.0984, 0.1040, 0.1679, 0.0938, 0.1020, 0.0990, 0.1028, 0.1065, 0.0876, 0.1200, 0.1126, 0.0934, 0.0993])
+
+    print(np.mean(cpu_seg_time), np.mean(cpu_post_process_time), np.mean(cpu_post_process_time + cpu_seg_time))
+    print(np.mean(gpu_seg_time), np.mean(gpu_post_process_time), np.mean(gpu_post_process_time + gpu_seg_time))
+
+
+    #plot_cpu_gpu_times(cpu_seg_time, cpu_post_process_time, gpu_seg_time, gpu_post_process_time)
+
+    # memory_usages = [5119, 18359, 9083]
+    # labels = ['Batch size 8', 'Batch size 32', 'Batch size 32 (mixed precision)']
+    # plot_memory_usage(memory_usages, labels, title='Memory Usage by Batch Size and Precision')
+
+    cpu_epoch_time = [452.4048, 466.7603, 459.6591, 471.3772, 479.2589, 500.8772, 460.6193, 454.4951, 453.2173, 454.0637]
+    gpu_epoch_time = [4.2034, 3.9112, 2.6794, 3.8027, 3.8488, 4.7915, 5.5026, 4.4560, 4.1945, 5.4300]
+    print(np.mean(cpu_epoch_time), np.mean(gpu_epoch_time))
+
+    
