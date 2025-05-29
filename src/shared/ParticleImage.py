@@ -1,11 +1,9 @@
 import os
 from PIL import Image
-import tifffile
 
 from src.shared.IOFunctions import is_dm_format, is_tiff_format
 from src.shared.FileInfo import FileInfo
 from src.model.dmFileReader import dmFileReader
-from src.model.DataTools import tiff_force_8bit
 class ParticleImage:
     def __init__(self, image_path):
         self.image_path = image_path
@@ -19,6 +17,8 @@ class ParticleImage:
             reader = dmFileReader()
             return  reader.get_image_from_dm_file(image_path)
         else:
+            from src.model.DataTools import tiff_force_8bit
+
             image = Image.open(image_path)
             image_8bit = tiff_force_8bit(image)
             return image_8bit.convert("L")
@@ -47,6 +47,8 @@ class ParticleImage:
         return file_info
     
     def extract_pixel_size_from_tiff_file(self, file_path):
+        import tifffile
+
         try:
             with tifffile.TiffFile(file_path) as tif:
                     tags = tif.pages[0].tags

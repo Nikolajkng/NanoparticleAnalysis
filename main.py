@@ -1,11 +1,29 @@
-import torch
-from src.model.UNet import UNet  # Directly import the UNet class
-from src.model.DataTools import load_image_as_tensor
-from src.model.DataTools import showTensor
-import numpy as np
+import sys
+import time
+from PyQt5.QtWidgets import QApplication
+
+import threading
+
+def preload_torch():
+    import numpy as np
+    import torch
+    import torchvision
+    _ = torch.Tensor([0])  # Force lazy CUDA init
+    import ncempy
+    import sklearn
+
 def main():
-    # Create an instance of the UNet model
-    model = UNet("src/data/model/UNet_best_09-05.pt")
+    start_time = time.perf_counter()
+    threading.Thread(target=preload_torch, daemon=True).start()
+    from src.gui.windows.MainWindow import MainWindow
+    app = QApplication(sys.argv)
+    ui = MainWindow()
+    ui.MainWindow.show()
+
+    end_time = time.perf_counter()
+    print(f"Startup time: {end_time - start_time:.4f} seconds")
+
+    sys.exit(app.exec_())
 
     # Generate a random input tensor (1 sample, 1 channel, 256x256 image)
     input_tensor = load_image_as_tensor("data/UNET_visualizations/input.PNG")
@@ -25,3 +43,4 @@ def main():
     #showTensor(cropped_image)
 if __name__ == "__main__":
     main()
+    #cv_kfold("data/medres_images", "data/medres_masks")
