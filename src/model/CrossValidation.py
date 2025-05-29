@@ -101,13 +101,13 @@ def cv_kfold(images_path, masks_path):
     
     # Set parameters:
     K = 5
-    learning_rates = [0.001, 0.0001, 0.00001]  
+    learning_rates = [0.0001]  
     #loss_functions = ["cross_entropy", "dice2"]#, "dice", "weighted_cross_entropy", "weighted_dice"] 
     augmentations = [(True, True, False, False, False, False)]
     random_cropping = [False, True]
     S = len(learning_rates)#len(learning_rates)
     #models = [UNet() for _ in range(S)]
-    epochs = 100
+    epochs = 500
     print(f"\nTraining model using one-level cross-validation with K={K}")
 
     # Load data
@@ -215,7 +215,6 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
     train_data, val_data = random_split(train_split, [0.8, 0.2])
     inner_test_data = process_and_slice(inner_test_data)
     inner_test_dataloader = DataLoader(inner_test_data, batch_size=1, shuffle=False)
-    data_augmenter = DataAugmenter()
     from src.model.UNet import UNet
 
     for s in range(1, len(parameters)+1):
@@ -225,7 +224,7 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
         unet.normalizer = get_normalizer(inner_train_dataloader.dataset.dataset)
         #inner_train_dataloader.dataset.dataset.transform = data_augmenter.get_transformer(True, *parameters[s-1])
         
-        model_name = f"UNet{s}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+        model_name = f"UNet{K2}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pt"
         learning_rate = parameters[s-1]  
         loss_function = "cross_entropy"#parameters[s-1]
         print(parameters[s-1])
@@ -242,6 +241,7 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
         )
 
         test_loss = unet.get_validation_loss(inner_test_dataloader)
+        from src.model.PlottingTools import plot_difference
         test_iou, test_dice = ModelEvaluator.evaluate_model(unet, inner_test_dataloader)
 
         test_results[s]["test_sizes"].append(len(inner_test_data))
@@ -289,7 +289,7 @@ def log_inner_fold_results(idx, parameters, inner_test_results, S):
                 f.write(f"    Dice: {inner_test_results[s]['test_dice_scores'][i]:.5f}\n")
 
 def log_one_layer_cv_results(parameters, fold_results, best_parameter):
-    with open("cross_validation_learning_rates_results.txt", "w") as f:
+    with open("cross_validation_final_model_results.txt", "w") as f:
         f.write(f"############## K-Fold Cross Validation Summary ##############\n")
         for s in range(1, len(parameters)+1):
             f.write(f"Model with {parameters[s-1]}:\n")
