@@ -20,7 +20,7 @@ def plot_loss(training_loss_values: list[float], validation_loss_values: list[fl
         print("Error when plotting!")
         print(e.with_traceback)
 
-def plot_difference(prediction, label, iou, dice_score):
+def plot_difference(input, prediction, label, iou, dice_score):
         import matplotlib
         import numpy as np
 
@@ -29,6 +29,7 @@ def plot_difference(prediction, label, iou, dice_score):
 
         prediction_uint8 = (np.array(prediction) * 255).astype(np.uint8).squeeze(0)
         label_uint8 = (np.array(label) * 255).astype(np.uint8).squeeze(0)
+        input_uint8 = (np.array(input) * 255).astype(np.uint8).squeeze()
 
         false_positives = ((prediction_uint8 == 255) & (label_uint8 == 0))  # FP: Red
         false_negatives = ((prediction_uint8 == 0) & (label_uint8 == 255))  # FN: Blue
@@ -37,17 +38,19 @@ def plot_difference(prediction, label, iou, dice_score):
 
         overlay[..., 0] = false_positives * 255
         overlay[..., 2] = false_negatives * 255  # Blue channel for FN
-        
-        fig, axes = plt.subplots(1, 3, figsize=(12, 5), sharex=True, sharey=True)
+        fig, axes = plt.subplots(1, 4, figsize=(16, 5), sharex=True, sharey=True)
 
-        axes[0].imshow(prediction_uint8, cmap='gray')
-        axes[0].set_title("Prediction")
+        axes[0].imshow(input_uint8, cmap='gray')
+        axes[0].set_title("Input")
 
-        axes[1].imshow(label_uint8, cmap='gray')
-        axes[1].set_title("Label")
+        axes[1].imshow(prediction_uint8, cmap='gray')
+        axes[1].set_title("Prediction")
 
-        axes[2].imshow(overlay)
-        axes[2].set_title("Difference (FP: Red, FN: Blue)")
+        axes[2].imshow(label_uint8, cmap='gray')
+        axes[2].set_title("Label")
+
+        axes[3].imshow(overlay)
+        axes[3].set_title("Difference (FP: Red, FN: Blue)")
 
         fig.text(0.5, 0.95, f"IoU: {iou:.2f}   Dice Score: {dice_score:.2f}",
          ha='center', va='top', fontsize=14, bbox=dict(facecolor='white', alpha=0.7))

@@ -41,6 +41,7 @@ class ModelEvaluator():
     
     def get_predictions(unet, dataloader: DataLoader):
         from src.model.DataTools import center_crop, construct_image_from_patches, mirror_fill, extract_slices
+        inputs = []
         predictions = []
         labels = []
         unet.eval()
@@ -66,11 +67,12 @@ class ModelEvaluator():
                 #prediction = unet.segment(input)
                 predictions.append(torch.tensor(segmented_image, dtype=input.dtype, device=input.device))
                 labels.append(label)
-        return predictions, labels
+                inputs.append(input.cpu())
+        return inputs, predictions, labels
 
     @staticmethod
     def evaluate_model(unet, test_dataloader: DataLoader, test_callback = None) -> tuple[float, float]:
-        predictions, labels = ModelEvaluator.get_predictions(unet, test_dataloader)
+        inputs, predictions, labels = ModelEvaluator.get_predictions(unet, test_dataloader)
         predictions = [pred.cpu() for pred in predictions]
         labels = [label.cpu() for label in labels]
         ious = ModelEvaluator.calculate_ious(predictions, labels)
@@ -83,11 +85,10 @@ class ModelEvaluator():
         indicies = random.sample(range(len(predictions)), number_of_predictions_to_show)
         if not test_callback:
             return np.mean(ious), np.mean(dice_scores)
-        
         try:
-            for i in indicies:
-                test_callback(predictions[i], labels[i], ious[i], dice_scores[i])
-        except Exception:
+            for i in range(len(predictions)): #indicies:
+                test_callback(inputs[i], predictions[i], labels[i], ious[i], dice_scores[i])
+        except Exception as e:
             return np.mean(ious), np.mean(dice_scores)
 
         return np.mean(ious), np.mean(dice_scores)
