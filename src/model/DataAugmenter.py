@@ -12,7 +12,7 @@ class DataAugmenter():
     def get_transformer(crop: bool, rotate: bool, flip: bool, deform: bool, adjust_brightness: bool, blur: bool):
         def transformer(image, mask):
             from torchvision.transforms.v2 import ElasticTransform, RandomCrop, GaussianBlur
-            from torchvision.transforms.functional import elastic_transform, crop, rotate, hflip, adjust_brightness
+            import torchvision.transforms.functional as TF
             from torchvision.transforms import InterpolationMode
 
             # Elastic deformation
@@ -24,31 +24,31 @@ class DataAugmenter():
                     sigma=(4.0, 6.0)
                 )
                 
-                image = elastic_transform(image, params)
-                mask = elastic_transform(mask, params, interpolation=InterpolationMode.NEAREST)
+                image = TF.elastic_transform(image, params)
+                mask = TF.elastic_transform(mask, params, interpolation=InterpolationMode.NEAREST)
 
             # Random crop
             if crop:
                 i, j, h, w = RandomCrop.get_params(
                     image, output_size=(256, 256))
-                image = crop(image, i, j, h, w)
-                mask = crop(mask, i, j, h, w)
+                image = TF.crop(image, i, j, h, w)
+                mask = TF.crop(mask, i, j, h, w)
 
             # Random rotation
             if rotate:
-                angle = random.randint(-30, 30)
-                #angle = random.choice([0, 90, 180, 270])
-                image = rotate(image, angle)
-                mask = rotate(mask, angle)
+                #angle = random.randint(-30, 30)
+                angle = random.choice([0, 90, 180, 270])
+                image = TF.rotate(image, angle)
+                mask = TF.rotate(mask, angle)
 
             # Random horizontal flipping
             if flip and random.random() > 0.5:
-                image = hflip(image)
-                mask = hflip(mask)
+                image = TF.hflip(image)
+                mask = TF.hflip(mask)
             
             if adjust_brightness:
                 brightness_factor = random.uniform(0.8, 1.2)
-                adjust_brightness(image, brightness_factor)
+                image = TF.adjust_brightness(image, brightness_factor)
 
             if blur:
                 blur_transform = GaussianBlur(kernel_size=3, sigma=(0.5, 1.5))
