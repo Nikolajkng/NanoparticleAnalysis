@@ -1,12 +1,9 @@
 from src.shared.Commands import Command
 from src.model.RequestHandler import request_handler
-from src.model.UNet import UNet
-
+import threading
 class Controller():
     def __init__(self, pre_loaded_model_name=None):
-        self.unet = UNet(f"src/data/model/{pre_loaded_model_name}")
-        self.request_handler = request_handler(self.unet)
-        
+        self.request_handler = request_handler(pre_loaded_model_name)
         self.commands = {
             Command.SEGMENT: self.request_handler.process_request_segment,
             Command.RETRAIN: self.request_handler.process_request_train,

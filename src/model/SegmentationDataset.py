@@ -1,8 +1,19 @@
 from torch.utils.data import Dataset
 import os
 from PIL import Image
-import torchvision.transforms.functional as TF
+import numpy as np
+import cv2
 
+class RepeatDataset(Dataset):
+    def __init__(self, dataset, repeat_factor):
+        self.dataset = dataset
+        self.repeat_factor = repeat_factor
+
+    def __len__(self):
+        return len(self.dataset) * self.repeat_factor
+
+    def __getitem__(self, idx):
+        return self.dataset[idx % len(self.dataset)]
 
 class SegmentationDataset(Dataset):
     def __init__(self, image_dir=None, mask_dir=None, transform=None):
@@ -16,7 +27,9 @@ class SegmentationDataset(Dataset):
         self.image_filenames = sorted(os.listdir(image_dir))
         self.mask_filenames = sorted(os.listdir(mask_dir))
         self.transform = transform
-        
+
+        import torchvision.transforms.functional as TF
+
         for index in range(len(self.image_filenames)):
             img_path = os.path.join(self.image_dir, self.image_filenames[index])
             mask_path = os.path.join(self.mask_dir, self.mask_filenames[index])
@@ -31,14 +44,29 @@ class SegmentationDataset(Dataset):
             self.masks.append(mask)
 
     @classmethod
-    def from_image_set(cls, images, masks):
+    def from_image_set(cls, images, masks, transforms=None):
         res = cls()
         res.images = images
         res.masks = masks
+        res.transform = transforms
         return res
 
+    
     def __len__(self):
         return len(self.images)
     
     def __getitem__(self, index):
-        return self.images[index], self.masks[index]
+        if self.transform:
+            image, mask = self.transform(self.images[index], self.masks[index])
+        else:
+            image = self.images[index]
+            mask = self.masks[index]
+        
+        return image, mask
+    
+    @staticmethod
+    def apply_clahe(image):
+        img = np.array(image)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        equalized = clahe.apply(img)
+        return equalized

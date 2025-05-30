@@ -1,12 +1,11 @@
-from ncempy.io import dm
 from PIL import Image
-import numpy as np
-import torchvision.transforms.functional as TF
 class dmFileReader():
     def __init__(self):
         return
     
     def get_image_from_dm_file(self, file_path):
+        from ncempy.io import dm
+
         with dm.fileDM(file_path) as dmFile1: 
             tags = dmFile1.allTags
             high_limit = float(tags['.DocumentObjectList.1.ImageDisplayInfo.HighLimit'])
@@ -23,6 +22,9 @@ class dmFileReader():
             return pil_image
     
     def get_tensor_from_dm_file(self, file_path):
+        from ncempy.io import dm
+
+        import torchvision.transforms.functional as TF
         with dm.fileDM(file_path) as dmFile1: 
             tags = dmFile1.allTags
             high_limit = float(tags['.DocumentObjectList.1.ImageDisplayInfo.HighLimit'])
@@ -45,13 +47,16 @@ class dmFileReader():
     def set_min_and_max(self, image_data, min_value, max_value):
         if min_value >= max_value:
             raise ValueError("min_value must be less than max_value")
-        
+        import numpy as np
+
         clipped_image = np.clip(image_data, min_value, max_value)
         scaled_image = (clipped_image - min_value) / (max_value - min_value) * 255
 
         return scaled_image.astype("uint8")
     
     def get_pixel_size(self, file_path):
+        from ncempy.io import dm
+
         with dm.fileDM(file_path) as dmFile1: 
             file = dmFile1.getDataset(0)
             pixel_unit = file['pixelUnit']
