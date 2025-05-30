@@ -5,8 +5,8 @@ import seaborn as sns
 #from src.model.DataTools import tensor_from_image_no_resize, to_2d_image_array
 
 def plot_paired_bar(iou_A, iou_B, dice_A, dice_B):
-    A_label = "Horizontal flipping"
-    B_label = "Flipping + rotation"
+    A_label = "Grid crop"
+    B_label = "Random crop"
     diff_iou = iou_B - iou_A
     diff_dice = dice_B - dice_A
 
@@ -225,6 +225,37 @@ def show_annotation(image, mask):
     plt.tight_layout()
     plt.show()
 
+
+def show_labkit_annotation(image, labkit, mask):
+    """
+    Show the image alongside the mask.
+    """
+    # Convert tensors to numpy arrays
+    image_np = to_2d_image_array(image.numpy())
+    labkit_np = to_2d_image_array(labkit.numpy())
+    mask_np = to_2d_image_array(mask.numpy())
+    # Normalize the image for display
+    image_np = (image_np - np.min(image_np)) / (np.max(image_np) - np.min(image_np))
+    
+    # Create a figure with subplots
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5), sharex=True, sharey=True)
+
+    # Display the original image
+    axes[0].imshow(image_np, cmap='gray')
+    axes[0].set_title("Original Image")
+    
+    # Display the original image
+    axes[1].imshow(labkit_np, cmap='gray')
+    axes[1].set_title("Labkit Ground Truth")
+
+    # Display the ground truth mask
+    axes[2].imshow(mask_np, cmap='gray')
+    axes[2].set_title("Ground Truth Mask")
+
+    plt.tight_layout()
+    plt.show()
+
+
 def bootstrap_compare(model_A: list, model_B: list, n_bootstraps=100_00, ci=(2.5, 97.5)):
     A = np.array(model_A)
     B = np.array(model_B)
@@ -439,20 +470,21 @@ def plot_cpu_gpu_times(cpu_seg_time, cpu_post_process_time, gpu_seg_time, gpu_po
     fig, ax = plt.subplots(figsize=(14, 7))
 
     # Bar positions
-    cpu_seg_pos = ind - 1.5 * width
-    cpu_post_pos = ind - 0.5 * width
-    gpu_seg_pos = ind + 0.5 * width
-    gpu_post_pos = ind + 1.5 * width
+    cpu_seg_pos = ind - 1.5 * width - 0.02
+    cpu_post_pos = ind - 0.5 * width - 0.02
+    gpu_seg_pos = ind + 0.5 * width + 0.02
+    gpu_post_pos = ind + 1.5 * width + 0.02
 
     # Plot bars
-    ax.bar(cpu_seg_pos, cpu_seg_time, width, label='CPU Segmentation', color='steelblue')
-    ax.bar(cpu_post_pos, cpu_post_process_time, width, label='CPU Post-Processing', color='lightblue')
-    ax.bar(gpu_seg_pos, gpu_seg_time, width, label='GPU Segmentation', color='darkorange')
-    ax.bar(gpu_post_pos, gpu_post_process_time, width, label='GPU Post-Processing', color='peachpuff')
+    ax.bar(cpu_seg_pos, cpu_seg_time, width, label='Grid Crop IOU', color='steelblue')
+    ax.bar(gpu_seg_pos, cpu_post_process_time, width, label='Random Crop IOU', color='lightblue')
+    ax.bar(cpu_post_pos, gpu_seg_time, width, label='Grid Crop Dice', color='darkorange')
+    ax.bar(gpu_post_pos, gpu_post_process_time, width, label='Random Crop Dice', color='peachpuff')
 
     ax.set_xlabel('Sample Index')
     ax.set_ylabel('Time (seconds)')
-    ax.set_yscale('log')  # Log scale for better visibility of differences
+    ax.set_ylim(0.6, 0.9)
+    #ax.set_yscale('log')  # Log scale for better visibility of differences
     ax.set_title('CPU vs GPU Segmentation and Post-Processing Times')
     ax.set_xticks(ind)
     ax.set_xticklabels([str(i+1) for i in range(n)])
@@ -466,56 +498,63 @@ def plot_cpu_gpu_times(cpu_seg_time, cpu_post_process_time, gpu_seg_time, gpu_po
 if __name__ == "__main__":
     #show_example_images(images[0:6])
 
-    # image_paths = get_image_paths("data/highres_images/")
-    # histogram = compute_collected_histogram(image_paths)
-    # # Print or plot the histogram
-    # import matplotlib.pyplot as plt
-    # plt.plot(histogram)
-    # plt.title("Collected Pixel Value Histogram")
-    # plt.xlabel("Pixel Value (0-255)")
-    # plt.ylabel("Frequency")
-    # plt.grid(True)
-    # plt.show()
+    image_paths = get_image_paths("data/highres_images/")
+    histogram = compute_collected_histogram(image_paths)
+    # Print or plot the histogram
+    import matplotlib.pyplot as plt
 
+    plt.subplot(1, 2, 1)
+    plt.plot(histogram)
+    plt.title("Collected Pixel Value Histogram")
+    plt.xlabel("Pixel Value (0-255)")
+    plt.ylabel("Frequency")
+    plt.grid(True)
 
-    # image_paths, mask_paths = get_sorted_image_mask_paths("data/highres_images", "data/highres_masks")
+    image_paths, mask_paths = get_sorted_image_mask_paths("data/highres_images", "data/highres_masks")
     
-    # fg_hist, bg_hist = compute_foreground_background_histograms(image_paths, mask_paths)
+    fg_hist, bg_hist = compute_foreground_background_histograms(image_paths, mask_paths)
     # # Plotting the histograms
-    # import matplotlib.pyplot as plt
-    # plt.plot(fg_hist, label='Foreground', color='red')
-    # plt.plot(bg_hist, label='Background', color='blue')
-    # plt.title("Foreground vs Background Pixel Histograms")
-    # plt.xlabel("Pixel Value (0-255)")
-    # plt.ylabel("Frequency")
-    # plt.legend()
-    # plt.grid(True)
-    # plt.show()
+    plt.subplot(1, 2, 2)
+    plt.plot(fg_hist, label='Foreground', color='red')
+    plt.plot(bg_hist, label='Background', color='blue')
+    plt.title("Foreground vs Background Pixel Histograms")
+    plt.xlabel("Pixel Value (0-255)")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
 
 
     # image = tensor_from_image_no_resize("data/highres_images/E. sample_0008_4k.tif")
     # mask = tensor_from_image_no_resize("data/highres_masks/E. sample_0008_mask_4k.tif")
+    # labkit = tensor_from_image_no_resize("data/labkit_segmentation.tif")
+    # show_labkit_annotation(image, labkit, mask)
     # image2, mask2 = random_affine(image, mask)
     # show_example_images([image, mask, image2, mask2])
     # show_annotation(image, mask)
     # import pandas as pd
     from scipy import stats
-    grid_crop = np.array([0.7131133079528809, 0.6165486574172974, 0.695585310459137, 0.750266432762146, 0.6702269911766052])
-    grid_crop_dice = np.array([0.8043874502182007, 0.719517171382904, 0.7841572165489197, 0.8046627044677734, 0.7735413312911987])
-    random_crop = np.array([0.7233980894088745, 0.7153764367103577, 0.7172026634216309, 0.8553881645202637, 0.6702863574028015])
-    random_crop_dice = np.array([0.8049336075782776, 0.8148965239524841, 0.7979193925857544, 0.897874653339386, 0.7769970893859863])
-    no_rotation = np.array([0.7658917903900146, 0.7825559377670288, 0.7103096842765808, 0.6605923771858215, 0.7762061357498169])
-    no_rotation_dice = np.array([0.8141549825668335, 0.8586778044700623, 0.8082917928695679, 0.7635799646377563, 0.8573122024536133])
-    rotation = np.array([0.837924063205719, 0.7863498330116272, 0.7245765924453735, 0.695385217666626, 0.832563579082489])
-    rotation_dice = np.array([0.8792867064476013, 0.8558564782142639, 0.8175121545791626, 0.7972359657287598, 0.9039480090141296])
+    grid_crop = np.array([0.6528146886825562, 0.6797138452529907, 0.7251459360122681, 0.6453444671630859, 0.7232711219787598])
+    grid_crop_dice = np.array([0.7642716979980469, 0.7461620569229126, 0.7954027056694031, 0.7549303579330444, 0.8166839981079102])
+    random_crop = np.array([0.668975293636322, 0.8001164793968201, 0.7264196920394897, 0.7317933440208435, 0.7347612380981445])
+    random_crop_dice = np.array([0.7676895260810852, 0.8609291315078735, 0.7848815321922302, 0.8258540034294128, 0.8281547427177429])
+    no_rotation = np.array([0.762157678604126, 0.704014003276825, 0.719645619392395, 0.7562171220779419, 0.7786809206008911])
+    no_rotation_dice = np.array([0.8458858132362366, 0.7899280786514282, 0.7921444773674011, 0.8396288752555847, 0.8582870364189148])
+    rotation = np.array([0.796130895614624, 0.7645872235298157, 0.7844747304916382, 0.7975218892097473, 0.8107856512069702])
+    rotation_dice = np.array([0.8698691725730896, 0.8418214321136475, 0.8482317924499512, 0.8769534826278687, 0.8891916275024414])
 
+    no_bright = np.array([0.6516720056533813, 0.7034207582473755, 0.7970498204231262, 0.7814952731132507, 0.7757821083068848])
+    bright = np.array([0.6945510506629944, 0.7286107540130615, 0.7784311771392822, 0.7878152132034302, 0.7485595345497131])
 
     no_flip = np.array([0.7106041312217712, 0.7450249195098877, 0.7225610613822937, 0.7385781407356262, 0.7855268716812134])
     no_flip_dice = np.array([0.7884710431098938, 0.8103492856025696, 0.8125852346420288, 0.8322637677192688, 0.8616784811019897])
     flip = np.array([0.7667941451072693, 0.6404618620872498, 0.7248525619506836, 0.7824148535728455, 0.8072212338447571])
     flip_dice = np.array([0.8451998233795166, 0.7093654274940491, 0.8108140826225281, 0.8679991960525513, 0.8851615786552429])
-
+    print(no_rotation.mean(), rotation.mean())
+    print(no_rotation_dice.mean(), rotation_dice.mean())
+    print(no_flip.mean(), flip.mean())
+    print(no_flip_dice.mean(), flip_dice.mean())
     print(stats.shapiro(grid_crop-random_crop))
     print(stats.shapiro(random_crop_dice-grid_crop_dice))
     print(stats.shapiro(no_rotation - rotation))
@@ -523,10 +562,23 @@ if __name__ == "__main__":
     print(stats.shapiro(no_flip - flip))
     print(stats.shapiro(no_flip_dice - flip_dice))
 
-    # print(stats.ttest_rel(grid_crop, random_crop))
-    # print(stats.ttest_rel(grid_crop_dice, random_crop_dice))
-    # print(stats.ttest_rel(no_rotation, rotation))
-    # print(stats.ttest_rel(no_rotation_dice, rotation_dice))
+    print(stats.ttest_rel(grid_crop, random_crop))
+    print(stats.ttest_rel(grid_crop_dice, random_crop_dice))
+    print(stats.ttest_rel(no_rotation, rotation))
+    print(stats.ttest_rel(no_rotation_dice, rotation_dice))
+    print(stats.ttest_rel(no_bright, bright))
+
+    print()
+
+    lr_03 = np.array([0.8283874988555908, 0.7682378888130188, 0.7941887378692627, 0.7041546106338501, 0.7252908945083618])
+    lr_04 = np.array([0.8291698694229126, 0.70115727186203, 0.7721849679946899, 0.727835476398468, 0.7304939031600952])
+    lr_05 = np.array([0.8114704489707947, 0.742527186870575, 0.7933081388473511, 0.7155537605285645, 0.7669943571090698])
+    print(stats.shapiro(lr_03 - lr_04))
+    print(stats.shapiro(lr_04 - lr_05))
+    print(stats.shapiro(lr_03 - lr_05))
+    print(stats.ttest_rel(lr_03, lr_04))
+    print(stats.ttest_rel(lr_04, lr_05))
+    print(stats.ttest_rel(lr_03, lr_05))
 
     # print(stats.ttest_rel(no_flip, flip))
     # print(stats.ttest_rel(no_flip_dice, flip_dice))
@@ -538,7 +590,8 @@ if __name__ == "__main__":
     # dice_C = np.array([0.8413566946983337, 0.8447999954223633, 0.8332952260971069, 0.8431856036186218, 0.8538570404052734])
     # #plot_iou_dice_boxplot(iou_A, iou_B, dice_A, dice_B) 
     # plot_iou_dice_boxplot(iou_A, iou_B, dice_A, dice_B)
-    # plot_paired_bar(iou_A, iou_B, dice_A, dice_B)
+    plot_paired_bar(no_rotation, rotation, no_rotation_dice, rotation_dice)
+    plot_cpu_gpu_times(grid_crop, grid_crop_dice, random_crop, random_crop_dice)
     # plot_paired_bar(iou_B, iou_C, dice_B, dice_C)
     # diff = iou_B - iou_A
     # bootstrap_compare(iou_A, iou_B)
