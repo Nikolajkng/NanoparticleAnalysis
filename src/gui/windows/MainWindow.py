@@ -251,17 +251,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         return QPixmap.fromImage(qimage) 
 
 
-    def show_testing_difference_mainwindow(self, prediction, label, iou, pixel_accuracy):
+    def show_testing_difference_mainwindow(self, prediction, label, iou, dice_score):
         from src.model.PlottingTools import plot_difference
-        plot_difference(prediction, label, iou, pixel_accuracy)
+        plot_difference(prediction, label, iou, dice_score)
 
-    def show_metrics_popup(self, iou, pixel_accuracy):
+    def show_metrics_popup(self, iou, dice_score):
         dialog = QDialog()
         dialog.setWindowTitle("Model Evaluation Metrics")
         dialog.resize(400, 200)  # width, height
 
         layout = QVBoxLayout()
-        label = QLabel(f"<h3>Model IOU:</h3> {iou:.4f}<br><h3>Pixel Accuracy:</h3> {pixel_accuracy:.4f}")
+        label = QLabel(f"<h3>Model IOU:</h3> {iou:.4f}<br><h3>Dice Score:</h3> {dice_score:.4f}")
         label.setWordWrap(True)
 
         layout.addWidget(label)
@@ -276,9 +276,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         if image_folder_path and mask_folder_path:
             self.show_testing_difference_signal.connect(plot_difference)
-            iou, pixel_accuracy = self.controller.process_command(Command.TEST_MODEL, image_folder_path, mask_folder_path, self.show_testing_difference)
-            print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
-            self.show_metrics_popup(iou, pixel_accuracy)
+            iou, dice = self.controller.process_command(Command.TEST_MODEL, image_folder_path, mask_folder_path, self.show_testing_difference)
+            print(f"""Model IOU: {iou}\nModel Dice score: {dice}""")
+            self.show_metrics_popup(iou, dice)
             
         else:
             messageBox(self, "Error in uploading directories")
