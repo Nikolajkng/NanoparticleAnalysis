@@ -45,57 +45,6 @@ def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event 
     iou, dice_score = ModelEvaluator.evaluate_model(unet, test_dataloader, testing_callback)
     return iou, dice_score
 
-
-def cv2_kfold(images_path, masks_path):
-    fold_results = []   
-    
-    # Set parameters:
-    K1 = 3
-    K2 = 5
-    learning_rates = [0.001, 0.0001, 0.00001]  
-    #loss_functions = ["cross_entropy", "dice"]
-    S = len(learning_rates)#len(learning_rates)
-    #models = [UNet() for _ in range(S)]
-    epochs = 100
-    print(f"\nTraining model using two-level cross-validation with K1={K1} and K2={K2}")
-
-    # Load data
-    dataset = SegmentationDataset(images_path, masks_path)
-    dataset = slice_dataset_in_four(dataset)
-    dataset_size = len(dataset)
-    sliced_dataset_size = len(process_and_slice(dataset))
-
-    cv_outer = KFold(n_splits=K1, shuffle=True, random_state=42)
-
-    fold_results = {"test_sizes": [], "test_losses": [], "test_ious": [], "test_dice_scores": []}
-    model_ious = {s+1: [] for s in range(S)}
-    best_models = []
-    for outerfold, (par_idx, test_idx) in enumerate(cv_outer.split(np.arange(dataset_size))): 
-        fold_model_ious, best_model = outer_fold(outerfold, dataset, par_idx, test_idx, K1, K2, learning_rates, epochs, S, fold_results)
-        best_models.append(best_model)
-        for i, iou in enumerate(fold_model_ious):
-            model_ious[i+1].append(iou) 
-
-    # **Final Generalization Error Computation**
-        
-    test_sizes = fold_results["test_sizes"]
-    test_losses = fold_results["test_losses"]
-    test_ious = fold_results["test_ious"]
-    test_dice_scores = fold_results["test_dice_scores"]
-    gen_error_estimate = sum(test_size * test_iou for test_size, test_iou in zip(test_sizes, test_ious)) / sliced_dataset_size 
-
-    print(f"\n############## K-Fold Cross Validation Summary ##############")
-    for i, iou in enumerate(fold_results["test_ious"]):
-        print(f"Outer Fold {i+1}: Test IOU = {iou:.5f}, Best Learning Rate = {learning_rates[best_models[i]]}")
-
-    print("############## Model Losses ##############")
-    for idx, (key, value) in enumerate(model_ious.items()):
-        print(f"Model {key} (Learning rate ={learning_rates[key-1]}): {[float(x) for x in value]}")
-
-    print(f"\n############## Estimated Generalization Error: {gen_error_estimate:.5f} ##############")
-
-    log_outer_folds_results(fold_results, learning_rates, best_models, model_ious, gen_error_estimate)
-
 def cv_kfold(images_path, masks_path):
     fold_results = []   
     
@@ -144,70 +93,6 @@ def cv_kfold(images_path, masks_path):
 
     log_one_layer_cv_results(learning_rates, fold_results, best_parameter)
 
-def outer_fold(idx, dataset, par_idx, test_idx, K1, K2, parameters, epochs, S, fold_results):
-    print(f"\n ---------------- Outer Fold {idx+1}/{K1} ----------------") 
-    cv_inner = KFold(n_splits=K2, shuffle=True, random_state=42)
-    # Outer split: partition & test set
-    par_split = Subset(dataset, par_idx.tolist())
-    sliced_par_split_size = len(process_and_slice(par_split))
-    test_split = Subset(dataset, test_idx.tolist())
-
-    # Inner CV: Find the best learning rate
-    best_val_loss = np.inf
-    best_s = None
-    inner_test_results = {s: {"test_sizes": [], "test_losses": [], "test_ious": [], "test_dice_scores": []} for s in range(1, S+1)}
-
-    for innerfold, (train_idx, inner_test_idx) in enumerate(cv_inner.split(par_idx)): 
-        inner_fold(innerfold, K2, par_split, parameters, epochs, train_idx, inner_test_idx, inner_test_results)
-
-    # Compute weighted validation loss
-    E_gen_iou_s = []
-    for s in range(1, S+1):
-        test_sizes = inner_test_results[s]["test_sizes"]
-        test_losses = inner_test_results[s]["test_losses"]
-        test_ious = inner_test_results[s]["test_ious"]
-        test_dice_scores = inner_test_results[s]["test_dice_scores"]
-        gen_error_estimate = sum(test_size * test_iou for test_size, test_iou in zip(test_sizes, test_ious)) / sliced_par_split_size
-        E_gen_iou_s.append(gen_error_estimate)
-    best_s = E_gen_iou_s.index(max(E_gen_iou_s))
-    best_parameter = parameters[best_s]
-    learning_rate = 1e-3
-    loss_function = "dice"
-    print(f"\nSelected best model: UNet{best_s+1} with Mean IOU: {E_gen_iou_s[best_s]:.5f} and loss function: {best_parameter}")
-
-
-    outer_train_dataloader, outer_val_dataloader = get_dataloaders_kfold(par_split, 0.8, 32, (256, 256))
-    #test_split = process_and_slice(test_split)
-    outer_test_dataloader = DataLoader(test_split, batch_size=1, shuffle=False)
-
-    # Train best model on the full partitioned dataset
-    from src.model.UNet import UNet
-
-    best_model = UNet()
-    best_model.normalizer = get_normalizer(outer_train_dataloader.dataset.dataset)
-    best_model.train_model(
-        training_dataloader=outer_train_dataloader,
-        validation_dataloader=outer_val_dataloader, 
-        epochs=epochs,
-        learningRate=best_parameter,#learning_rate,
-        model_name=f"Best_UNet_Outer{idx+1}",
-        cross_validation="kfold",
-        with_early_stopping=True,
-        loss_function=loss_function#best_parameter
-    )
-
-    # **NEW STEP: Evaluate best model on the test set**
-    test_loss = best_model.get_validation_loss(outer_test_dataloader)
-    test_iou, test_dice = ModelEvaluator.evaluate_model(best_model, outer_test_dataloader)
-    fold_results["test_sizes"].append(len(test_split))
-    fold_results["test_losses"].append(test_loss)
-    fold_results["test_ious"].append(test_iou)
-    fold_results["test_dice_scores"].append(test_dice)
-
-    log_inner_fold_results(idx, parameters, inner_test_results, S)
-    return E_gen_iou_s, best_s
-    
-
 def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test_results):
     print(f"\n ------------ Inner Fold {idx+1}/{K2} -------------") 
     train_split = Subset(par_split, train_idx.tolist())
@@ -253,23 +138,6 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
             f.write(f"Model {s} in fold {idx}\n")
             f.write(f"Mean IOU: {test_iou}\n")
             f.write(f"Mean Dice: {test_dice}")
-
-def log_outer_folds_results(fold_results, parameters, best_models, model_ious, gen_error_estimate):
-    with open("cross_validation_clahe_results.txt", "w") as f:
-        f.write(f"############## K-Fold Cross Validation Summary ##############\n")
-        for i, (loss, iou, dice) in enumerate(zip(fold_results["test_losses"], fold_results["test_ious"], fold_results["test_dice_scores"])):
-            f.write(f"Outer Fold {i+1}:\n")
-            f.write(f"  Test Size: {fold_results["test_sizes"][i]}\n")
-            f.write(f"  Test Loss: {loss:.5f}\n")
-            f.write(f"  Test IOU: {iou:.5f}\n")
-            f.write(f"  Test Dice Score: {dice:.5f}\n")
-            f.write(f"  Best Learning rate: {parameters[best_models[i]]}\n\n")
-
-        f.write("############## Estimated Model IOUs from Inner folds per Outer Fold ##############\n")
-        for idx, (key, value) in enumerate(model_ious.items()):
-            f.write(f"Model {key} (Learning rate={parameters[key-1]}): {[float(x) for x in value]}\n")
-
-        f.write(f"\n############## Estimated Generalization Error: {gen_error_estimate:.5f} ##############\n")
 
 def log_inner_fold_results(idx, parameters, inner_test_results, S):
     results_dir = "cv_loss_functions_logs"
