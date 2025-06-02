@@ -199,15 +199,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # messageBoxTraining(self, "success")            
         except:
             messageBoxTraining(self, "")
-        # iou, pixel_accuracy = self.controller.process_command(Command.RETRAIN, model_config, self.update_training_model_stats)
-        # print(f"""Model IOU: {iou}\nModel Pixel Accuracy: {pixel_accuracy}""")
 
 
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
 
-    def show_testing_difference(self, prediction, label, iou, pixel_accuracy):
-        self.show_testing_difference_signal.emit(prediction, label, iou, pixel_accuracy)
+    def show_testing_difference(self, prediction, label, iou, dice):
+        self.show_testing_difference_signal.emit(prediction, label, iou, dice)
 
     def update_loss_values(self, stats: ModelTrainingStats):
         # Update the GUI with the training stats
