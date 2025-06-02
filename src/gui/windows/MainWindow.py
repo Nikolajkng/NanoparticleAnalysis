@@ -232,7 +232,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             self, 
             "Select an image file", 
             default_image_path, 
-            "Image Files (*.png *.jpg *.jpeg *.tif *.dm3 *.dm4);;All Files (*)")
+            "Image Files (*.png *.jpg *.jpeg *.tif *.tiff *.dm3 *.dm4);;All Files (*)")
         
         self.image_path = self.file_path_image
 

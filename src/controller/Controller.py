@@ -1,5 +1,5 @@
 from src.shared.Commands import Command
-from src.model.RequestHandler import request_handler
+from src.controller.RequestHandler import request_handler
 import threading
 class Controller():
     def __init__(self, pre_loaded_model_name=None):
