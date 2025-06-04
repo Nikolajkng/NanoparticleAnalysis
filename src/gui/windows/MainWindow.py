@@ -33,7 +33,7 @@ from src.shared.ParticleImage import ParticleImage
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
-    show_testing_difference_signal = QtCore.pyqtSignal(object, object, object, object)
+    show_testing_difference_signal = QtCore.pyqtSignal(object, object, object, object, object)
     def __init__(self):
         super().__init__()
         self.MainWindow = QMainWindow()
@@ -204,8 +204,8 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def update_training_model_stats(self, stats: ModelTrainingStats):
         self.update_train_model_values_signal.emit(stats)
 
-    def show_testing_difference(self, prediction, label, iou, dice):
-        self.show_testing_difference_signal.emit(prediction, label, iou, dice)
+    def show_testing_difference(self, input, prediction, label, iou, dice):
+        self.show_testing_difference_signal.emit(input, prediction, label, iou, dice)
 
     def update_loss_values(self, stats: ModelTrainingStats):
         # Update the GUI with the training stats

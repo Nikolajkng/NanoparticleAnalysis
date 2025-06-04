@@ -5,8 +5,8 @@ import seaborn as sns
 #from src.model.DataTools import tensor_from_image_no_resize, to_2d_image_array
 
 def plot_paired_bar(iou_A, iou_B, dice_A, dice_B):
-    A_label = "Grid crop"
-    B_label = "Random crop"
+    A_label = "No rotation"
+    B_label = "Rotation"
     diff_iou = iou_B - iou_A
     diff_dice = dice_B - dice_A
 
@@ -635,11 +635,11 @@ if __name__ == "__main__":
     # startup_times_after = [0.6642, 0.4200, 0.4553, 0.4453, 0.4193, 0.4202, 0.4153, 0.4380, 0.4465, 0.4230]
     # print(np.mean(startup_times_before), np.mean(startup_times_after))
 
-    cpu_seg_time = np.array([10.1272, 10.4156, 9.9943, 9.9314, 9.7927, 9.9107, 9.6871, 9.9212, 9.9013, 9.7655, 10.4376, 10.0092, 9.7280])
-    cpu_post_process_time = np.array([0.1420, 0.1515, 0.2147, 0.1513, 0.1493, 0.1472, 0.1504, 0.1561, 0.1345, 0.1676, 0.1566, 0.1357, 0.1443])
+    cpu_seg_time = np.array([10.1272, 10.4156, 9.9943, 9.9314, 9.7927, 9.9107, 9.6871, 9.9212, 9.9013, 9.7655])
+    cpu_post_process_time = np.array([0.1420, 0.1515, 0.2147, 0.1513, 0.1493, 0.1472, 0.1504, 0.1561, 0.1345, 0.1676])
 
-    gpu_seg_time = np.array([0.1400, 0.1271, 0.1183, 0.1162, 0.1238, 0.1303, 0.1261, 0.1280, 0.1269, 0.1258, 0.1287, 0.1272, 0.1257])
-    gpu_post_process_time = np.array([0.0984, 0.1040, 0.1679, 0.0938, 0.1020, 0.0990, 0.1028, 0.1065, 0.0876, 0.1200, 0.1126, 0.0934, 0.0993])
+    gpu_seg_time = np.array([0.1400, 0.1271, 0.1183, 0.1162, 0.1238, 0.1303, 0.1261, 0.1280, 0.1269, 0.1258])
+    gpu_post_process_time = np.array([0.0984, 0.1040, 0.1679, 0.0938, 0.1020, 0.0990, 0.1028, 0.1065, 0.0876, 0.1200])
 
     print(np.mean(cpu_seg_time), np.mean(cpu_post_process_time), np.mean(cpu_post_process_time + cpu_seg_time))
     print(np.mean(gpu_seg_time), np.mean(gpu_post_process_time), np.mean(gpu_post_process_time + gpu_seg_time))
