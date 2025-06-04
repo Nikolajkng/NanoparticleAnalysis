@@ -17,7 +17,7 @@ Install pyinstaller with 'pip install pyinstaller'
 3. To run the application, navigate to dist folder and execute: './my_app'
 
 
-## Linux (Ubuntu): 
+## MacOS: 
 0. Navigate to root of project folder
 1. Give build script exec. permission: 'sudo chmod +x build_app_mac.sh'
 2. Run the script 'build_app_mac.sh'

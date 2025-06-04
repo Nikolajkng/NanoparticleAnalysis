@@ -1,0 +1,108 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+' Shared Commands
+class Command {
+    + SEGMENT
+    + RETRAIN
+    + STOP_TRAINING
+    + EXPORT
+    + LOAD_MODEL
+    + TEST_MODEL
+    + SEGMENT_FOLDER
+    + LOAD_IMAGE
+}
+
+' UNet Model
+class UNet {
+    + __init__(pre_loaded_model_path: str, normalizer: Normalize)
+    + forward(input: Tensor): Tensor
+    + train_model(training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event, loss_callback)
+    + get_validation_loss(validation_dataloader: DataLoader): float
+    + save_model(folder_path: str, model_name: str)
+    + load_model(path: str)
+    + segment(tensor: Tensor): Tensor
+}
+
+' Encoder Block
+class EncoderBlock {
+    + __init__(in_channels: int, out_channels: int)
+    + forward(input: Tensor): Tensor
+}
+
+' Decoder Block
+class DecoderBlock {
+    + __init__(in_channels: int, out_channels: int)
+    + forward(input: Tensor, concat_map: Tensor): Tensor
+}
+
+' Data Augmenter
+class DataAugmenter {
+    + __init__()
+    + get_transformer(crop: bool, rotate: bool, flip: bool, deform: bool, adjust_brightness: bool, blur: bool): Callable
+    + create_rotated_tensors(images: list[Tensor], masks: list[Tensor]): tuple[list[Tensor], list[Tensor]]
+    + create_random_crops(image: Tensor, mask: Tensor, amount_to_create: int, cropped_size=(256,256)): tuple[list[Tensor], list[Tensor]]
+    + augment_dataset(dataset: Dataset, input_size: tuple[int, int], augmentations=[True,True,False,False,False,False]): Dataset
+}
+
+' Segmentation Analyzer
+class SegmentationAnalyzer {
+    + get_connected_components(image: Tensor): list
+    + save_histogram_as_image(fig: Figure)
+    + create_histogram(stats: np.ndarray, file_info: FileInfo)
+    + write_stats_to_txt(stats: np.ndarray, file_info: FileInfo, particle_count: int, output_folder: str)
+    + add_annotations(image: Tensor, centroids: list, min_distance: int, max_offset_attempts: int)
+    + format_table_data(stats: np.ndarray, file_info: FileInfo, particle_count: int)
+}
+
+' Request Handler
+class request_handler {
+    + __init__(pre_loaded_model_name: str)
+    + load_model_async(model_name: str)
+    + process_request_train(model_config: ModelConfig, stop_training_event: Event, loss_callback, test_callback): tuple[float, float]
+    + process_request_segment(image: Tensor, output_folder: str)
+    + process_request_load_model(model_path: str)
+    + process_request_test_model(test_data_image_dir: str, test_data_mask_dir: str, testing_callback)
+    + process_request_segment_folder(input_folder: str, output_parent_folder: str)
+    + process_request_load_image(image_path: str)
+}
+
+' Main Window
+class MainWindow {
+    + __init__()
+    + on_test_model_clicked()
+    + on_segment_image_clicked()
+    + on_train_model_custom_data_clicked()
+    + train_model_custom_data(model_config: ModelConfig, stop_training_event: Event)
+    + update_training_model_stats(stats: ModelTrainingStats)
+    + show_testing_difference(prediction: Tensor, label: Tensor, iou: float, pixel_accuracy: float)
+    + update_loss_values(stats: ModelTrainingStats)
+    + on_open_image_clicked()
+    + on_load_model_clicked()
+    + on_export_statistics_clicked()
+}
+
+' Train Model Window
+class TrainModelWindow {
+    + __init__(update_data_signal: Signal, show_testing_difference_signal: Signal)
+    + select_training_images_clicked()
+    + select_training_labels_clicked()
+    + select_test_images_clicked()
+    + select_test_labels_clicked()
+    + train_model_clicked()
+    + stop_training_clicked()
+    + update_loss_values(stats: ModelTrainingStats)
+    + show_testing_difference(prediction: Tensor, label: Tensor, iou: float, dice_score: float)
+}
+
+' Relationships
+UNet --> EncoderBlock
+UNet --> DecoderBlock
+UNet --> DataAugmenter
+UNet --> SegmentationAnalyzer
+request_handler --> UNet
+MainWindow --> request_handler
+MainWindow --> TrainModelWindow
+TrainModelWindow --> UNet
+
+@enduml
