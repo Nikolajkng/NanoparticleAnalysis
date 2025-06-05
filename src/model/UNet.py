@@ -93,6 +93,7 @@ class UNet(nn.Module):
         d3 = self.decoder3(d2, e2)
         d4 = self.decoder4(d3, e1)
         m = self.mappingConvolution(d4)
+        #self._visualize_feature_map(m, "Output Feature Map", is_output=True)
         return m
     
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event = None, loss_callback = None):
@@ -231,3 +232,42 @@ class UNet(nn.Module):
         output = self(tensor)
         arg = output.argmax(dim=1)
         return arg
+    
+    def _visualize_feature_map(self, feature_map: Tensor, title: str, is_output: bool = False):
+        """
+        Helper function to visualize feature maps with a color bar.
+        """
+        import matplotlib.pyplot as plt
+        import torch.nn.functional as F
+        from src.model.DataTools import construct_image_from_patches, center_crop
+        feature_map = F.softmax(feature_map, dim=1)
+        feature_map = feature_map.detach().cpu().numpy()
+        num_channels = feature_map.shape[1]
+        print(feature_map.shape)
+        collected_image = construct_image_from_patches(feature_map, (664, 664), (204,204))
+        collected_image = center_crop(collected_image, (512, 512))
+        feature_map = collected_image
+        print(feature_map.shape)
+        # Plot the first few feature maps
+        num_to_plot = min(8, num_channels)  
+        fig, axes = plt.subplots(1, num_to_plot, figsize=(15, 5))
+        fig.suptitle(title, fontsize=16)
+
+        vmin = 0.0#min(feature_map[0, 0, :, :].min(), feature_map[0, 1, :, :].min())
+        vmax = 1.0#max(feature_map[0, 0, :, :].max(), feature_map[0, 1, :, :].max())
+
+        for i in range(num_to_plot):
+            ax = axes[i]
+            im = ax.imshow(feature_map[0, i, :, :], cmap='jet', vmin=vmin, vmax=vmax)
+            ax.axis('off')
+            if i == 0:
+                ax.set_title(f"Class {i + 1} = Background", fontsize=16, weight='bold')
+            else:
+                ax.set_title(f"Class {i + 1} = Foreground (Nanoparticle)", fontsize=16, weight='bold')
+
+            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+            cbar.ax.tick_params(labelsize=14)  # Increase tick label size
+
+
+        plt.tight_layout()
+        plt.show()
