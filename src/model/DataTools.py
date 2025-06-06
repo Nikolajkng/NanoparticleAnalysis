@@ -64,7 +64,7 @@ def process_and_slice(data_subset, input_size=(256, 256)):
     # Create list of (image, mask) tensors
     return SegmentationDataset.from_image_set(images, masks)
 
-def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader, DataLoader]:
+def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int], with_data_augmentation: bool) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
     dataset = slice_dataset_in_four(dataset, input_size)
     #torch.manual_seed(42)
@@ -73,8 +73,10 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     print(f"Train images: {train_data.indices}")
     print(f"Validation images: {val_data.indices}")
     print(f"Test images: {test_data.indices}")
-    train_data = data_augmenter.augment_dataset(train_data, input_size)  
-
+    if with_data_augmentation:
+        train_data = data_augmenter.augment_dataset(train_data, input_size)
+    else:
+        train_data = data_augmenter.augment_dataset(train_data, input_size, [False, False, False, False, False, False])
     val_data = process_and_slice(val_data, input_size)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
     test_data = process_and_slice(test_data, input_size)#data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
 
@@ -87,13 +89,14 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     return (train_dataloader, val_dataloader, test_dataloader)
 
 
-def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, input_size: tuple[int, int]) -> tuple[DataLoader, DataLoader]:
+def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, input_size: tuple[int, int], with_data_augmentation: bool) -> tuple[DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
     dataset = slice_dataset_in_four(dataset, input_size)
     train_data, val_data = random_split(dataset, [train_data_size, 1-train_data_size])
-
-    train_data = data_augmenter.augment_dataset(train_data, input_size)
-
+    if with_data_augmentation:
+        train_data = data_augmenter.augment_dataset(train_data, input_size)
+    else:
+        train_data = data_augmenter.augment_dataset(train_data, input_size, [False, False, False, False, False, False])
     val_data = process_and_slice(val_data, input_size)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
 
     train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True)

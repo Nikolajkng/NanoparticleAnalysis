@@ -192,12 +192,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     Command.RETRAIN, model_config, 
                     stop_training_event,
                     self.update_training_model_stats,
-                    self.show_testing_difference_trainingwindow,
+                    self.show_testing_difference,
                     ),
                 daemon=True)
             self.train_thread.start()
             # messageBoxTraining(self, "success")            
-        except:
+        except Exception as e:
+            print(f"Error during training: {e}")
             messageBoxTraining(self, "")
 
 
