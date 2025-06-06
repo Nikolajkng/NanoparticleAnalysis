@@ -2,7 +2,7 @@
 
 # === CONFIG ===
 PY_SCRIPT="main.py"               
-OUTPUT_NAME="my_app"                 
+OUTPUT_NAME="NP_segmenter_linux"                 
 
 # === DETECT ACTIVE CONDA ENV LIB FOLDER ===
 if [[ -z "$CONDA_PREFIX" ]]; then
@@ -31,7 +31,7 @@ done
 
 # === RUN PYINSTALLER ===
 echo "[+] Building with PyInstaller..."
-MODEL_PATH="src/data/model/UNet_best_09-05.pt"
+MODEL_PATH="src/data/model/UNet_best_04-06.pt"
 ADD_DATA="--add-data \"src/data/model:src/data/model\""
 
 eval pyinstaller "$PY_SCRIPT" \
