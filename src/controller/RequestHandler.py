@@ -10,7 +10,7 @@ class request_handler:
     def load_model_async(self, model_name):
         def load():
             from src.model.UNet import UNet
-            self.unet = UNet()  # or UNet(pre_loaded_model_path=...)
+            self.unet = UNet(pre_loaded_model_path=f"src/data/model/{model_name}")  # or UNet(pre_loaded_model_path=...)
             self.model_ready_event.set()
             print("Model ready")
 
