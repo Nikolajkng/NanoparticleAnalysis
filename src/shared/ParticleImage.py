@@ -51,9 +51,7 @@ class ParticleImage:
 
         try:
             with tifffile.TiffFile(file_path) as tif:
-                    tags = tif.pages[0].tags
-                    #tvips = tags.get('TVIPS') # Can only extract pixel size if file is from TVIPS
-                    
+                    tags = tif.pages[0].tags                    
                     X_Resolution_fraction = tags.get('XResolution')
                     Y_Resolution_fraction = tags.get('YResolution')
                     if not X_Resolution_fraction or not Y_Resolution_fraction:

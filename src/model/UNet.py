@@ -7,7 +7,6 @@ import numpy as np
 from threading import Event
 import os
 from torch import autocast, GradScaler
-# Model-related imports
 from src.model.PlottingTools import *
 from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, BinarySymmetricDiceLoss
 
@@ -93,7 +92,6 @@ class UNet(nn.Module):
         d3 = self.decoder3(d2, e2)
         d4 = self.decoder4(d3, e1)
         m = self.mappingConvolution(d4)
-        #self._visualize_feature_map(m, "Output Feature Map", is_output=True)
         return m
     
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event = None, loss_callback = None):
@@ -156,7 +154,6 @@ class UNet(nn.Module):
                     self.optimizer.step()
                 
                 running_loss += loss.item()
-                #print(f"Epoch {epoch + 1}: Finished batch {i + 1} of {batches_in_epoch}")
             epoch_training_loss = running_loss / len(training_dataloader)
             training_loss_values.append(epoch_training_loss)
 

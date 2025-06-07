@@ -81,8 +81,8 @@ def cv_kfold(images_path, masks_path):
         test_ious = fold_results[s]["test_ious"]
         test_dice_scores = fold_results[s]["test_dice_scores"]
         gen_error_estimate_loss = sum(test_size * test_loss for test_size, test_loss in zip(test_sizes, test_losses)) / sliced_dataset_size
-        gen_error_estimate_iou = np.mean(test_ious)#sum(test_size * test_iou for test_size, test_iou in zip(test_sizes, test_ious)) / sliced_dataset_size
-        gen_error_estimate_dice = np.mean(test_dice_scores)#sum(test_size * test_dice for test_size, test_dice in zip(test_sizes, test_dice_scores)) / sliced_dataset_size
+        gen_error_estimate_iou = np.mean(test_ious)
+        gen_error_estimate_dice = np.mean(test_dice_scores)
         E_gen_loss_s.append(gen_error_estimate_loss)
         E_gen_iou_s.append(gen_error_estimate_iou)
         E_gen_dice_s.append(gen_error_estimate_dice)
