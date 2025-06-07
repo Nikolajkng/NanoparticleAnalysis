@@ -6,7 +6,6 @@ from PIL import Image
 from torch import Tensor
 import numpy as np
 import sys
-
 from src.model.DataAugmenter import DataAugmenter
 from src.model.dmFileReader import dmFileReader
 from src.shared.IOFunctions import is_dm_format
@@ -67,9 +66,7 @@ def process_and_slice(data_subset, input_size=(256, 256)):
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int], with_data_augmentation: bool) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
     dataset = slice_dataset_in_four(dataset, input_size)
-    #torch.manual_seed(42)
     train_data, val_data, test_data = random_split(dataset, [train_data_size, validation_data_size, 1-train_data_size-validation_data_size])
-    #torch.manual_seed(torch.initial_seed())
     print(f"Train images: {train_data.indices}")
     print(f"Validation images: {val_data.indices}")
     print(f"Test images: {test_data.indices}")
@@ -77,8 +74,8 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
         train_data = data_augmenter.augment_dataset(train_data, input_size)
     else:
         train_data = data_augmenter.augment_dataset(train_data, input_size, [False, False, False, False, False, False])
-    val_data = process_and_slice(val_data, input_size)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
-    test_data = process_and_slice(test_data, input_size)#data_augmenter.get_crops_for_dataset(test_data, 10, input_size)
+    val_data = process_and_slice(val_data, input_size)
+    test_data = process_and_slice(test_data, input_size)
 
     if torch.cuda.is_available():
         train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True, num_workers=24)
@@ -97,7 +94,7 @@ def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, in
         train_data = data_augmenter.augment_dataset(train_data, input_size)
     else:
         train_data = data_augmenter.augment_dataset(train_data, input_size, [False, False, False, False, False, False])
-    val_data = process_and_slice(val_data, input_size)#data_augmenter.get_crops_for_dataset(val_data, 10, input_size)
+    val_data = process_and_slice(val_data, input_size)
 
     train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True)
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
@@ -151,7 +148,7 @@ def resize_and_save_images(folder_path, output_size=(256, 256), is_masks=False):
                 img_binary = img.point(lambda p: 255 if p > 20 else 0)
                 img_binary.save(os.path.join(folder_path,"new"+filename))
             else:    
-                img.save(os.path.join(folder_path,"new"+filename))  # You can change this line to save it elsewhere
+                img.save(os.path.join(folder_path,"new"+filename))  
             print(image_path)
 
 def tensor_from_image_no_resize(image_path: str):

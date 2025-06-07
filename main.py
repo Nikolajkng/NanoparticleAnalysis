@@ -8,7 +8,7 @@ def preload_torch():
     import numpy as np
     import torch
     import torchvision
-    _ = torch.Tensor([0])  # Force lazy CUDA init
+    _ = torch.Tensor([0])  
     import ncempy
     import sklearn
 
@@ -24,4 +24,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #cv_kfold("data/medres_images", "data/medres_masks")

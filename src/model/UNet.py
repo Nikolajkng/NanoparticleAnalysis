@@ -244,13 +244,14 @@ class UNet(nn.Module):
         collected_image = center_crop(collected_image, (512, 512))
         feature_map = collected_image
         print(feature_map.shape)
+        
         # Plot the first few feature maps
         num_to_plot = min(8, num_channels)  
         fig, axes = plt.subplots(1, num_to_plot, figsize=(15, 5))
         fig.suptitle(title, fontsize=16)
 
-        vmin = 0.0#min(feature_map[0, 0, :, :].min(), feature_map[0, 1, :, :].min())
-        vmax = 1.0#max(feature_map[0, 0, :, :].max(), feature_map[0, 1, :, :].max())
+        vmin = 0.0
+        vmax = 1.0
 
         for i in range(num_to_plot):
             ax = axes[i]

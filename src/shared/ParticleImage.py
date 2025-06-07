@@ -103,11 +103,6 @@ class ParticleImage:
                         unit_string = "\u00B5m"
 
                     
-
-                    # if tvips:
-                    #     pixel_width = tvips.value['PixelSizeX']
-                    #     pixel_height = tvips.value['PixelSizeY']
-                    
                     return (pixel_width, pixel_height), unit_string
         except (tifffile.TiffFileError, TypeError):
             return None
