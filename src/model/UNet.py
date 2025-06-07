@@ -228,10 +228,6 @@ class UNet(nn.Module):
         self.normalizer = Normalize(mean=model["normalizer_mean"], std=model["normalizer_std"])
         self.load_state_dict(model["model_state_dict"])
 
-    def segment(self, tensor: Tensor):
-        output = self(tensor)
-        arg = output.argmax(dim=1)
-        return arg
     
     def _visualize_feature_map(self, feature_map: Tensor, title: str, is_output: bool = False):
         """

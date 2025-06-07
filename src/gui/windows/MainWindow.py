@@ -25,8 +25,6 @@ from src.shared.ModelTrainingStats import ModelTrainingStats
 from PIL import Image
 from PIL.ImageQt import ImageQt
 from src.gui.windows.MessageBoxes import *
-from src.shared.ParticleImage import ParticleImage
-from src.gui.windows.MessageBoxes import *
 from src.model.PlottingTools import plot_loss, plot_difference
 from src.shared.Formatters import _truncate
 from src.shared.ParticleImage import ParticleImage
@@ -45,8 +43,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.image: ParticleImage = None
         self.segmented_image = None
         self.annotated_image = None
-        self.pixmap_item_count = None
-        self.csv_file = None
         self.file_path_image = None
         self.scale_is_selected = False
         self.table_data_set = False
@@ -156,9 +152,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         manager.window.showMaximized()
         plt.pause(0.1)
         plt.tight_layout()
-        #plt.show(block=False)
-        #fig.tight_layout()
-        #plt.show()
+
 
     def set_table_data(self, table_data):
         data = TableData(table_data)
@@ -196,7 +190,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                     ),
                 daemon=True)
             self.train_thread.start()
-            # messageBoxTraining(self, "success")            
         except Exception as e:
             print(f"Error during training: {e}")
             messageBoxTraining(self, "")

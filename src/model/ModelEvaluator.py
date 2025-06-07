@@ -64,7 +64,6 @@ class ModelEvaluator():
                     segmentations = unet(patches_tensor).cpu().detach().numpy()
                 segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
                 segmented_image = center_crop(segmented_image, (input.shape[2], input.shape[3])).argmax(axis=1)
-                #prediction = unet.segment(input)
                 predictions.append(torch.tensor(segmented_image, dtype=input.dtype, device=input.device))
                 labels.append(label)
                 inputs.append(input.cpu())
@@ -86,7 +85,7 @@ class ModelEvaluator():
         if not test_callback:
             return np.mean(ious), np.mean(dice_scores)
         try:
-            for i in range(len(predictions)): #indicies:
+            for i in indicies:
                 test_callback(inputs[i], predictions[i], labels[i], ious[i], dice_scores[i])
         except Exception as e:
             return np.mean(ious), np.mean(dice_scores)
