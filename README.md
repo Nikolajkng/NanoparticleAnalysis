@@ -4,6 +4,10 @@ Bachelor Project 2025
 
 # Installation Guide
 
+## Downloading executables
+The application has been exported as executables for Windows, Mac and Linux. Download these through "Releases". These also have pre-trained models ready for use.
+If you want to build the project using the source code, follow the guides below.
+
 ## Install Conda and import the environment.yml based on your OS
 0. Conda installation guide https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html 
 1. Install pyinstaller with 'pip install pyinstaller'
