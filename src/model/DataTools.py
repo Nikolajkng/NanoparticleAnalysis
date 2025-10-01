@@ -1,4 +1,4 @@
-# import torch
+import torch
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader, random_split
 import os
@@ -7,10 +7,10 @@ from torch import Tensor
 import numpy as np
 import sys
 
-# from src.model.DataAugmenter import DataAugmenter
-# from src.model.dmFileReader import dmFileReader
-# from src.shared.IOFunctions import is_dm_format
-# from src.model.SegmentationDataset import SegmentationDataset
+from src.model.DataAugmenter import DataAugmenter
+from src.model.dmFileReader import dmFileReader
+from src.shared.IOFunctions import is_dm_format
+from src.model.SegmentationDataset import SegmentationDataset
 
 def slice_dataset_in_four(dataset, input_size=(256, 256)):
     images = []
@@ -421,11 +421,10 @@ if __name__ == '__main__':
     #print(ttest_rel(C, D))
     
     
-    resize_and_save_images(folder_path, is_masks=True, output_size=(1024, 1024))
+    #resize_and_save_images(folder_path, is_masks=True, output_size=(1024, 1024))
     # tensor = tensor_from_image('data/W. sample_0011.tif', (256, 256))
     # tensor = mirror_fill(tensor, (100,100), (100,100))
     # patches = extract_slices(tensor, (100,100), (100,100))
     # showTensor(tensor)
     # reconstructed = construct_image_from_patches(patches, (300,300), (100,100))
     # showTensor(reconstructed)
-
