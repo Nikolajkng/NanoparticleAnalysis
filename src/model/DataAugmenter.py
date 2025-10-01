@@ -17,7 +17,6 @@ class DataAugmenter():
 
             # Elastic deformation
             if deform:
-                size = image.shape[-1]
                 params = ElasticTransform.get_params(
                     size=[512,512],
                     alpha=(20.0, 60), 
@@ -70,40 +69,3 @@ class DataAugmenter():
     
         return RepeatDataset(dataset=SegmentationDataset.from_image_set(new_images, new_masks, transforms=DataAugmenter.get_transformer(*augmentations)), repeat_factor=10 if augmentations[0] else 20)
     
-
-
-if __name__ == '__main__':
-    data_augmenter = DataAugmenter()
-    dataset = SegmentationDataset("data/highres_images/", "data/highres_masks/")
-    dataset = data_augmenter.augment_dataset(dataset, (512, 512))
-    # image, mask = dataset[0]
-    # rotated_images, rotated_masks = data_augmenter.create_rotated_tensors(image, mask)
-    # crop_image, crop_mask = data_augmenter.random_crop(image, mask, cropped_size=(50,50))
-    # pixels = normalizeTensorToPixels(crop_image)
-    # img = TF.to_pil_image(pixels.byte())
-    # img.show()
-    # augmented_images, augmented_masks = data_augmenter.create_hflipped_tensors(rotated_images, rotated_masks)
-    
-    
-    # for idx, (image, mask) in enumerate(dataset):
-    #     pixels = normalizeTensorToPixels(image)
-    #     image = TF.to_pil_image(pixels.byte())
-    #     mask_np = mask.numpy()
-    #     mask_np = to_2d_image_array(mask_np)
-    #     segmented_image = Image.fromarray(mask_np)
-        
-
-    #     fig, axes = plt.subplots(1, 2, figsize=(12, 5), sharex=True, sharey=True)
-
-    #     manager = plt.get_current_fig_manager()
-
-    #     axes[0].imshow(image, cmap='gray')
-    #     axes[0].set_title("Image")
-
-        
-    #     axes[1].imshow(segmented_image, cmap='gray')
-    #     axes[1].set_title("Segmentation")
-    #     manager.window.showMaximized()
-    #     plt.pause(0.1)
-    #     plt.tight_layout()
-

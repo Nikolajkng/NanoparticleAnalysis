@@ -29,7 +29,7 @@ class BinarySymmetricDiceLoss(Module):
         self.smooth = smooth
 
     def forward(self, prediction, target):
-        prediction = torch.softmax(prediction, dim=1)[:, 1, :, :]  # Get foreground prob
+        prediction = torch.softmax(prediction, dim=1)[:, 1, :, :]  
         target = target.float()
 
         # Flatten

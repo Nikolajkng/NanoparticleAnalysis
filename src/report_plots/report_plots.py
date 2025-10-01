@@ -2,7 +2,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
-#from src.model.DataTools import tensor_from_image_no_resize, to_2d_image_array
+import torchvision.transforms.functional as TF
 
 def plot_paired_bar(iou_A, iou_B, dice_A, dice_B):
     A_label = "No rotation"
@@ -68,10 +68,7 @@ def plot_paired_histogram(iou_A, iou_B, dice_A, dice_B):
 
     # Plot histograms
     plt.figure(figsize=(12, 5))
-
     max_diff = max(np.max(np.abs(diff_iou)), np.max(np.abs(diff_dice)))
-
-
     plt.subplot(1, 2, 1)
     plt.hist(diff_iou, bins=20, color='skyblue', edgecolor='black')
     plt.title('Histogram of Paired Differences: IOU')

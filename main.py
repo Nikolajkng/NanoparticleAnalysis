@@ -23,4 +23,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #cv_kfold("data/medres_images", "data/medres_masks")
