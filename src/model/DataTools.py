@@ -73,7 +73,7 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     if with_data_augmentation:
         train_data = data_augmenter.augment_dataset(train_data, input_size)
     else:
-        train_data = data_augmenter.augment_dataset(train_data, input_size, [False, False, False, False, False, False])
+        train_data = data_augmenter.augment_dataset(train_data, input_size, [False, False, False, False, False, False, False])
     val_data = process_and_slice(val_data, input_size)
     test_data = process_and_slice(test_data, input_size)
 
@@ -93,7 +93,7 @@ def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, in
     if with_data_augmentation:
         train_data = data_augmenter.augment_dataset(train_data, input_size)
     else:
-        train_data = data_augmenter.augment_dataset(train_data, input_size, [False, False, False, False, False, False])
+        train_data = data_augmenter.augment_dataset(train_data, input_size, [False, False, False, False, False, False, False])
     val_data = process_and_slice(val_data, input_size)
 
     train_dataloader = DataLoader(train_data, batch_size=32, shuffle=True, drop_last=True)
@@ -107,14 +107,14 @@ def get_dataloaders_kfold(dataset: Dataset, train_data_size: float, batch_size: 
     if random_cropping:
         train_data = data_augmenter.augment_dataset(train_data, input_size)
     else:
-        train_data = data_augmenter.augment_dataset(train_data, input_size, [False, True, True, False])
+        train_data = data_augmenter.augment_dataset(train_data, input_size, [False, True, True, False, False, False, False])
     val_data = process_and_slice(val_data, input_size)
 
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True, drop_last=True, num_workers=24)
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
     return (train_dataloader, val_dataloader)
 
-def get_dataloaders_kfold_already_split(train_data, val_data, batch_size, input_size, augmentations=[True,True,False,False,False,False]):
+def get_dataloaders_kfold_already_split(train_data, val_data, batch_size, input_size, augmentations=[True,True,False,False,False,False, False]):
     data_augmenter = DataAugmenter()
     print(augmentations)
     if not augmentations[0]: # No random cropping
@@ -181,6 +181,54 @@ def load_image_as_tensor(image_path: str):
     if tensor.shape[-1] > 1024 or tensor.shape[-2] > 1024:
         tensor = TF.resize(tensor, 1024)
     return tensor
+
+def binarize_segmentation_output(segmented_image, high_thresh=0.7, low_thresh=0.4, mean_prob_thresh=0.5):
+    """
+    Post-process U-Net probabilities by seeding on high-confidence pixels
+    and growing into lower-confidence regions.
+
+    Args:
+        probs (numpy.ndarray): U-Net probabilities [1, 2, H, W].
+        high_thresh (float): Seed threshold (confident foreground).
+        low_thresh (float): Candidate threshold (possible foreground).
+        mean_prob_thresh (float): Min avg probability for final region.
+
+    Returns:
+        numpy.ndarray: Binary mask [H, W].
+    """
+    import numpy as np
+    from skimage.measure import label, regionprops
+    from skimage.morphology import dilation, disk
+    from scipy.special import softmax
+    
+    probs = softmax(segmented_image, axis=1)
+    fg_prob = probs[0, 1]
+
+    # Step 1: High-confidence seeds
+    seeds = fg_prob > high_thresh
+
+    # Step 2: Candidate region (lower threshold)
+    candidates = fg_prob > low_thresh
+
+    # Step 3: Connected components from seeds
+    lbl = label(seeds)
+    final = np.zeros_like(seeds, dtype=bool)
+
+    for region in regionprops(lbl):
+        # Grow seed into candidate mask
+        coords = region.coords
+        grown = np.zeros_like(seeds, dtype=bool)
+        grown[tuple(coords.T)] = True
+
+        # Expand until it matches the candidate mask in that connected area
+        candidate_lbl = label(candidates)
+        candidate_region = candidate_lbl[coords[0][0], coords[0][1]]
+        grown = candidate_lbl == candidate_region
+
+        # Check mean probability of whole grown region
+        if fg_prob[grown].mean() > mean_prob_thresh:
+            final[grown] = True
+    return np.expand_dims(final.astype(np.uint8),axis=0)
 
 # Made with help from https://stackoverflow.com/questions/65754703/pillow-converting-a-tiff-from-greyscale-16-bit-to-8-bit-results-in-fully-white
 def tiff_force_8bit(image, **kwargs):

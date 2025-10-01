@@ -92,6 +92,7 @@ class UNet(nn.Module):
         d3 = self.decoder3(d2, e2)
         d4 = self.decoder4(d3, e1)
         m = self.mappingConvolution(d4)
+        self._visualize_feature_map(m, "output", True)
         return m
     
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event = None, loss_callback = None):
@@ -230,6 +231,8 @@ class UNet(nn.Module):
         """
         Helper function to visualize feature maps with a color bar.
         """
+        import matplotlib
+        matplotlib.use('Qt5Agg')
         import matplotlib.pyplot as plt
         import torch.nn.functional as F
         from src.model.DataTools import construct_image_from_patches, center_crop
@@ -237,8 +240,8 @@ class UNet(nn.Module):
         feature_map = feature_map.detach().cpu().numpy()
         num_channels = feature_map.shape[1]
         print(feature_map.shape)
-        collected_image = construct_image_from_patches(feature_map, (664, 664), (204,204))
-        collected_image = center_crop(collected_image, (512, 512))
+        collected_image = construct_image_from_patches(feature_map, (1072, 1072), (204,204))
+        collected_image = center_crop(collected_image, (1024, 1024))
         feature_map = collected_image
         print(feature_map.shape)
         

@@ -40,7 +40,7 @@ class ModelEvaluator():
         return dice_scores
     
     def get_predictions(unet, dataloader: DataLoader):
-        from src.model.DataTools import center_crop, construct_image_from_patches, mirror_fill, extract_slices
+        from src.model.DataTools import binarize_segmentation_output, center_crop, construct_image_from_patches, mirror_fill, extract_slices
         inputs = []
         predictions = []
         labels = []
@@ -63,7 +63,8 @@ class ModelEvaluator():
                 else:
                     segmentations = unet(patches_tensor).cpu().detach().numpy()
                 segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
-                segmented_image = center_crop(segmented_image, (input.shape[2], input.shape[3])).argmax(axis=1)
+                segmented_image = center_crop(segmented_image, (input.shape[2], input.shape[3]))
+                segmented_image = binarize_segmentation_output(segmented_image)
                 predictions.append(torch.tensor(segmented_image, dtype=input.dtype, device=input.device))
                 labels.append(label)
                 inputs.append(input.cpu())

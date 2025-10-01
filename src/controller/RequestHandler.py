@@ -6,7 +6,26 @@ class request_handler:
         self.unet = None
         self.model_ready_event = threading.Event()
         self.load_model_async(pre_loaded_model_name)
+    def unet_postprocess_margin(self, probs, margin_thresh=0.05, mean_prob_thresh=0.55):
+        import numpy as np
+        from skimage.measure import label, regionprops
+        # Extract background and foreground probabilities
+        foreground_prob = probs[0, 1]
+        background_prob = probs[0, 0]
 
+        # Margin thresholding: only accept foreground if P_fg - P_bg > margin_thresh
+        margin = foreground_prob - background_prob
+        binary_mask = (margin > margin_thresh)
+
+        # Connected component filtering with region mean probability
+        lbl = label(binary_mask)
+        final = np.zeros_like(binary_mask, dtype=bool)
+
+        for region in regionprops(lbl, intensity_image=foreground_prob):
+            if region.mean_intensity > mean_prob_thresh:
+                final[lbl == region.label] = True
+
+        return final.astype(np.uint8)
     def load_model_async(self, model_name):
         def load():
             from src.model.UNet import UNet
@@ -26,7 +45,7 @@ class request_handler:
         return iou, dice_score
 
     def process_request_segment(self, image, output_folder, return_stats = False):
-        from src.model.DataTools import mirror_fill, extract_slices, construct_image_from_patches, center_crop, to_2d_image_array
+        from src.model.DataTools import binarize_segmentation_output, mirror_fill, extract_slices, construct_image_from_patches, center_crop, to_2d_image_array
         import torch
         import torchvision.transforms.functional as TF
         import numpy as np
@@ -55,7 +74,8 @@ class request_handler:
 
 
         segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
-        segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3])).argmax(axis=1)
+        segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3]))
+        segmented_image = binarize_segmentation_output(segmented_image)
         segmented_image_2d = to_2d_image_array(segmented_image)
         from src.model.SegmentationAnalyzer import SegmentationAnalyzer
         analyzer = SegmentationAnalyzer()
@@ -75,7 +95,7 @@ class request_handler:
             return segmented_image_pil, annotated_image_pil, table_data, histogram_fig, stats
         else:
             return segmented_image_pil, annotated_image_pil, table_data, histogram_fig
-    
+
     def process_request_load_model(self, model_path):
         self.model_ready_event.wait()
         self.unet.load_model(model_path)
