@@ -25,7 +25,7 @@ class request_handler:
         print(f"Model IOU: {iou}\nModel Dice Score: {dice_score}")
         return iou, dice_score
 
-    def process_request_segment(self, image, output_folder):
+    def process_request_segment(self, image, output_folder, return_stats = False):
         from src.model.DataTools import mirror_fill, extract_slices, construct_image_from_patches, center_crop, to_2d_image_array
         import torch
         import torchvision.transforms.functional as TF
@@ -66,9 +66,15 @@ class request_handler:
         segmented_image_pil = Image.fromarray(segmented_image_2d)
 
         table_data = analyzer.format_table_data(stats, image.file_info, particle_count)
-        analyzer.write_stats_to_txt(stats, image.file_info, particle_count, output_folder)
         histogram_fig = analyzer.create_histogram(stats, image.file_info) 
-        return segmented_image_pil, annotated_image_pil, table_data, histogram_fig
+
+        from src.model.StatsWriter import StatsWriter
+        stats_writer = StatsWriter()
+        stats_writer.write_stats_to_txt(stats, image.file_info, particle_count, output_folder)
+        if return_stats:
+            return segmented_image_pil, annotated_image_pil, table_data, histogram_fig, stats
+        else:
+            return segmented_image_pil, annotated_image_pil, table_data, histogram_fig
     
     def process_request_load_model(self, model_path):
         self.model_ready_event.wait()
@@ -92,19 +98,27 @@ class request_handler:
         
     def process_request_segment_folder(self, input_folder, output_parent_folder):
         import os
-
+        import numpy as np
+        from src.shared.FileInfo import FileInfo
         self.model_ready_event.wait()
-
+        all_stats = []
+        all_file_info = []
+        
         for filename in os.listdir(input_folder):
             file_path = os.path.join(input_folder, filename)
             image = self.process_request_load_image(file_path)
             output_folder = f"{output_parent_folder}/{image.file_info.file_name}"
             os.makedirs(output_folder, exist_ok=True)
-            segmented_image_pil, annotated_image_pil, table_data, histogram_fig = self.process_request_segment(image, output_folder)
+            segmented_image_pil, annotated_image_pil, _, _, stats = self.process_request_segment(image, output_folder, True)
+            all_stats.append(stats)
+            all_file_info.append(image.file_info)
             # Save the segmented image and annotated image
             segmented_image_pil.save(os.path.join(output_folder, f"{image.file_info.file_name}_segmented.tif"))
             annotated_image_pil.save(os.path.join(output_folder, f"{image.file_info.file_name}_annotated.tif"))
-            
+        #all_stats = np.vstack(all_stats)
+        from src.model.StatsWriter import StatsWriter
+        stats_writer = StatsWriter()
+        stats_writer.write_all_stats_to_txt(all_stats, all_file_info, output_parent_folder)
     def process_request_load_image(self, image_path):
         from src.shared.ParticleImage import ParticleImage
         image = ParticleImage(image_path)

@@ -5,12 +5,11 @@ from PyQt5.QtWidgets import QApplication
 import threading
 
 def preload_torch():
+    from ncempy.io import dm
     import numpy as np
     import torch
     import torchvision
     _ = torch.Tensor([0])  # Force lazy CUDA init
-    import ncempy
-    import sklearn
 
 def main():
     threading.Thread(target=preload_torch, daemon=True).start()

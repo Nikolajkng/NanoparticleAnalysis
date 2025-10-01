@@ -3,7 +3,6 @@ import os
 import datetime
 from torch.utils.data import DataLoader, Subset
 import numpy as np
-from sklearn.model_selection import KFold
 from torch.utils.data import DataLoader, random_split
 from src.model.SegmentationDataset import SegmentationDataset
 from src.model.PlottingTools import *
@@ -64,7 +63,7 @@ def cv_kfold(images_path, masks_path):
     dataset = slice_dataset_in_four(dataset)
     dataset_size = len(dataset)
     sliced_dataset_size = len(process_and_slice(dataset))
-
+    from sklearn.model_selection import KFold
     cv = KFold(n_splits=K, shuffle=True)
 
     fold_results = {s: {"test_sizes": [], "test_losses": [], "test_ious": [], "test_dice_scores": []} for s in range(1, S+1)}
