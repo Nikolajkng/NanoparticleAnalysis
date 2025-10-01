@@ -208,7 +208,7 @@ def binarize_segmentation_output(segmented_image, high_thresh=0.7, low_thresh=0.
     seeds = fg_prob > high_thresh
 
     # Step 2: Candidate region (lower threshold)
-    candidates = fg_prob > low_thresh
+    candidates = segmented_image.argmax(axis=1)[0]
 
     # Step 3: Connected components from seeds
     lbl = label(seeds)
