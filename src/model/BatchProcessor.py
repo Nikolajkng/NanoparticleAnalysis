@@ -19,9 +19,18 @@ class BatchProcessor:
             
         Returns:
             None
+            
+        Raises:
+            ValueError: If any image in the folder has 'pixel' as its unit
         """
         all_stats = []
         all_file_info = []
+        # First validate all images have proper units
+        for filename in os.listdir(input_folder):
+            file_path = os.path.join(input_folder, filename)
+            image = ParticleImage.load_and_preprocess(file_path)
+            if image.file_info.unit.lower() == "pixel":
+                raise ValueError(f"Image '{filename}' has no readable physical unit (unit is 'pixel'). Cannot process folder when physical units are missing.")
         
         # Process each image in the input folder
         for filename in os.listdir(input_folder):

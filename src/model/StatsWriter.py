@@ -3,7 +3,33 @@ import os
 
 class StatsWriter:
     def __init__(self):
-        pass
+        # Conversion factors to nanometers (nm)
+        self._unit_conversion_factors = {
+            "nm": 1,
+            "\u00B5m": 1000,  # micrometer
+            "mm": 1000000,
+            "cm": 10000000,
+            "inch": 25400000
+        }
+        
+    def _convert_measurement(self, value, from_unit, to_unit):
+        """Convert a measurement from one unit to another.
+        
+        Args:
+            value: The value to convert
+            from_unit: The unit to convert from
+            to_unit: The unit to convert to
+            
+        Returns:
+            float: The converted value
+        """
+        if from_unit == to_unit:
+            return value
+        
+        # Convert to nanometers first
+        nm_value = value * self._unit_conversion_factors.get(from_unit, 1)
+        # Then convert to target unit
+        return nm_value / self._unit_conversion_factors.get(to_unit, 1)
     
     def __get_diameters(self, stats):
         import numpy as np
@@ -39,22 +65,48 @@ class StatsWriter:
         except Exception as e:
             print("Error in writing statistics to txt file: ", e)
 
+    def _get_smallest_unit(self, units):
+        """Find the smallest unit from a list of units based on conversion factors.
+        Smaller unit = smaller conversion factor (e.g., nm has smaller factor than μm)"""
+        min_factor = float("inf")
+        smallest_unit = None
+        for unit in units:
+            if unit.lower() == "pixel":
+                continue
+            factor = self._unit_conversion_factors.get(unit, 0)
+            if factor < min_factor:
+                min_factor = factor
+                smallest_unit = unit
+        return smallest_unit
+
     def write_all_stats_to_txt(self, stats_list, file_info_list, output_folder, output_filename="all_statistics.txt"):
         """Write statistics for ALL images combined into one TXT file.
-        Naively assumes that all images use the same unit."""
+        Converts all measurements to the smallest unit found among the images."""
         import numpy as np
         try:
             all_areas = []
             all_diameters = []
             txtfile_path = os.path.join(output_folder, output_filename)
             os.makedirs(os.path.dirname(txtfile_path), exist_ok=True)
-            global_unit = file_info_list[0].unit
+            
+            # Find the smallest unit among all images
+            units = [info.unit for info in file_info_list]
+            target_unit = self._get_smallest_unit(units)
+            if not target_unit:
+                raise ValueError("No valid physical units found in images")
+            
             with open(txtfile_path, "w", encoding="utf-8") as txtfile:
-                self._write_header(txtfile, global_unit)
+                self._write_header(txtfile, target_unit)
 
                 global_particle_idx = 1
                 for stats, file_info in zip(stats_list, file_info_list):
+                    # Get measurements in the original unit
                     scaled_areas, scaled_diameters = self._get_scaled_meassurements(stats, file_info)
+                    
+                    # Convert to target unit if needed
+                    if file_info.unit != target_unit:
+                        scaled_areas = [self._convert_measurement(area, file_info.unit, target_unit) for area in scaled_areas]
+                        scaled_diameters = [self._convert_measurement(diam, file_info.unit, target_unit) for diam in scaled_diameters]
 
                     for area, diameter in zip(scaled_areas, scaled_diameters):
                         txtfile.write(
@@ -67,9 +119,9 @@ class StatsWriter:
                 # Write global summary
                 txtfile.write("_______________________________\n")
                 txtfile.write(
-                f"{'Total count':<12}{'Mean Area [' + global_unit + '²]':>20}{'Mean Diameter [' + global_unit + ']':>20}"
-                f"{'Max Area [' + global_unit + '²]':>20}{'Max Diameter [' + global_unit + ']':>20}"
-                f"{'Min Area [' + global_unit + '²]':>20}{'Min Diameter [' + global_unit + ']':>20}\n"
+                f"{'Total count':<12}{'Mean Area [' + target_unit + '²]':>20}{'Mean Diameter [' + target_unit + ']':>20}"
+                f"{'Max Area [' + target_unit + '²]':>20}{'Max Diameter [' + target_unit + ']':>20}"
+                f"{'Min Area [' + target_unit + '²]':>20}{'Min Diameter [' + target_unit + ']':>20}\n"
                 )
                 txtfile.write(
                     f"{len(all_areas):<12}"
