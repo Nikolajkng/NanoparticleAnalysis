@@ -29,11 +29,33 @@ from src.model.PlottingTools import plot_loss, plot_difference
 from src.shared.Formatters import _truncate
 from src.shared.ParticleImage import ParticleImage
 from src.shared.IOFunctions import validate_file_extension
+from PyQt5.QtCore import QObject, pyqtSignal, QThread
+
+class SegmentationWorker(QObject):
+    """Worker that runs segmentation via controller.safe_request in a separate thread."""
+    finished = pyqtSignal(object)  # emits result or None on error
+    error = pyqtSignal(str)
+
+    def __init__(self, controller_owner, command, *args, **kwargs):
+        super().__init__() 
+        self.controller_owner = controller_owner
+        self.command = command
+        self.args = args
+        self.kwargs = kwargs
+
+    def run(self):
+        try:
+            res = self.controller_owner.safe_request(self.command, *self.args, **self.kwargs)
+            self.finished.emit(res)
+        except Exception as e:
+            self.error.emit(str(e))
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
     show_testing_difference_signal = QtCore.pyqtSignal(object, object, object, object, object)
     errorOccurred = QtCore.pyqtSignal(str, object)
+    segmentation_finished = pyqtSignal(object)
+    segmentation_failed = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -88,6 +110,13 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.runSegmentationBtn.clicked.connect(self.on_segment_image_clicked)
 
         self.errorOccurred.connect(self.handle_error)
+        # Segmentation thread / worker references
+        self._seg_thread = None
+        self._seg_worker = None
+        # Connect signals to handlers
+        self.segmentation_finished.connect(self._on_segmentation_finished)
+        self.segmentation_failed.connect(self._on_segmentation_failed)
+
 
     def handle_error(self, message, handler=None):
         messageBox(self, message)
@@ -98,6 +127,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         from src.shared.RequestError import RequestError
         res = self.controller.process_command(command, *args, **kwargs)
         if isinstance(res, RequestError):
+            print(f"Error: {res.message}")
             self.errorOccurred.emit(res.message, on_error)
             return None
         return res
@@ -136,7 +166,6 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     
     
     def toggle_count_overlay(self):
-            print("toggling")
             if self.segmented_image is None or self.annotated_image is None:
                 messageBox(self, "No segmented image available to toggle.")
                 return
@@ -181,7 +210,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         input_folder_path = QFileDialog.getExistingDirectory(None, "Select an input folder", "")
         output_folder_path = QFileDialog.getExistingDirectory(None, "Select a folder for the output", "")
         if input_folder_path and output_folder_path:
-            self.safe_request(Command.SEGMENT_FOLDER, input_folder_path, output_folder_path)
+            # Run segmentation in background thread; helper handles wiring/cleanup
+            self.set_ui_busy(True)
+            self._start_segmentation_thread(Command.SEGMENT_FOLDER, input_folder_path, output_folder_path)
+            self._seg_thread.start()
         else:
             messageBox(self, "Error in uploading directory")
             return
@@ -303,20 +335,47 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             messageBox(self, "Error in uploading directories")
             return
 
-    
-
     def on_segment_image_clicked(self):
         if (self.image_path == None):
             messageBox(self, "Segmentation failed: No image found")
             return
-        
-        res = self.safe_request(Command.SEGMENT, self.image, "data/statistics")
-        if res is None:
-            return
-        self.segmented_image, self.annotated_image, table_data, histogram_fig = res
-        self.set_table_data(table_data)
-        self.update_segmented_image_view()
-        self.display_histogram(histogram_fig)
+        # Run segmentation in background thread; helper handles wiring/cleanup
+        self.set_ui_busy(True)
+        self._start_segmentation_thread(Command.SEGMENT, self.image, "data/statistics")
+        self._seg_thread.start()
+
+    def _start_segmentation_thread(self, command=Command.SEGMENT, *args, **kwargs):
+        """Prepare a QThread and SegmentationWorker for running segmentation."""
+        # Ensure previous thread is cleaned up
+        self._cleanup_seg_thread()
+
+        self._seg_thread = QThread()
+        self._seg_worker = SegmentationWorker(self, command, *args, **kwargs)
+        self._seg_worker.moveToThread(self._seg_thread)
+
+        # Wire up signals
+        self._seg_thread.started.connect(self._seg_worker.run)
+        self._seg_worker.finished.connect(lambda res: self.segmentation_finished.emit(res))
+        self._seg_worker.error.connect(lambda msg: self.segmentation_failed.emit(msg))
+
+        # Ensure thread is cleaned after finish/fail
+        self._seg_worker.finished.connect(self._seg_thread.quit)
+        self._seg_worker.finished.connect(self._seg_worker.deleteLater)
+        self._seg_worker.error.connect(self._seg_thread.quit)
+        self._seg_worker.error.connect(self._seg_worker.deleteLater)
+        self._seg_thread.finished.connect(self._seg_thread.deleteLater)
+
+    def _cleanup_seg_thread(self):
+        """Try to clean up any existing segmentation QThread."""
+        if getattr(self, '_seg_thread', None) is not None:
+            try:
+                # ask the existing thread to quit and wait shortly
+                self._seg_thread.quit()
+                self._seg_thread.wait(timeout=100)
+            except Exception:
+                pass
+        self._seg_thread = None
+        self._seg_worker = None
         
     def display_histogram(self, histogram_fig):
         if histogram_fig is not None:
@@ -347,6 +406,47 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
         self.plot_segmentation_scene.clear()
         self.plot_segmentation_scene.addItem(pixmap_item)
+
+    # UI busy helpers
+    def set_ui_busy(self, busy: bool):
+        """Disable/enable central interactive widgets while background work is running."""
+        widgets = [
+            self.runSegmentationBtn,
+            self.setScaleButton,
+            self.fullscreen_image_button,
+            self.actionRun_Segmentation_on_Current_Image,
+            self.actionRun_Segmentation_on_folder,
+            self.action_open_image,
+            self.action_load_model,
+            self.action_new_data_train_model,
+            self.action_test_model,
+            self.actionExport_Segmentation_2,
+            self.actionExport_Data_as_csv,
+            self.actionExport_Statistics_as_CSV,
+        ]
+        for w in widgets:
+            try:
+                # QAction uses setEnabled, widgets too
+                w.setEnabled(not busy)
+            except Exception:
+                pass
+
+    def _on_segmentation_finished(self, res):
+        # Re-enable UI
+        self.set_ui_busy(False)
+        if res is None:
+            return
+        try:
+            self.segmented_image, self.annotated_image, table_data, histogram_fig = res
+            self.set_table_data(table_data)
+            self.update_segmented_image_view()
+            self.display_histogram(histogram_fig)
+        except Exception as e:
+            messageBox(self, f"Failed processing segmentation result: {e}")
+
+    def _on_segmentation_failed(self, message):
+        self.set_ui_busy(False)
+        messageBox(self, f"Segmentation failed: {message}")
             
 
     def on_load_model_clicked(self):        

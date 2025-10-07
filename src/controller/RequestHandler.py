@@ -48,7 +48,6 @@ class RequestHandler:
 
         
         self.model_ready_event.wait()
-        
         # Initialize preprocessor
         preprocessor = ImagePreprocessor(self.unet.preferred_input_size)
         
@@ -73,7 +72,6 @@ class RequestHandler:
         # Step 4: Get analysis results
         analyzer = SegmentationAnalyzer()
         results = analyzer.analyze_segmentation(segmented_image_2d, image.file_info, output_folder)
-
         if return_stats:
             return results
         else:
