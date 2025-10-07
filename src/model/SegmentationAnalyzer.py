@@ -10,6 +10,43 @@ class SegmentationAnalyzer():
         num_labels, labels, area_stats, centroids= cv2.connectedComponentsWithStats(image)
         return num_labels, labels, area_stats, centroids
     
+    def analyze_segmentation(self, segmented_image_2d, file_info, output_folder):
+        """
+        Analyze the segmentation and generate output images and statistics.
+        
+        Args:
+            segmented_image_2d: The segmented image as a 2D array
+            file_info: FileInfo object containing image metadata
+            output_folder: Folder to save the statistics
+            
+        Returns:
+            Tuple containing:
+            - Segmented image (PIL Image)
+            - Annotated image (PIL Image)
+            - Table data
+            - Histogram figure
+            - Stats
+        """
+        # Get components
+        num_labels, _, stats, centroids = self.get_connected_components(segmented_image_2d)
+        particle_count = num_labels - 1
+        
+        # Create output images
+        annotated_image = self.add_annotations(segmented_image_2d, centroids)
+        annotated_image_pil = Image.fromarray(annotated_image)
+        segmented_image_pil = Image.fromarray(segmented_image_2d)
+        
+        # Generate analysis outputs
+        table_data = self.format_table_data(stats, file_info, particle_count)
+        histogram_fig = self.create_histogram(stats, file_info)
+        
+        # Save statistics
+        from src.model.StatsWriter import StatsWriter
+        stats_writer = StatsWriter()
+        stats_writer.write_stats_to_txt(stats, file_info, particle_count, output_folder)
+        
+        return segmented_image_pil, annotated_image_pil, table_data, histogram_fig, stats
+
     def save_histogram_as_image(self, fig):
         import matplotlib
         matplotlib.use('Agg')

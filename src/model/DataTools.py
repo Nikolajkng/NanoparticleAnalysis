@@ -11,6 +11,35 @@ from src.model.dmFileReader import dmFileReader
 from src.shared.IOFunctions import is_dm_format
 from src.model.SegmentationDataset import SegmentationDataset
 
+class ImagePreprocessor:
+    """Handles all image preprocessing operations for the segmentation model."""
+    
+    def __init__(self, model_input_size):
+        self.model_input_size = model_input_size
+        
+    def prepare_image_patches(self, pil_image, device):
+        """Prepare image patches for segmentation by converting to tensor and extracting patches."""
+        import torchvision.transforms.functional as TF
+        
+        tensor = TF.to_tensor(pil_image).unsqueeze(0)
+        tensor = tensor.to(device)
+        stride_length = self.model_input_size[0]*4//5
+        tensor_mirror_filled = mirror_fill(tensor, self.model_input_size, (stride_length,stride_length))
+        patches = extract_slices(tensor_mirror_filled, self.model_input_size, (stride_length,stride_length))
+        
+        return tensor, tensor_mirror_filled, patches, stride_length
+    
+    def post_process_segmentation(self, segmentations, tensor_mirror_filled, tensor, stride_length):
+        """Post-process the segmentation output."""
+        segmented_image = construct_image_from_patches(
+            segmentations, 
+            tensor_mirror_filled.shape[2:], 
+            (stride_length, stride_length)
+        )
+        segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3]))
+        segmented_image = binarize_segmentation_output(segmented_image)
+        return to_2d_image_array(segmented_image)
+
 def slice_dataset_in_four(dataset, input_size=(256, 256)):
     images = []
     masks = []

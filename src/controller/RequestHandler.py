@@ -1,7 +1,7 @@
 from PIL import Image
 import threading
 from src.model.PlottingTools import *
-class request_handler:
+class RequestHandler:
     def __init__(self, pre_loaded_model_name=None):
         self.unet = None
         self.model_ready_event = threading.Event()
@@ -25,57 +25,59 @@ class request_handler:
         print(f"Model IOU: {iou}\nModel Dice Score: {dice_score}")
         return iou, dice_score
 
-    def process_request_segment(self, image, output_folder, return_stats = False):
-        from src.model.DataTools import binarize_segmentation_output, mirror_fill, extract_slices, construct_image_from_patches, center_crop, to_2d_image_array
+    def process_request_segment(self, image, output_folder, return_stats=False):
+        """
+        Process an image through the segmentation pipeline.
+        
+        Args:
+            image: The input image to segment
+            output_folder: Folder to save the statistics
+            return_stats: Whether to include raw statistics in the return value
+            
+        Returns:
+            Tuple containing:
+            - Segmented image (PIL Image)
+            - Annotated image (PIL Image)
+            - Table data
+            - Histogram figure
+            - Stats (optional, only if return_stats is True)
+        """
         import torch
-        import torchvision.transforms.functional as TF
-        import numpy as np
-
-        self.model_ready_event.wait()
-
-        tensor = TF.to_tensor(image.pil_image).unsqueeze(0)
-        tensor = tensor.to(self.unet.device)
-        stride_length = self.unet.preferred_input_size[0]*4//5
-        tensor_mirror_filled = mirror_fill(tensor, self.unet.preferred_input_size, (stride_length,stride_length))
-        patches = extract_slices(tensor_mirror_filled, self.unet.preferred_input_size, (stride_length,stride_length))
-
-        segmentations = np.empty((patches.shape[0], 2, patches.shape[2], patches.shape[3]), dtype=patches.dtype)
-
-        self.unet.eval()
-        self.unet.to(self.unet.device)
-        patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
-        with torch.no_grad():
-            if self.unet.device.type == 'cuda':
-                from torch import autocast
-                
-                with autocast("cuda"):
-                    segmentations = self.unet(patches_tensor).cpu().detach().numpy()
-            else:
-                segmentations = self.unet(patches_tensor).cpu().detach().numpy()
-
-
-        segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
-        segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3]))
-        segmented_image = binarize_segmentation_output(segmented_image)
-        segmented_image_2d = to_2d_image_array(segmented_image)
+        from src.model.DataTools import ImagePreprocessor
         from src.model.SegmentationAnalyzer import SegmentationAnalyzer
+
+        
+        self.model_ready_event.wait()
+        
+        # Initialize preprocessor
+        preprocessor = ImagePreprocessor(self.unet.preferred_input_size)
+        
+        # Step 1: Prepare image patches
+        tensor, tensor_mirror_filled, patches, stride_length = preprocessor.prepare_image_patches(
+            image.pil_image, 
+            self.unet.device
+        )
+        
+        # Step 2: Process patches through model
+        patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
+        segmentations = self.unet.process_patches(patches_tensor)
+        
+        # Step 3: Post-process segmentation output
+        segmented_image_2d = preprocessor.post_process_segmentation(
+            segmentations,
+            tensor_mirror_filled,
+            tensor,
+            stride_length
+        )
+        
+        # Step 4: Get analysis results
         analyzer = SegmentationAnalyzer()
-        num_labels, _, stats, centroids = analyzer.get_connected_components(segmented_image_2d)
-        particle_count = num_labels - 1
-        annotated_image = analyzer.add_annotations(segmented_image_2d, centroids)
-        annotated_image_pil = Image.fromarray(annotated_image)
-        segmented_image_pil = Image.fromarray(segmented_image_2d)
+        results = analyzer.analyze_segmentation(segmented_image_2d, image.file_info, output_folder)
 
-        table_data = analyzer.format_table_data(stats, image.file_info, particle_count)
-        histogram_fig = analyzer.create_histogram(stats, image.file_info) 
-
-        from src.model.StatsWriter import StatsWriter
-        stats_writer = StatsWriter()
-        stats_writer.write_stats_to_txt(stats, image.file_info, particle_count, output_folder)
         if return_stats:
-            return segmented_image_pil, annotated_image_pil, table_data, histogram_fig, stats
+            return results
         else:
-            return segmented_image_pil, annotated_image_pil, table_data, histogram_fig
+            return results[:-1]  # Return without stats   
 
     def process_request_load_model(self, model_path):
         self.model_ready_event.wait()
@@ -98,32 +100,33 @@ class request_handler:
         return iou, dice_score
         
     def process_request_segment_folder(self, input_folder, output_parent_folder):
-        import os
-        import numpy as np
-        from src.shared.FileInfo import FileInfo
-        self.model_ready_event.wait()
-        all_stats = []
-        all_file_info = []
+        """
+        Process all images in a folder through the segmentation pipeline.
         
-        for filename in os.listdir(input_folder):
-            file_path = os.path.join(input_folder, filename)
-            image = self.process_request_load_image(file_path)
-            output_folder = f"{output_parent_folder}/{image.file_info.file_name}"
-            os.makedirs(output_folder, exist_ok=True)
-            segmented_image_pil, annotated_image_pil, _, _, stats = self.process_request_segment(image, output_folder, True)
-            all_stats.append(stats)
-            all_file_info.append(image.file_info)
-            # Save the segmented image and annotated image
-            segmented_image_pil.save(os.path.join(output_folder, f"{image.file_info.file_name}_segmented.tif"))
-            annotated_image_pil.save(os.path.join(output_folder, f"{image.file_info.file_name}_annotated.tif"))
-        #all_stats = np.vstack(all_stats)
-        from src.model.StatsWriter import StatsWriter
-        stats_writer = StatsWriter()
-        stats_writer.write_all_stats_to_txt(all_stats, all_file_info, output_parent_folder)
+        Args:
+            input_folder: Path to folder containing images to process
+            output_parent_folder: Path to folder where results will be saved
+        """
+        from src.model.BatchProcessor import BatchProcessor
+        
+        self.model_ready_event.wait()
+        
+        batch_processor = BatchProcessor()
+        batch_processor.process_folder(
+            input_folder,
+            output_parent_folder,
+            self.process_request_segment
+        )
+        
     def process_request_load_image(self, image_path):
+        """
+        Load and preprocess an image for segmentation.
+        
+        Args:
+            image_path: Path to the image file to load
+            
+        Returns:
+            ParticleImage: The loaded and preprocessed image
+        """
         from src.shared.ParticleImage import ParticleImage
-        image = ParticleImage(image_path)
-        image.file_info = image.get_file_info(image_path)
-        if image.pil_image.width > 1024 or image.pil_image.height > 1024:
-                image.resize((1024, 1024))
-        return image
+        return ParticleImage.load_and_preprocess(image_path)

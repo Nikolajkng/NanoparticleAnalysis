@@ -226,6 +226,18 @@ class UNet(nn.Module):
         self.normalizer = Normalize(mean=model["normalizer_mean"], std=model["normalizer_std"])
         self.load_state_dict(model["model_state_dict"])
 
+    def process_patches(self, patches_tensor):
+        """Process image patches through the model with proper device and state management."""
+        self.eval()
+        self.to(self.device)
+        
+        with torch.no_grad():
+            if self.device.type == 'cuda':
+                with autocast("cuda"):
+                    return self(patches_tensor).cpu().detach().numpy()
+            else:
+                return self(patches_tensor).cpu().detach().numpy()
+
     
     def _visualize_feature_map(self, feature_map: Tensor, title: str, is_output: bool = False):
         """

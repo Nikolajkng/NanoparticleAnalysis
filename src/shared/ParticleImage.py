@@ -12,10 +12,27 @@ class ParticleImage:
         self.convert_from_cm = True
         
 
+    @classmethod
+    def load_and_preprocess(cls, image_path):
+        """
+        Load and preprocess an image for analysis.
+        
+        Args:
+            image_path: Path to the image file to load
+            
+        Returns:
+            ParticleImage: The loaded and preprocessed image
+        """
+        image = cls(image_path)
+        image.file_info = image.get_file_info(image_path)
+        if image.pil_image.width > 1024 or image.pil_image.height > 1024:
+            image.resize((1024, 1024))
+        return image
+
     def load_image(self, image_path):
         if is_dm_format(image_path):
             reader = dmFileReader()
-            return  reader.get_image_from_dm_file(image_path)
+            return reader.get_image_from_dm_file(image_path)
         else:
             from src.model.DataTools import tiff_force_8bit
 
