@@ -12,7 +12,6 @@ def preload_torch():
     _ = torch.Tensor([0])  # Force lazy CUDA init
 
 def main():
-    #import skimage
     threading.Thread(target=preload_torch, daemon=True).start()
     from src.gui.windows.MainWindow import MainWindow
     
