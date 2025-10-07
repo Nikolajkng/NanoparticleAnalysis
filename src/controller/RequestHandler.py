@@ -56,7 +56,7 @@ class request_handler:
 
         segmented_image = construct_image_from_patches(segmentations, tensor_mirror_filled.shape[2:], (stride_length,stride_length))
         segmented_image = center_crop(segmented_image, (tensor.shape[2], tensor.shape[3]))
-        segmented_image = segmented_image.argmax(axis=1)#binarize_segmentation_output(segmented_image)
+        segmented_image = binarize_segmentation_output(segmented_image)
         segmented_image_2d = to_2d_image_array(segmented_image)
         from src.model.SegmentationAnalyzer import SegmentationAnalyzer
         analyzer = SegmentationAnalyzer()
