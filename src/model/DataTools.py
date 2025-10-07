@@ -182,7 +182,7 @@ def load_image_as_tensor(image_path: str):
         tensor = TF.resize(tensor, 1024)
     return tensor
 
-def binarize_segmentation_output(segmented_image, high_thresh=0.7, low_thresh=0.4, mean_prob_thresh=0.5):
+def binarize_segmentation_output(segmented_image, high_thresh=0.7, mean_prob_thresh=0.5):
     """
     Post-process U-Net probabilities by seeding on high-confidence pixels
     and growing into lower-confidence regions.
@@ -190,19 +190,20 @@ def binarize_segmentation_output(segmented_image, high_thresh=0.7, low_thresh=0.
     Args:
         probs (numpy.ndarray): U-Net probabilities [1, 2, H, W].
         high_thresh (float): Seed threshold (confident foreground).
-        low_thresh (float): Candidate threshold (possible foreground).
         mean_prob_thresh (float): Min avg probability for final region.
 
     Returns:
-        numpy.ndarray: Binary mask [H, W].
+        numpy.ndarray: Binary mask [1, H, W].
     """
     import numpy as np
     from skimage.measure import label, regionprops
-    from skimage.morphology import dilation, disk
     from scipy.special import softmax
     
     probs = softmax(segmented_image, axis=1)
     fg_prob = probs[0, 1]
+    bg_prob = probs[0, 0]
+
+    margin = fg_prob - bg_prob
 
     # Step 1: High-confidence seeds
     seeds = fg_prob > high_thresh
@@ -225,8 +226,8 @@ def binarize_segmentation_output(segmented_image, high_thresh=0.7, low_thresh=0.
         candidate_region = candidate_lbl[coords[0][0], coords[0][1]]
         grown = candidate_lbl == candidate_region
 
-        # Check mean probability of whole grown region
-        if fg_prob[grown].mean() > mean_prob_thresh:
+        # Check that the model is on average more sure that it is a foreground than a background.
+        if margin[grown].mean() > 0:
             final[grown] = True
     return np.expand_dims(final.astype(np.uint8),axis=0)
 

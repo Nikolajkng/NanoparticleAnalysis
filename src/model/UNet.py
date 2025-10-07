@@ -92,7 +92,7 @@ class UNet(nn.Module):
         d3 = self.decoder3(d2, e2)
         d4 = self.decoder4(d3, e1)
         m = self.mappingConvolution(d4)
-        self._visualize_feature_map(m, "output", True)
+        #self._visualize_feature_map(m, "output", True)
         return m
     
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event = None, loss_callback = None):

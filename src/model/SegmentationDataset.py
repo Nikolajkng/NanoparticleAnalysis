@@ -27,6 +27,9 @@ class SegmentationDataset(Dataset):
         self.image_filenames = sorted(os.listdir(image_dir))
         self.mask_filenames = sorted(os.listdir(mask_dir))
         self.transform = transform
+        
+        if len(self.image_filenames) != len(self.mask_filenames):
+            raise ValueError("The number of images and masks must be the same.")
 
         import torchvision.transforms.functional as TF
 

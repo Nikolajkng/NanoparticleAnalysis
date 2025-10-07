@@ -28,10 +28,13 @@ from src.gui.windows.MessageBoxes import *
 from src.model.PlottingTools import plot_loss, plot_difference
 from src.shared.Formatters import _truncate
 from src.shared.ParticleImage import ParticleImage
+from src.shared.IOFunctions import validate_file_extension
 
 class MainWindow(QMainWindow, Ui_MainWindow):
     update_train_model_values_signal = QtCore.pyqtSignal(ModelTrainingStats)
     show_testing_difference_signal = QtCore.pyqtSignal(object, object, object, object, object)
+    errorOccurred = QtCore.pyqtSignal(str, object)
+
     def __init__(self):
         super().__init__()
         self.MainWindow = QMainWindow()
@@ -83,7 +86,22 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.radioButton.toggled.connect(self.on_toggle_segmented_image_clicked)
         self.setScaleButton.clicked.connect(self.open_set_scale_window) 
         self.runSegmentationBtn.clicked.connect(self.on_segment_image_clicked)
-    
+
+        self.errorOccurred.connect(self.handle_error)
+
+    def handle_error(self, message, handler=None):
+        messageBox(self, message)
+        if handler:
+            handler()
+
+    def safe_request(self, command, *args, on_error=None, **kwargs):
+        from src.shared.RequestError import RequestError
+        res = self.controller.process_command(command, *args, **kwargs)
+        if isinstance(res, RequestError):
+            self.errorOccurred.emit(res.message, on_error)
+            return None
+        return res
+
     def open_set_scale_window(self):
         if (self.image_path == None or self.image == None):
             messageBox(self, "No image found")
@@ -163,7 +181,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         input_folder_path = QFileDialog.getExistingDirectory(None, "Select an input folder", "")
         output_folder_path = QFileDialog.getExistingDirectory(None, "Select a folder for the output", "")
         if input_folder_path and output_folder_path:
-            self.controller.process_command(Command.SEGMENT_FOLDER, input_folder_path, output_folder_path)
+            self.safe_request(Command.SEGMENT_FOLDER, input_folder_path, output_folder_path)
         else:
             messageBox(self, "Error in uploading directory")
             return
@@ -179,20 +197,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if result == QMessageBox.No:
                 return
                     
-        try:
-            self.train_thread = threading.Thread(
-                target=partial(
-                    self.controller.process_command, 
-                    Command.RETRAIN, model_config, 
-                    stop_training_event,
-                    self.update_training_model_stats,
-                    self.show_testing_difference,
-                    ),
-                daemon=True)
-            self.train_thread.start()
-        except Exception as e:
-            print(f"Error during training: {e}")
-            messageBoxTraining(self, "")
+        
+        self.train_thread = threading.Thread(
+            target=partial(
+                self.safe_request,
+                Command.RETRAIN, model_config, 
+                stop_training_event,
+                self.update_training_model_stats,
+                self.show_testing_difference,
+                on_error=lambda: self.train_model_window.stop_training_clicked()
+                ),
+            daemon=True)
+        self.train_thread.start()
 
 
     def update_training_model_stats(self, stats: ModelTrainingStats):
@@ -206,17 +222,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.training_loss_values.append(stats.training_loss)
         self.validation_loss_values.append(stats.validation_loss)
         plot_loss(self.training_loss_values, self.validation_loss_values)
-        
+    
+    def clear_image(self):
+        self.graphicsView_scene.clear()
+        self.plot_segmentation_scene.clear()
+        self.image_path = None
+        self.scale_is_selected = False
+        self.scale_input_set = False
+        self.segmented_image = None
+
     def on_open_image_clicked(self):
-        #Remove old item
-        if (self.image_path):
-            self.graphicsView_scene.clear()
-            self.image_path = None
-            self.scale_is_selected = False
-            self.scale_input_set = False
-            self.segmented_image = None
-            
-        
         default_image_path = os.path.abspath(os.path.join(os.getcwd(), 'data', 'images'))
         
         self.scale_is_selected = False
@@ -228,15 +243,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             default_image_path, 
             "Image Files (*.png *.jpg *.jpeg *.tif *.tiff *.dm3 *.dm4);;All Files (*)")
         
-        self.image_path = self.file_path_image
 
         if self.file_path_image: 
-            self.image = self.controller.process_command(Command.LOAD_IMAGE, self.file_path_image)
+            if not validate_file_extension(self.file_path_image, [".png", ".jpg", "jpeg", ".tif", ".tiff", ".dm3", ".dm4"]):
+                messageBox(self, "Error in uploading file: Unsupported file format")
+                return
+            self.clear_image()
+            self.image_path = self.file_path_image
+            
+            res = self.safe_request(Command.LOAD_IMAGE, self.file_path_image) 
+            if res is None:
+                return
+            self.image = res
             pixmap = self.load_pixmap(self.image.pil_image)
             pixmap_item = QGraphicsPixmapItem(pixmap.scaled(500, 500, aspectRatioMode=1))
             self.graphicsView_scene.clear()
             self.graphicsView_scene.addItem(pixmap_item)
             self.display_image_metadata_overlay(self.file_path_image)
+        else:
+            messageBox(self, "Error in uploading file: No file selected")
 
     def load_pixmap(self, image: Image) -> QPixmap:
         qimage = ImageQt(image)
@@ -265,10 +290,12 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         image_folder_path = QFileDialog.getExistingDirectory(None, "Select test images folder", "")
         mask_folder_path = QFileDialog.getExistingDirectory(None, "Select test masks folder", "")
 
-
         if image_folder_path and mask_folder_path:
             self.show_testing_difference_signal.connect(plot_difference)
-            iou, dice = self.controller.process_command(Command.TEST_MODEL, image_folder_path, mask_folder_path, self.show_testing_difference)
+            res = self.safe_request(Command.TEST_MODEL, image_folder_path, mask_folder_path, self.show_testing_difference)
+            if res is None:
+                return
+            iou, dice = res
             print(f"""Model IOU: {iou}\nModel Dice score: {dice}""")
             self.show_metrics_popup(iou, dice)
             
@@ -283,7 +310,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             messageBox(self, "Segmentation failed: No image found")
             return
         
-        self.segmented_image, self.annotated_image, table_data, histogram_fig = self.controller.process_command(Command.SEGMENT, self.image, "data/statistics")
+        res = self.safe_request(Command.SEGMENT, self.image, "data/statistics")
+        if res is None:
+            return
+        self.segmented_image, self.annotated_image, table_data, histogram_fig = res
         self.set_table_data(table_data)
         self.update_segmented_image_view()
         self.display_histogram(histogram_fig)
@@ -332,7 +362,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             if "PT" in selected_filter:
                 if not file_path.endswith(".pt"):  
                     file_path += ".pt"
-                self.controller.process_command(Command.LOAD_MODEL, file_path)
+                self.safe_request(Command.LOAD_MODEL, file_path) 
                 self.current_model_label.setText(f"{os.path.basename(file_path)}")
                 messageBox(self, "success", "Model loaded successfully")
             else:

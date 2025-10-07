@@ -1,4 +1,5 @@
 from src.shared.Commands import Command
+from src.shared.RequestError import RequestError
 from src.controller.RequestHandler import request_handler
 import threading
 class Controller():
@@ -23,8 +24,7 @@ class Controller():
             data = self.commands[command](*args, **kwargs)
             return data
         except Exception as e:
-            print(e)
-            return None
+            return RequestError(str(e))
 
             
             
