@@ -37,6 +37,7 @@ def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event 
         cross_validation="holdout",
         with_early_stopping=model_config.with_early_stopping,
         loss_function="cross_entropy",
+        scheduler_type=getattr(model_config, 'scheduler_type', 'plateau'),  # Default to plateau if not specified
         stop_training_event=stop_training_event,
         loss_callback=loss_callback
         )
@@ -121,7 +122,8 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
             model_name=model_name,
             cross_validation="kfold",
             with_early_stopping=True,
-            loss_function=loss_function
+            loss_function=loss_function,
+            scheduler_type="plateau"  # Add scheduler type
         )
 
         test_loss = unet.get_validation_loss(inner_test_dataloader)
