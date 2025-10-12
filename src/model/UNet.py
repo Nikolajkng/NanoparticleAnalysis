@@ -97,6 +97,8 @@ class UNet(nn.Module):
     
     def _configure_scheduler(self, scheduler_type="plateau"):
         """Configure learning rate scheduler based on type"""
+        if scheduler_type in (None, "none"):
+            return None
         if scheduler_type == "plateau":
             return torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self.optimizer, 

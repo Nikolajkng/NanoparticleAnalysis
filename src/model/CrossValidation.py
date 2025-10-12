@@ -50,11 +50,12 @@ def cv_kfold(images_path, masks_path):
     
     # Set parameters:
     K = 5
-    learning_rates = [0.0001]  
+    learning_rates = [0.0001] 
+    schedulers = ["none", "plateau"] 
     #loss_functions = ["cross_entropy", "dice2"]#, "dice", "weighted_cross_entropy", "weighted_dice"] 
     augmentations = [(True, True, False, False, False, False)]
     random_cropping = [False, True]
-    S = len(learning_rates)#len(learning_rates)
+    S = len(schedulers)#len(learning_rates)
     #models = [UNet() for _ in range(S)]
     epochs = 500
     print(f"\nTraining model using one-level cross-validation with K={K}")
@@ -69,7 +70,7 @@ def cv_kfold(images_path, masks_path):
 
     fold_results = {s: {"test_sizes": [], "test_losses": [], "test_ious": [], "test_dice_scores": []} for s in range(1, S+1)}
     for fold, (par_idx, test_idx) in enumerate(cv.split(np.arange(dataset_size))): 
-        inner_fold(fold, K, dataset, learning_rates, epochs, par_idx, test_idx, fold_results)
+        inner_fold(fold, K, dataset, schedulers, epochs, par_idx, test_idx, fold_results)
 
     
     E_gen_loss_s = []
@@ -87,7 +88,7 @@ def cv_kfold(images_path, masks_path):
         E_gen_iou_s.append(gen_error_estimate_iou)
         E_gen_dice_s.append(gen_error_estimate_dice)
     best_s = E_gen_iou_s.index(max(E_gen_iou_s))
-    best_parameter = learning_rates[best_s]
+    best_parameter = schedulers[best_s]
 
     print(f"\nSelected best model: UNet{best_s+1} with Mean IOU: {E_gen_iou_s[best_s]:.5f} and loss function: {best_parameter}")
 
@@ -110,8 +111,9 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
         #inner_train_dataloader.dataset.dataset.transform = data_augmenter.get_transformer(True, *parameters[s-1])
         
         model_name = f"UNet{K2}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pt"
-        learning_rate = parameters[s-1]  
+        learning_rate = 0.0001#parameters[s-1]  
         loss_function = "cross_entropy"#parameters[s-1]
+        scheduler = parameters[s-1]
         print(parameters[s-1])
         print(f"\nTraining model {s} with \nName: {model_name}\n Loss function: {loss_function}\n Learning rate: {learning_rate}")
         unet.train_model(
@@ -123,12 +125,13 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
             cross_validation="kfold",
             with_early_stopping=True,
             loss_function=loss_function,
-            scheduler_type="plateau"  # Add scheduler type
+            scheduler_type=scheduler  # Add scheduler type
         )
 
         test_loss = unet.get_validation_loss(inner_test_dataloader)
         from src.model.PlottingTools import plot_difference
         test_iou, test_dice = ModelEvaluator.evaluate_model(unet, inner_test_dataloader)
+        print(test_results)
 
         test_results[s]["test_sizes"].append(len(inner_test_data))
         test_results[s]["test_losses"].append(test_loss)
