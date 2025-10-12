@@ -8,7 +8,7 @@ from threading import Event
 import os
 from torch import autocast, GradScaler
 from src.model.PlottingTools import *
-from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, BinarySymmetricDiceLoss
+from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, BinarySymmetricDiceLoss, FocalLoss, CombinedLoss, TverskyLoss, BoundaryLoss, SizePenaltyLoss
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -139,6 +139,36 @@ class UNet(nn.Module):
         """Get current learning rate"""
         return self.optimizer.param_groups[0]['lr']
     
+    def _create_focal_dice_loss(self):
+        """Create custom Focal + Dice combination loss"""
+        class FocalDiceLoss(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.focal = FocalLoss(alpha=0.25, gamma=2.0)
+                self.dice = DiceLoss()
+                
+            def forward(self, prediction, target):
+                focal_loss = self.focal(prediction, target)
+                dice_loss = self.dice(prediction, target)
+                return 0.6 * focal_loss + 0.4 * dice_loss
+        
+        return FocalDiceLoss()
+    
+    def _create_boundary_dice_loss(self):
+        """Create custom Boundary + Dice combination loss"""
+        class BoundaryDiceLoss(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.boundary = BoundaryLoss(boundary_weight=3.0)
+                self.dice = DiceLoss()
+                
+            def forward(self, prediction, target):
+                boundary_loss = self.boundary(prediction, target)
+                dice_loss = self.dice(prediction, target)
+                return 0.5 * boundary_loss + 0.5 * dice_loss
+        
+        return BoundaryDiceLoss()
+    
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, scheduler_type: str = "plateau", stop_training_event: Event = None, loss_callback = None):
         self.to(self.device)
 
@@ -160,8 +190,38 @@ class UNet(nn.Module):
             self.criterion = nn.CrossEntropyLoss(weight=Tensor([1.0, 2.0], device=self.device))
         elif loss_function == "cross_entropy":
             self.criterion = nn.CrossEntropyLoss()
+        
+        # NEW LOSS FUNCTIONS
+        elif loss_function == "focal":
+            self.criterion = FocalLoss(alpha=0.25, gamma=2.0)
+        elif loss_function == "focal_strong":
+            self.criterion = FocalLoss(alpha=0.25, gamma=3.0)  # Stronger focus on hard examples
+        elif loss_function == "combined":
+            self.criterion = CombinedLoss(ce_weight=0.5, dice_weight=0.5)
+        elif loss_function == "combined_dice_heavy":
+            self.criterion = CombinedLoss(ce_weight=0.3, dice_weight=0.7)  # More emphasis on Dice
+        elif loss_function == "tversky":
+            self.criterion = TverskyLoss(alpha=0.3, beta=0.7)  # Penalize false negatives more
+        elif loss_function == "tversky_balanced":
+            self.criterion = TverskyLoss(alpha=0.5, beta=0.5)  # Balanced
+        elif loss_function == "boundary":
+            self.criterion = BoundaryLoss(boundary_weight=5.0)
+        elif loss_function == "size_penalty":
+            self.criterion = SizePenaltyLoss(expected_size_range=(50, 500), penalty_weight=0.1)
+        
+        # COMBINATION APPROACHES
+        elif loss_function == "focal_dice":
+            # Custom combination of Focal + Dice
+            self.criterion = self._create_focal_dice_loss()
+        elif loss_function == "boundary_dice":
+            # Custom combination of Boundary + Dice  
+            self.criterion = self._create_boundary_dice_loss()
+        
         else:
-            raise ValueError(f"Unknown loss function: {loss_function}, use 'dice', 'weighted_cross_entropy' or 'cross_entropy'")
+            raise ValueError(f"Unknown loss function: {loss_function}. Available options: "
+                           f"'dice', 'dice2', 'weighted_dice', 'cross_entropy', 'weighted_cross_entropy', "
+                           f"'focal', 'focal_strong', 'combined', 'combined_dice_heavy', 'tversky', "
+                           f"'tversky_balanced', 'boundary', 'size_penalty', 'focal_dice', 'boundary_dice'")
 
         training_loss_values = []
         validation_loss_values = []
