@@ -441,10 +441,29 @@ def construct_image_from_patches(patches: np.ndarray, img_size: tuple, stride_si
     return images
 
 def get_normalizer(dataset):
-    X = torch.stack(dataset.images)
-    mu = X.mean(axis=(0, 2, 3)).tolist()
-    std = X.std(axis=(0, 2, 3)).tolist()
+    """Calculate normalization statistics for images of potentially different sizes."""
+    import torch
     from torchvision.transforms.v2 import Normalize
+    
+    # Collect and flatten all images
+    all_pixels = []
+    for image in dataset.images:
+        if not isinstance(image, torch.Tensor):
+            image = torch.tensor(image)
+        
+        # Standardize to CHW format
+        if image.dim() == 2:
+            image = image.unsqueeze(0)
+        elif image.dim() == 3 and image.shape[0] > image.shape[2]:
+            image = image.permute(2, 0, 1)
+        
+        all_pixels.append(image.reshape(image.shape[0], -1).float())
+    
+    # Concatenate all pixels and calculate statistics
+    combined = torch.cat(all_pixels, dim=1)
+    mu = combined.mean(dim=1).tolist()
+    std = combined.std(dim=1, unbiased=True).tolist()
+    
     return Normalize(mean=mu, std=std)
 
 def resource_path(relative_path):
