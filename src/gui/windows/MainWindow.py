@@ -212,7 +212,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         if input_folder_path and output_folder_path:
             # Run segmentation in background thread; helper handles wiring/cleanup
             self.set_ui_busy(True)
-            self._start_segmentation_thread(Command.SEGMENT_FOLDER, input_folder_path, output_folder_path)
+            self._start_segmentation_thread(Command.SEGMENT_FOLDER, self._on_segmentation_finished, input_folder_path, output_folder_path)
             self._seg_thread.start()
         else:
             messageBox(self, "Error in uploading directory")
@@ -304,7 +304,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         from src.model.PlottingTools import plot_difference
         plot_difference(prediction, label, iou, dice_score)
 
-    def show_metrics_popup(self, iou, dice_score):
+    def show_metrics_popup(self, scores):
+        self.set_ui_busy(False)
+
+        iou, dice_score = scores
         dialog = QDialog()
         dialog.setWindowTitle("Model Evaluation Metrics")
         dialog.resize(400, 200)  # width, height
@@ -323,14 +326,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         mask_folder_path = QFileDialog.getExistingDirectory(None, "Select test masks folder", "")
 
         if image_folder_path and mask_folder_path:
+            try:
+                self.show_testing_difference_signal.disconnect()
+            except TypeError:
+                pass
             self.show_testing_difference_signal.connect(plot_difference)
-            res = self.safe_request(Command.TEST_MODEL, image_folder_path, mask_folder_path, self.show_testing_difference)
-            if res is None:
-                return
-            iou, dice = res
-            print(f"""Model IOU: {iou}\nModel Dice score: {dice}""")
-            self.show_metrics_popup(iou, dice)
-            
+            self.set_ui_busy(True)
+            self._start_segmentation_thread(Command.TEST_MODEL, self.show_metrics_popup, image_folder_path, mask_folder_path, self.show_testing_difference)
+            self._seg_thread.start()            
         else:
             messageBox(self, "Error in uploading directories")
             return
@@ -341,10 +344,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             return
         # Run segmentation in background thread; helper handles wiring/cleanup
         self.set_ui_busy(True)
-        self._start_segmentation_thread(Command.SEGMENT, self.image, "data/statistics")
+        self._start_segmentation_thread(Command.SEGMENT, self._on_segmentation_finished,self.image, "data/statistics")
         self._seg_thread.start()
 
-    def _start_segmentation_thread(self, command=Command.SEGMENT, *args, **kwargs):
+    def _start_segmentation_thread(self, command=Command.SEGMENT, on_finished_function=None, *args, **kwargs):
         """Prepare a QThread and SegmentationWorker for running segmentation."""
         # Ensure previous thread is cleaned up
         self._cleanup_seg_thread()
@@ -355,6 +358,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
         # Wire up signals
         self._seg_thread.started.connect(self._seg_worker.run)
+        
+        try:
+            self.segmentation_finished.disconnect()
+        except TypeError:
+            pass
+
+        self.segmentation_finished.connect(on_finished_function)
+        self.segmentation_failed.connect(self._on_segmentation_failed)
+
         self._seg_worker.finished.connect(lambda res: self.segmentation_finished.emit(res))
         self._seg_worker.error.connect(lambda msg: self.segmentation_failed.emit(msg))
 
@@ -436,6 +448,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.set_ui_busy(False)
         if res is None:
             return
+        
         try:
             self.segmented_image, self.annotated_image, table_data, histogram_fig = res
             self.set_table_data(table_data)
