@@ -6,7 +6,9 @@ from torch.utils.data import DataLoader
 import numpy as np
 from threading import Event
 import os
+from typing import Optional
 from torch import autocast, GradScaler
+
 from src.model.PlottingTools import *
 from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, BinarySymmetricDiceLoss
 
@@ -40,9 +42,8 @@ class DecoderBlock(nn.Module):
         x = F.relu(self.bn2(self.conv2(x)))
         return x
         
-
 class UNet(nn.Module):
-    def __init__(self, pre_loaded_model_path = None, normalizer = None):
+    def __init__(self, pre_loaded_model_path: Optional[str] = None, normalizer: Optional[nn.Module] = None):
         super().__init__()
 
         self.encoder1 = EncoderBlock(1, 64)
@@ -59,40 +60,40 @@ class UNet(nn.Module):
 
         self.mappingConvolution = nn.Conv2d(64, 2, 1)
 
-        self.optimizer = None
-        
-        self.criterion = None
+        self.pool = nn.MaxPool2d(2, 2)
 
+        self.optimizer = None
+        self.criterion = None
+        
         self.device = device("cuda" if cuda.is_available() else "cpu")
         print(f"Using {self.device}")
 
         self.preferred_input_size = (256, 256)
         self.normalizer = normalizer
 
-        if pre_loaded_model_path:
+        # --- LOAD MODEL (only in eager mode) ---
+        if pre_loaded_model_path is not None and not torch.jit.is_scripting():
             from src.model.DataTools import resource_path
-
             model_path = resource_path(pre_loaded_model_path)
             self.load_model(model_path)
 
-    def forward(self, input):
-        if self.normalizer:
+    def forward(self, input: torch.Tensor) -> torch.Tensor:
+        if self.normalizer is not None:
             input = self.normalizer(input)
+
         e1 = self.encoder1(input)
-        pooled = nn.MaxPool2d(2,2)(e1)
-        e2 = self.encoder2(pooled)
-        pooled = nn.MaxPool2d(2,2)(e2)
-        e3 = self.encoder3(pooled)
-        pooled = nn.MaxPool2d(2,2)(e3)
-        e4 = self.encoder4(pooled)
-        pooled = nn.MaxPool2d(2,2)(e4)
-        b = self.bottleneck(pooled)
+        e2 = self.encoder2(self.pool(e1))
+        e3 = self.encoder3(self.pool(e2))
+        e4 = self.encoder4(self.pool(e3))
+
+        b = self.bottleneck(self.pool(e4))
+
         d1 = self.decoder1(b, e4)
         d2 = self.decoder2(d1, e3)
         d3 = self.decoder3(d2, e2)
         d4 = self.decoder4(d3, e1)
+
         m = self.mappingConvolution(d4)
-        #self._visualize_feature_map(m, "output", True)
         return m
     
     def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event = None, loss_callback = None):
@@ -225,19 +226,6 @@ class UNet(nn.Module):
         from torchvision.transforms.v2 import Normalize
         self.normalizer = Normalize(mean=model["normalizer_mean"], std=model["normalizer_std"])
         self.load_state_dict(model["model_state_dict"])
-
-    def process_patches(self, patches_tensor):
-        """Process image patches through the model with proper device and state management."""
-        self.eval()
-        self.to(self.device)
-        
-        with torch.no_grad():
-            if self.device.type == 'cuda':
-                with autocast("cuda"):
-                    return self(patches_tensor).cpu().detach().numpy()
-            else:
-                return self(patches_tensor).cpu().detach().numpy()
-
     
     def _visualize_feature_map(self, feature_map: Tensor, title: str, is_output: bool = False):
         """
