@@ -36,7 +36,8 @@ def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event 
         model_name="UNet_" + datetime.datetime.now().strftime('%d.%m.%Y_%H-%M-%S')+".pt",
         cross_validation="holdout",
         with_early_stopping=model_config.with_early_stopping,
-        loss_function="cross_entropy",
+        loss_function="combined",
+        scheduler_type=getattr(model_config, 'scheduler_type', 'plateau'),  # Default to plateau if not specified
         stop_training_event=stop_training_event,
         loss_callback=loss_callback
         )
@@ -49,11 +50,12 @@ def cv_kfold(images_path, masks_path):
     
     # Set parameters:
     K = 5
-    learning_rates = [0.0001]  
-    #loss_functions = ["cross_entropy", "dice2"]#, "dice", "weighted_cross_entropy", "weighted_dice"] 
+    learning_rates = [0.0001] 
+    #schedulers = ["none", "plateau"] 
+    loss_functions = ["cross_entropy", "dice2", "focal", "combined", "tversky"]#, "dice", "weighted_cross_entropy", "weighted_dice"] 
     augmentations = [(True, True, False, False, False, False)]
     random_cropping = [False, True]
-    S = len(learning_rates)#len(learning_rates)
+    S = len(loss_functions)#len(learning_rates)
     #models = [UNet() for _ in range(S)]
     epochs = 500
     print(f"\nTraining model using one-level cross-validation with K={K}")
@@ -68,7 +70,7 @@ def cv_kfold(images_path, masks_path):
 
     fold_results = {s: {"test_sizes": [], "test_losses": [], "test_ious": [], "test_dice_scores": []} for s in range(1, S+1)}
     for fold, (par_idx, test_idx) in enumerate(cv.split(np.arange(dataset_size))): 
-        inner_fold(fold, K, dataset, learning_rates, epochs, par_idx, test_idx, fold_results)
+        inner_fold(fold, K, dataset, loss_functions, epochs, par_idx, test_idx, fold_results)
 
     
     E_gen_loss_s = []
@@ -86,11 +88,11 @@ def cv_kfold(images_path, masks_path):
         E_gen_iou_s.append(gen_error_estimate_iou)
         E_gen_dice_s.append(gen_error_estimate_dice)
     best_s = E_gen_iou_s.index(max(E_gen_iou_s))
-    best_parameter = learning_rates[best_s]
+    best_parameter = loss_functions[best_s]
 
     print(f"\nSelected best model: UNet{best_s+1} with Mean IOU: {E_gen_iou_s[best_s]:.5f} and loss function: {best_parameter}")
 
-    log_one_layer_cv_results(learning_rates, fold_results, best_parameter)
+    log_one_layer_cv_results(loss_functions, fold_results, best_parameter)
 
 def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test_results):
     print(f"\n ------------ Inner Fold {idx+1}/{K2} -------------") 
@@ -109,8 +111,9 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
         #inner_train_dataloader.dataset.dataset.transform = data_augmenter.get_transformer(True, *parameters[s-1])
         
         model_name = f"UNet{K2}_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pt"
-        learning_rate = parameters[s-1]  
-        loss_function = "cross_entropy"#parameters[s-1]
+        learning_rate = 0.0001#parameters[s-1]  
+        loss_function = parameters[s-1]
+        scheduler = "none"#parameters[s-1]
         print(parameters[s-1])
         print(f"\nTraining model {s} with \nName: {model_name}\n Loss function: {loss_function}\n Learning rate: {learning_rate}")
         unet.train_model(
@@ -121,7 +124,8 @@ def inner_fold(idx, K2, par_split, parameters, epochs, train_idx, test_idx, test
             model_name=model_name,
             cross_validation="kfold",
             with_early_stopping=True,
-            loss_function=loss_function
+            loss_function=loss_function,
+            scheduler_type=scheduler  # Add scheduler type
         )
 
         test_loss = unet.get_validation_loss(inner_test_dataloader)
@@ -147,7 +151,7 @@ def log_inner_fold_results(idx, parameters, inner_test_results, S):
         f.write(f"Inner Fold Results for Outer Fold {idx+1}\n")
         f.write("=" * 50 + "\n")
         for s in range(1, S+1):
-            f.write(f"\nModel {s} (Learning rate = {parameters[s-1]}):\n")
+            f.write(f"\nModel {s} (Loss function = {parameters[s-1]}):\n")
             for i in range(len(inner_test_results[s]["test_ious"])):
                 f.write(f"  Inner Fold {i+1}:\n")
                 f.write(f"    Test Size: {inner_test_results[s]['test_sizes'][i]}\n")

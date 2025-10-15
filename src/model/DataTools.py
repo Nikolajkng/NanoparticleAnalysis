@@ -143,7 +143,7 @@ def get_dataloaders_kfold(dataset: Dataset, train_data_size: float, batch_size: 
     val_dataloader = DataLoader(val_data, batch_size=1, shuffle=True, drop_last=True)
     return (train_dataloader, val_dataloader)
 
-def get_dataloaders_kfold_already_split(train_data, val_data, batch_size, input_size, augmentations=[True,True,False,False,False,False, False]):
+def get_dataloaders_kfold_already_split(train_data, val_data, batch_size, input_size, augmentations=[True,True,False,False,True,True,False]):
     data_augmenter = DataAugmenter()
     print(augmentations)
     if not augmentations[0]: # No random cropping

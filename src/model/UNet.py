@@ -10,7 +10,7 @@ from typing import Optional
 from torch import autocast, GradScaler
 
 from src.model.PlottingTools import *
-from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, BinarySymmetricDiceLoss
+from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, ForegroundDiceLoss, FocalLoss, CombinedLoss, TverskyLoss, BoundaryLoss, SizePenaltyLoss
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -96,30 +96,140 @@ class UNet(nn.Module):
         m = self.mappingConvolution(d4)
         return m
     
-    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, stop_training_event: Event = None, loss_callback = None):
+    def _configure_scheduler(self, scheduler_type="plateau"):
+        """Configure learning rate scheduler based on type"""
+        if scheduler_type in (None, "none"):
+            return None
+        if scheduler_type == "plateau":
+            return torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer, 
+                mode='min',           # Reduce LR when validation loss stops decreasing
+                factor=0.5,           # Multiply LR by 0.5
+                patience=10,          # Wait 10 epochs before reducing
+                min_lr=1e-7,          # Don't reduce below this
+                verbose=True          # Print when LR is reduced
+            )
+        elif scheduler_type == "cosine":
+            return torch.optim.lr_scheduler.CosineAnnealingLR(
+                self.optimizer,
+                T_max=50,            # Period of cosine annealing
+                eta_min=1e-7         # Minimum learning rate
+            )
+        elif scheduler_type == "cosine_restart":
+            return torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+                self.optimizer,
+                T_0=20,              # Restart every 20 epochs
+                T_mult=2,            # Double the restart period each time
+                eta_min=1e-7         # Minimum learning rate
+            )
+        elif scheduler_type == "step":
+            return torch.optim.lr_scheduler.StepLR(
+                self.optimizer,
+                step_size=30,        # Reduce LR every 30 epochs
+                gamma=0.5            # Multiply by 0.5
+            )
+        elif scheduler_type == "exponential":
+            return torch.optim.lr_scheduler.ExponentialLR(
+                self.optimizer,
+                gamma=0.95           # Multiply by 0.95 each epoch
+            )
+        else:
+            raise ValueError(f"Unknown scheduler type: {scheduler_type}")
+    
+    def get_current_lr(self):
+        """Get current learning rate"""
+        return self.optimizer.param_groups[0]['lr']
+    
+    def _create_focal_dice_loss(self):
+        """Create custom Focal + Dice combination loss"""
+        class FocalDiceLoss(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.focal = FocalLoss(alpha=0.25, gamma=2.0)
+                self.dice = DiceLoss()
+                
+            def forward(self, prediction, target):
+                focal_loss = self.focal(prediction, target)
+                dice_loss = self.dice(prediction, target)
+                return 0.6 * focal_loss + 0.4 * dice_loss
+        
+        return FocalDiceLoss()
+    
+    def _create_boundary_dice_loss(self):
+        """Create custom Boundary + Dice combination loss"""
+        class BoundaryDiceLoss(nn.Module):
+            def __init__(self):
+                super().__init__()
+                self.boundary = BoundaryLoss(boundary_weight=3.0)
+                self.dice = DiceLoss()
+                
+            def forward(self, prediction, target):
+                boundary_loss = self.boundary(prediction, target)
+                dice_loss = self.dice(prediction, target)
+                return 0.5 * boundary_loss + 0.5 * dice_loss
+        
+        return BoundaryDiceLoss()
+    
+    def train_model(self, training_dataloader: DataLoader, validation_dataloader: DataLoader, epochs: int, learningRate: float, model_name: str, cross_validation: str, with_early_stopping: bool, loss_function: str, scheduler_type: str = "plateau", stop_training_event: Event = None, loss_callback = None):
         self.to(self.device)
 
-        self.optimizer = torch.optim.Adam(self.parameters(), learningRate)
+        self.optimizer = torch.optim.Adam(self.parameters(), learningRate, weight_decay=1e-4)
+        
+        # Configure learning rate scheduler
+        self.scheduler = self._configure_scheduler(scheduler_type=scheduler_type)
+        
         if self.device.type == 'cuda':
             scaler = GradScaler("cuda")
 
         if loss_function == "dice":
             self.criterion = DiceLoss()
         elif loss_function == "dice2":
-            self.criterion = BinarySymmetricDiceLoss()
+            self.criterion = ForegroundDiceLoss()
         elif loss_function == "weighted_dice":
             self.criterion = WeightedDiceLoss(class_weights=[1.0, 2.0])
         elif loss_function == "weighted_cross_entropy":
             self.criterion = nn.CrossEntropyLoss(weight=Tensor([1.0, 2.0], device=self.device))
         elif loss_function == "cross_entropy":
             self.criterion = nn.CrossEntropyLoss()
+        
+        # NEW LOSS FUNCTIONS
+        elif loss_function == "focal":
+            self.criterion = FocalLoss(alpha=0.25, gamma=2.0)
+        elif loss_function == "focal_strong":
+            self.criterion = FocalLoss(alpha=0.25, gamma=3.0)  # Stronger focus on hard examples
+        elif loss_function == "combined":
+            self.criterion = CombinedLoss(ce_weight=0.5, dice_weight=0.5)
+        elif loss_function == "combined_dice_heavy":
+            self.criterion = CombinedLoss(ce_weight=0.3, dice_weight=0.7)  # More emphasis on Dice
+        elif loss_function == "tversky":
+            self.criterion = TverskyLoss(alpha=0.3, beta=0.7)  # Penalize false negatives more
+        elif loss_function == "tversky_balanced":
+            self.criterion = TverskyLoss(alpha=0.5, beta=0.5)  # Balanced
+        elif loss_function == "boundary":
+            self.criterion = BoundaryLoss(boundary_weight=5.0)
+        elif loss_function == "size_penalty":
+            self.criterion = SizePenaltyLoss(expected_size_range=(50, 500), penalty_weight=0.1)
+        
+        # COMBINATION APPROACHES
+        elif loss_function == "focal_dice":
+            # Custom combination of Focal + Dice
+            self.criterion = self._create_focal_dice_loss()
+        elif loss_function == "boundary_dice":
+            # Custom combination of Boundary + Dice  
+            self.criterion = self._create_boundary_dice_loss()
+        
         else:
-            raise ValueError(f"Unknown loss function: {loss_function}, use 'dice', 'weighted_cross_entropy' or 'cross_entropy'")
+            raise ValueError(f"Unknown loss function: {loss_function}. Available options: "
+                           f"'dice', 'dice2', 'weighted_dice', 'cross_entropy', 'weighted_cross_entropy', "
+                           f"'focal', 'focal_strong', 'combined', 'combined_dice_heavy', 'tversky', "
+                           f"'tversky_balanced', 'boundary', 'size_penalty', 'focal_dice', 'boundary_dice'")
 
         training_loss_values = []
         validation_loss_values = []
         best_loss = np.inf
         no_improvement_epochs = 0
+        min_delta = 1e-4  # Minimum improvement threshold
+        early_stopping_patience = 25  # Increased patience for better training
         batches_in_epoch = len(training_dataloader.dataset)//training_dataloader.batch_size
         import time
         for epoch in range(epochs):
@@ -149,10 +259,15 @@ class UNet(nn.Module):
                 
                 if self.device.type == 'cuda':
                     scaler.scale(loss).backward()
+                    # Add gradient clipping
+                    scaler.unscale_(self.optimizer)
+                    torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
                     scaler.step(self.optimizer)
                     scaler.update()
                 else:
                     loss.backward()
+                    # Add gradient clipping
+                    torch.nn.utils.clip_grad_norm_(self.parameters(), max_norm=1.0)
                     self.optimizer.step()
                 
                 running_loss += loss.item()
@@ -162,16 +277,23 @@ class UNet(nn.Module):
             epoch_validation_loss = self.get_validation_loss(validation_dataloader)
             validation_loss_values.append(epoch_validation_loss)
             
-            
+            # Update learning rate scheduler
+            if self.scheduler is not None:
+                if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    self.scheduler.step(epoch_validation_loss)
+                else:
+                    self.scheduler.step()
+                current_lr = self.optimizer.param_groups[0]['lr']
             
             print(f'---Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}---')
-            if epoch_validation_loss < best_loss:
+            if epoch_validation_loss < best_loss - min_delta:
                 self.save_model("data/models/", model_name)
                 best_loss = epoch_validation_loss
                 no_improvement_epochs = 0
             else:
                 no_improvement_epochs += 1
-                if with_early_stopping and no_improvement_epochs >= 15:
+                if with_early_stopping and no_improvement_epochs >= early_stopping_patience:
+                    print(f"Early stopping triggered after {no_improvement_epochs} epochs without improvement")
                     break
             
             if loss_callback:
