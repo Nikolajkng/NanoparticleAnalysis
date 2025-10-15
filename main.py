@@ -22,6 +22,6 @@ def main():
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
-    #main()
-    from src.model.CrossValidation import cv_kfold
-    cv_kfold("data/medres_images", "data/medres_masks")
+    main()
+    #from src.model.CrossValidation import cv_kfold
+    #cv_kfold("data/medres_images", "data/medres_masks")
