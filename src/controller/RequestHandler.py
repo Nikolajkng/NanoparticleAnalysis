@@ -37,31 +37,30 @@ class RequestHandler:
         Returns:
             Tuple containing:
             - Segmented image (PIL Image)
-            - Annotated image (PIL Image)
+            - Annotated image (PIL Image) 
             - Table data
             - Histogram figure
             - Stats (optional, only if return_stats is True)
         """
-        import torch
         from src.model.DataTools import ImagePreprocessor
         from src.model.SegmentationAnalyzer import SegmentationAnalyzer
 
-        
+        # Wait for model to be ready
         self.model_ready_event.wait()
-        # Initialize preprocessor
+                
+        # 1. Initialize preprocessor
         preprocessor = ImagePreprocessor(self.unet.preferred_input_size)
         
-        # Step 1: Prepare image patches
+        # 2. Prepare image patches
         tensor, tensor_mirror_filled, patches, stride_length = preprocessor.prepare_image_patches(
             image.pil_image, 
             self.unet.device
         )
         
-        # Step 2: Process patches through model
-        patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
-        segmentations = self.unet.process_patches(patches_tensor)
+        # 3. Run model inference
+        segmentations = self._run_model_inference(patches, tensor)
         
-        # Step 3: Post-process segmentation output
+        # 4. Post-process segmentation output
         segmented_image_2d = preprocessor.post_process_segmentation(
             segmentations,
             tensor_mirror_filled,
@@ -69,13 +68,52 @@ class RequestHandler:
             stride_length
         )
         
-        # Step 4: Get analysis results
+        # 5. Analyze results and generate statistics
         analyzer = SegmentationAnalyzer()
         results = analyzer.analyze_segmentation(segmented_image_2d, image.file_info, output_folder)
+        
         if return_stats:
             return results
         else:
-            return results[:-1]  # Return without stats   
+            return results[:-1]  # Return without stats
+    
+    def _run_model_inference(self, patches, tensor):
+        """
+        Run model inference on image patches.
+        
+        Args:
+            patches: Array of image patches
+            tensor: Original tensor for dtype/device info
+            
+        Returns:
+            numpy array: Model predictions
+        """
+        import torch
+        
+        # Convert patches to tensor
+        patches_tensor = torch.tensor(patches, dtype=tensor.dtype, device=tensor.device)
+        
+        # Optimize model for inference
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.unet.to(device, memory_format=torch.channels_last).eval()
+        
+        # Create optimized model for inference
+        scripted_unet = torch.jit.script(self.unet)
+        scripted_unet = torch.jit.optimize_for_inference(scripted_unet)
+        
+        # Prepare input tensor
+        patches_tensor = patches_tensor.to(device, memory_format=torch.channels_last)
+        
+        # Run inference with appropriate precision
+        with torch.inference_mode():
+            if device.type == "cuda":
+                with torch.cuda.amp.autocast("cuda"):
+                    output = scripted_unet(patches_tensor)
+            else:
+                output = scripted_unet(patches_tensor)
+        
+        # Convert to numpy for post-processing
+        return output.cpu().detach().numpy()   
 
     def process_request_load_model(self, model_path):
         self.model_ready_event.wait()
