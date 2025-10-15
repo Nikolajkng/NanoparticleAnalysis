@@ -87,6 +87,7 @@ class ModelEvaluator():
             return np.mean(ious), np.mean(dice_scores)
         try:
             for i in indicies:
+                plt.close("all")
                 test_callback(inputs[i], predictions[i], labels[i], ious[i], dice_scores[i])
         except Exception as e:
             return np.mean(ious), np.mean(dice_scores)
