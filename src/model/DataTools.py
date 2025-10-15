@@ -217,48 +217,102 @@ def binarize_segmentation_output(segmented_image, high_thresh=0.7, mean_prob_thr
     and growing into lower-confidence regions.
 
     Args:
-        probs (numpy.ndarray): U-Net probabilities [1, 2, H, W].
-        high_thresh (float): Seed threshold (confident foreground).
+        segmented_image (numpy.ndarray): U-Net logits [1, 2, H, W].
+        high_thresh (float): Seed threshold for confident foreground.
         mean_prob_thresh (float): Min avg probability for final region.
 
     Returns:
         numpy.ndarray: Binary mask [1, H, W].
-    """
-    import numpy as np
-    from skimage.measure import label, regionprops
+    """    
+    # Step 1: Extract probabilities and compute confidence
+    fg_prob, confidence_margin = _extract_probabilities(segmented_image)
+    
+    # Step 2: Generate seeds and candidate regions
+    seeds, candidates = _generate_regions(fg_prob, segmented_image, high_thresh)
+    
+    # Step 3: Find candidate regions that contain seeds
+    valid_candidate_ids = _find_seeded_candidates(seeds, candidates)
+    
+    # Step 4: Filter candidates by confidence margin
+    approved_regions = _filter_by_confidence(valid_candidate_ids, candidates, confidence_margin)
+    
+    # Step 5: Create final binary mask
+    return _create_final_mask(candidates, approved_regions, seeds.shape)
+
+
+def _extract_probabilities(segmented_image):
+    """Extract foreground probabilities and confidence margin."""
     from scipy.special import softmax
     
     probs = softmax(segmented_image, axis=1)
-    fg_prob = probs[0, 1]
-    bg_prob = probs[0, 0]
+    fg_prob = probs[0, 1]  # Foreground probability
+    bg_prob = probs[0, 0]  # Background probability
+    confidence_margin = fg_prob - bg_prob
+    
+    return fg_prob, confidence_margin
 
-    margin = fg_prob - bg_prob
 
-    # Step 1: High-confidence seeds
-    seeds = fg_prob > high_thresh
+def _generate_regions(fg_prob, segmented_image, high_thresh):
+    """Generate seed pixels and candidate regions."""
+    from skimage.measure import label
+    
+    # High-confidence seed pixels
+    seeds = label(fg_prob > high_thresh)
+    
+    # All positive predictions as candidates
+    candidates = label(segmented_image.argmax(axis=1)[0])
+    
+    return seeds, candidates
 
-    # Step 2: Candidate region (lower threshold)
-    candidates = segmented_image.argmax(axis=1)[0]
 
-    # Step 3: Connected components from seeds
-    lbl = label(seeds)
-    final = np.zeros_like(seeds, dtype=bool)
+def _find_seeded_candidates(seeds, candidates):
+    """Find candidate regions that contain at least one seed pixel."""
+    import numpy as np
+    
+    # Map seed pixels to their candidate regions
+    seed_pixels = seeds > 0
+    seed_candidate_map = np.where(seed_pixels, candidates, 0)
+    
+    # Get unique candidate region IDs that contain seeds
+    valid_candidate_ids = np.unique(seed_candidate_map[seed_candidate_map > 0])
+    
+    return valid_candidate_ids
 
-    for region in regionprops(lbl):
-        # Grow seed into candidate mask
-        coords = region.coords
-        grown = np.zeros_like(seeds, dtype=bool)
-        grown[tuple(coords.T)] = True
 
-        # Expand until it matches the candidate mask in that connected area
-        candidate_lbl = label(candidates)
-        candidate_region = candidate_lbl[coords[0][0], coords[0][1]]
-        grown = candidate_lbl == candidate_region
+def _filter_by_confidence(valid_candidate_ids, candidates, confidence_margin):
+    """Filter candidate regions by average confidence margin."""
+    import numpy as np
+    
+    if len(valid_candidate_ids) == 0:
+        return []
+    
+    # Vectorized calculation of average confidence for each region
+    flat_labels = candidates.ravel()
+    flat_margins = confidence_margin.ravel()
+    max_id = valid_candidate_ids.max()
+    
+    # Sum margins and count pixels for each candidate region
+    margin_sums = np.bincount(flat_labels, weights=flat_margins, minlength=max_id + 1)
+    region_counts = np.bincount(flat_labels, minlength=max_id + 1)
+    
+    # Calculate average margins (avoid division by zero)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        margin_means = margin_sums[valid_candidate_ids] / region_counts[valid_candidate_ids]
+    
+    # Return regions with positive average confidence
+    return valid_candidate_ids[margin_means > 0]
 
-        # Check that the model is on average more sure that it is a foreground than a background.
-        if margin[grown].mean() > 0:
-            final[grown] = True
-    return np.expand_dims(final.astype(np.uint8),axis=0)
+
+def _create_final_mask(candidates, approved_regions, shape):
+    """Create the final binary mask from approved regions."""
+    import numpy as np
+    
+    final_mask = np.zeros(shape, dtype=bool)
+    
+    if len(approved_regions) > 0:
+        final_mask[np.isin(candidates, approved_regions)] = True
+    
+    return np.expand_dims(final_mask.astype(np.uint8), axis=0)
 
 # Made with help from https://stackoverflow.com/questions/65754703/pillow-converting-a-tiff-from-greyscale-16-bit-to-8-bit-results-in-fully-white
 def tiff_force_8bit(image, **kwargs):
