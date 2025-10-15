@@ -24,6 +24,26 @@ class DiceLoss(Module):
         dice = (2.0 * intersection + self.smooth) / (total + self.smooth)
         return 1 - dice.mean()
     
+class ForegroundDiceLoss(Module):
+    """Focus only on particle class for better particle detection"""
+    def __init__(self, smooth=1e-6):
+        super(ForegroundDiceLoss, self).__init__()
+        self.smooth = smooth
+
+    def forward(self, prediction, target):
+        # Get foreground probabilities
+        prediction = F.softmax(prediction, dim=1)[:, 1, :, :]  # [N, H, W]
+        target = (target == 1).float()  # Convert class indices to binary [N, H, W]
+
+        # Flatten
+        prediction = prediction.contiguous().view(-1)
+        target = target.contiguous().view(-1)
+
+        intersection = (prediction * target).sum()
+        dice_score = (2.0 * intersection + self.smooth) / (prediction.sum() + target.sum() + self.smooth)
+        
+        return 1 - dice_score
+
 class BinarySymmetricDiceLoss(Module):
     def __init__(self, smooth=1e-6):
         super().__init__()
@@ -118,7 +138,7 @@ class CombinedLoss(Module):
         self.ce_weight = ce_weight
         self.dice_weight = dice_weight
         self.ce_loss = torch.nn.CrossEntropyLoss()
-        self.dice_loss = DiceLoss()
+        self.dice_loss = ForegroundDiceLoss()
 
     def forward(self, prediction, target):
         ce = self.ce_loss(prediction, target)

@@ -8,7 +8,7 @@ from threading import Event
 import os
 from torch import autocast, GradScaler
 from src.model.PlottingTools import *
-from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, BinarySymmetricDiceLoss, FocalLoss, CombinedLoss, TverskyLoss, BoundaryLoss, SizePenaltyLoss
+from src.model.DiceLoss import DiceLoss, WeightedDiceLoss, ForegroundDiceLoss, FocalLoss, CombinedLoss, TverskyLoss, BoundaryLoss, SizePenaltyLoss
 
 class EncoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -183,7 +183,7 @@ class UNet(nn.Module):
         if loss_function == "dice":
             self.criterion = DiceLoss()
         elif loss_function == "dice2":
-            self.criterion = BinarySymmetricDiceLoss()
+            self.criterion = ForegroundDiceLoss()
         elif loss_function == "weighted_dice":
             self.criterion = WeightedDiceLoss(class_weights=[1.0, 2.0])
         elif loss_function == "weighted_cross_entropy":
@@ -277,13 +277,14 @@ class UNet(nn.Module):
             validation_loss_values.append(epoch_validation_loss)
             
             # Update learning rate scheduler
-            if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
-                self.scheduler.step(epoch_validation_loss)
-            else:
-                self.scheduler.step()
-            current_lr = self.optimizer.param_groups[0]['lr']
+            if self.scheduler is not None:
+                if isinstance(self.scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                    self.scheduler.step(epoch_validation_loss)
+                else:
+                    self.scheduler.step()
+                current_lr = self.optimizer.param_groups[0]['lr']
             
-            print(f'---Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}, LR: {current_lr:.2e}---')
+            print(f'---Epoch {epoch + 1}: Training loss: {epoch_training_loss:.5f}, Validation loss: {epoch_validation_loss:.5f}---')
             if epoch_validation_loss < best_loss - min_delta:
                 self.save_model("data/models/", model_name)
                 best_loss = epoch_validation_loss
