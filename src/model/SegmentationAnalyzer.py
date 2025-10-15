@@ -165,10 +165,11 @@ class SegmentationAnalyzer():
 
     
     def __get_diameters(self, stats: np.ndarray):
+        """Calculate diameters using Equivalent Circular Diameter (ECD)."""
         diameters = np.empty(stats.shape[0]-1)
         for label_idx in range(1, stats.shape[0]):
-            width, height = stats[label_idx, cv2.CC_STAT_WIDTH], stats[label_idx, cv2.CC_STAT_HEIGHT]
-            diameter = np.mean([width, height])  
+            area = stats[label_idx, cv2.CC_STAT_AREA]
+            diameter = 2 * np.sqrt(area / np.pi)
             diameters[label_idx-1] = diameter
         return diameters
     
