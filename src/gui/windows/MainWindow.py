@@ -321,10 +321,17 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         mean_dice = evaluation_result.mean_dice
         dialog = QDialog()
         dialog.setWindowTitle("Model Evaluation Metrics")
-        dialog.resize(400, 200)  # width, height
+        dialog.resize(400, 400)  # width, height
 
         layout = QVBoxLayout()
-        label = QLabel(f"<h3>Model IOU:</h3> {mean_iou:.4f}<br><h3>Dice Score:</h3> {mean_dice:.4f}")
+        label = QLabel(f"<h3>Mean IOU:</h3> {mean_iou:.4f}<br>"
+                       f"<h3>Mean Dice Score:</h3> {mean_dice:.4f}<hr>"
+                       f"<h3>Min IOU:</h3> {evaluation_result.min_iou:.4f}<br>"
+                       f"<h3>Min Dice Score:</h3> {evaluation_result.min_dice:.4f}<hr>"
+                       f"<h3>Max IOU:</h3> {evaluation_result.max_iou:.4f}<br>"
+                       f"<h3>Max Dice Score:</h3> {evaluation_result.max_dice:.4f}<hr>"
+                       f"<h3>Tested on:</h3> {len(evaluation_result)} samples"
+                       )
         label.setWordWrap(True)
 
         layout.addWidget(label)

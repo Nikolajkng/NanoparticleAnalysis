@@ -43,7 +43,8 @@ class ImagePreprocessor:
 def slice_dataset_in_four(dataset, input_size=(256, 256)):
     images = []
     masks = []
-    for img, mask in dataset:
+    filenames = []
+    for (img, mask), filename in zip(dataset, dataset.image_filenames):
         width = img.shape[-1]
         height = img.shape[-2]
         if width <= input_size[0] or height <= input_size[1]:
@@ -65,32 +66,55 @@ def slice_dataset_in_four(dataset, input_size=(256, 256)):
             mask[:, :new_height, new_width:],
             mask[:, new_height:, new_width:]
         ]
+        filename_slices = [
+            filename + " TOP LEFT",
+            filename + " BOTTOM LEFT",
+            filename + " TOP RIGHT",
+            filename + " BOTTOM RIGHT"
+        ]
         images.extend(image_slices)
         masks.extend(mask_slices)
-    return SegmentationDataset.from_image_set(images, masks)
+        filenames.extend(filename_slices)
+    return SegmentationDataset.from_image_set(images, masks, filenames)
 
 # Helper to process val/test with mirror_fill and extract_slices
 def process_and_slice(data_subset, input_size=(256, 256)):
     images = []
     masks = []
-    for img, mask in data_subset:
+    filenames = []
+    
+    for (img, mask), idx in zip(data_subset, data_subset.indices):
         img = img.unsqueeze(0) if img.dim() == 3 else img
         mask = mask.unsqueeze(0) if mask.dim() == 3 else mask
+
         filled_image = mirror_fill(img, patch_size=input_size, stride_size=input_size)
         filled_mask = mirror_fill(mask, patch_size=input_size, stride_size=input_size)
 
         sliced_images = extract_slices(filled_image, patch_size=input_size, stride_size=input_size)
         sliced_masks = extract_slices(filled_mask, patch_size=input_size, stride_size=input_size)
-        # Convert np.ndarray -> torch.Tensor if necessary
+        
         if isinstance(sliced_masks[0], np.ndarray):
             sliced_images = [torch.from_numpy(img) for img in sliced_images]
         if isinstance(sliced_masks[0], np.ndarray):
             sliced_masks = [torch.from_numpy(mask) for mask in sliced_masks]
         images.extend(sliced_images)
         masks.extend(sliced_masks)
+        
+        # Get the base filename for this image
+        base_filename = data_subset.dataset.image_filenames[idx]
+        
+        # Convert tensors to list and add to results
+        num_slices = len(sliced_images)
+        slice_filenames = []
+        for i in range(num_slices):
+            slice_filename = f"{base_filename}_slice_{i:03d}"
+            slice_filenames.append(slice_filename)
+
+        filenames.extend(slice_filenames)
+
 
     # Create list of (image, mask) tensors
-    return SegmentationDataset.from_image_set(images, masks)
+    return SegmentationDataset.from_image_set(images, masks, filenames)
 
 def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int], with_data_augmentation: bool) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()

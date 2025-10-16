@@ -14,6 +14,19 @@ class RepeatDataset(Dataset):
 
     def __getitem__(self, idx):
         return self.dataset[idx % len(self.dataset)]
+    
+    @property
+    def image_filenames(self):
+        """Expose the underlying dataset's image filenames, repeated as needed."""
+        if hasattr(self.dataset, 'image_filenames'):
+            base_filenames = self.dataset.image_filenames
+            # Repeat the filenames list for each repeat factor
+            repeated_filenames = []
+            for _ in range(self.repeat_factor):
+                repeated_filenames.extend(base_filenames)
+            return repeated_filenames
+        else:
+            return None
 
 class SegmentationDataset(Dataset):
     def __init__(self, image_dir=None, mask_dir=None, transform=None):
@@ -111,10 +124,11 @@ class SegmentationDataset(Dataset):
         return image, mask
 
     @classmethod
-    def from_image_set(cls, images, masks, transforms=None):
+    def from_image_set(cls, images, masks, file_names=None, transforms=None):
         res = cls()
         res.images = images
         res.masks = masks
+        res.image_filenames = file_names
         res.transform = transforms
         return res
 

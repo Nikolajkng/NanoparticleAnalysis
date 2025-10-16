@@ -11,12 +11,6 @@ def preload_torch():
         import numpy as np
         import torch
         import torchvision
-        import torchvision.transforms
-        import torchvision.transforms.functional
-        from torchvision.transforms import InterpolationMode  # Preload this specifically
-        from torch.utils.data import Dataset, DataLoader  # Preload common torch utils
-        from torch.nn import Module
-        import torch.nn.functional as F
         _ = torch.Tensor([0])  # Force lazy CUDA init
     except Exception as e:
         print(f"Error during torch preloading: {e}")

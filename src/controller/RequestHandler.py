@@ -9,11 +9,7 @@ class RequestHandler:
         self.load_model_async(pre_loaded_model_name)
 
     def load_model_async(self, model_name):
-        def load():
-            # Ensure torch preloading is complete before importing UNet
-            from src.shared.torch_coordinator import ensure_torch_ready
-            ensure_torch_ready()
-            
+        def load():            
             from src.model.UNet import UNet
             self.unet = UNet(pre_loaded_model_path=f"src/data/model/{model_name}")  # or UNet(pre_loaded_model_path=...)
             self.model_ready_event.set()
@@ -21,7 +17,7 @@ class RequestHandler:
 
         threading.Thread(target=load, daemon=True).start()
         
-    def process_request_train(self, model_config, stop_training_event = None, loss_callback = None, test_callback = None):  
+    def process_request_train(self, model_config, stop_training_event = None, loss_callback = None, test_callback = None, log_file_path = None):  
         from src.shared.torch_coordinator import ensure_torch_ready
         ensure_torch_ready()
         
@@ -29,7 +25,18 @@ class RequestHandler:
         from src.model.UNet import UNet
         self.model_ready_event.wait()
         self.unet = UNet()
-        evaluation_result = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
+        
+        # Generate default log file path if not provided
+        if log_file_path is None:
+            import datetime
+            import os
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            # Create logs directory in current working directory
+            logs_dir = "data/logs"
+            os.makedirs(logs_dir, exist_ok=True)
+            log_file_path = os.path.join(logs_dir, f"training_evaluation_{timestamp}.txt")
+        
+        evaluation_result = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback, log_file_path)
         print(f"Model IOU: {evaluation_result.mean_iou}\nModel Dice Score: {evaluation_result.mean_dice}")
         return evaluation_result
 
@@ -131,7 +138,7 @@ class RequestHandler:
         self.unet.load_model(model_path)
         return None
     
-    def process_request_test_model(self, test_data_image_dir, test_data_mask_dir, testing_callback = None):
+    def process_request_test_model(self, test_data_image_dir, test_data_mask_dir, testing_callback = None, log_file_path = None):
         from src.shared.torch_coordinator import ensure_torch_ready
         ensure_torch_ready()
         
@@ -144,7 +151,18 @@ class RequestHandler:
         from src.model.ModelEvaluator import ModelEvaluator
 
         self.model_ready_event.wait()
-        evaluation_result = ModelEvaluator.evaluate_model(self.unet, test_dataloader, testing_callback)
+        
+        # Generate default log file path if not provided
+        if log_file_path is None:
+            import os
+            import datetime
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            # Create logs directory if it doesn't exist
+            logs_dir = os.path.join(os.path.dirname(test_data_image_dir), "logs")
+            os.makedirs(logs_dir, exist_ok=True)
+            log_file_path = os.path.join(logs_dir, f"evaluation_results_{timestamp}.txt")
+        
+        evaluation_result = ModelEvaluator.evaluate_model(self.unet, test_dataloader, testing_callback, log_file_path)
         return evaluation_result
         
     def process_request_segment_folder(self, input_folder, output_parent_folder):

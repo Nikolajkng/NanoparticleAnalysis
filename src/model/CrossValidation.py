@@ -12,7 +12,7 @@ from src.model.ModelEvaluator import ModelEvaluator
 from src.shared.ModelConfig import ModelConfig
 from src.shared.EvaluationResult import EvaluationResult
 
-def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None, testing_callback = None) -> EvaluationResult:
+def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None, testing_callback = None, log_file_path = None) -> EvaluationResult:
     # Set parameters:
     train_subset_size = 0.6
     validation_subset_size = 0.2
@@ -43,7 +43,15 @@ def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event 
         loss_callback=loss_callback
         )
     
-    evaluation_result = ModelEvaluator.evaluate_model(unet, test_dataloader, testing_callback)
+    # Generate default log file path if not provided
+    if log_file_path is None:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        # Create logs directory in current working directory
+        logs_dir = "data/logs"
+        os.makedirs(logs_dir, exist_ok=True)
+        log_file_path = os.path.join(logs_dir, f"evaluation_results_holdout_{timestamp}.txt")
+    
+    evaluation_result = ModelEvaluator.evaluate_model(unet, test_dataloader, testing_callback, log_file_path)
     return evaluation_result
 
 def cv_kfold(images_path, masks_path):

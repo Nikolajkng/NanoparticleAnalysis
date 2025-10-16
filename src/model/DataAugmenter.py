@@ -68,12 +68,21 @@ class DataAugmenter():
     def augment_dataset(self, dataset: Dataset, input_size: tuple[int, int], augmentations=[True,True,False,False,True,True,False]) -> Dataset:
         new_images = []
         new_masks = []
-        
+        new_filenames = []
         for i in range(len(dataset)):
             image, mask = dataset[i]
+            # Handle both regular datasets and Subset datasets
+            if hasattr(dataset, 'indices'):
+                # This is a Subset, get the filename from the original dataset
+                original_idx = dataset.indices[i]
+                filename = dataset.dataset.image_filenames[original_idx]
+            else:
+                # This is a regular dataset
+                filename = dataset.image_filenames[i]
+            
             new_images.extend(image.unsqueeze(0))
             new_masks.extend(mask.unsqueeze(0))
-       
-    
-        return RepeatDataset(dataset=SegmentationDataset.from_image_set(new_images, new_masks, transforms=DataAugmenter.get_transformer(*augmentations)), repeat_factor=10 if augmentations[0] else 20)
+            new_filenames.append(filename)
+        
+        return RepeatDataset(dataset=SegmentationDataset.from_image_set(new_images, new_masks, new_filenames, transforms=DataAugmenter.get_transformer(*augmentations)), repeat_factor=10 if augmentations[0] else 20)
     
