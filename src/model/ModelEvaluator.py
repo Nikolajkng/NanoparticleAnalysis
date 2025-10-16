@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 import random
+from src.shared.EvaluationResult import EvaluationResult
 
 class ModelEvaluator():
     @staticmethod
@@ -71,7 +72,7 @@ class ModelEvaluator():
         return inputs, predictions, labels
 
     @staticmethod
-    def evaluate_model(unet, test_dataloader: DataLoader, test_callback = None) -> tuple[float, float]:
+    def evaluate_model(unet, test_dataloader: DataLoader, test_callback = None) -> EvaluationResult:
         inputs, predictions, labels = ModelEvaluator.get_predictions(unet, test_dataloader)
         predictions = [pred.cpu() for pred in predictions]
         labels = [label.cpu() for label in labels]
@@ -89,9 +90,9 @@ class ModelEvaluator():
             for i in indicies:
                 test_callback(inputs[i], predictions[i], labels[i], ious[i], dice_scores[i])
         except Exception as e:
-            return np.mean(ious), np.mean(dice_scores)
-
-        return np.mean(ious), np.mean(dice_scores)
+            print(f"Error in test callback: {e}")
+        finally:
+            return EvaluationResult(ious, dice_scores)
 
         
         

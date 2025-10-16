@@ -29,6 +29,7 @@ from src.model.PlottingTools import plot_loss, plot_difference
 from src.shared.Formatters import _truncate
 from src.shared.ParticleImage import ParticleImage
 from src.shared.IOFunctions import validate_file_extension
+from src.shared.EvaluationResult import EvaluationResult
 from PyQt5.QtCore import QObject, pyqtSignal, QThread
 
 class SegmentationWorker(QObject):
@@ -230,17 +231,25 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 return
                     
         
-        self.train_thread = threading.Thread(
-            target=partial(
-                self.safe_request,
-                Command.RETRAIN, model_config, 
+        # self.train_thread = threading.Thread(
+        #     target=partial(
+        #         self.safe_request,
+        #         Command.RETRAIN, model_config, 
+        #         stop_training_event,
+        #         self.update_training_model_stats,
+        #         self.show_testing_difference,
+        #         on_error=lambda: self.train_model_window.stop_training_clicked()
+        #         ),
+        #     daemon=True)
+        # self.train_thread.start()
+
+        self._start_segmentation_thread(Command.RETRAIN, self.show_metrics_popup, 
+                model_config,
                 stop_training_event,
                 self.update_training_model_stats,
                 self.show_testing_difference,
-                on_error=lambda: self.train_model_window.stop_training_clicked()
-                ),
-            daemon=True)
-        self.train_thread.start()
+                on_error=lambda: self.train_model_window.stop_training_clicked())
+        self._seg_thread.start()  
 
 
     def update_training_model_stats(self, stats: ModelTrainingStats):
@@ -304,16 +313,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         from src.model.PlottingTools import plot_difference
         plot_difference(prediction, label, iou, dice_score)
 
-    def show_metrics_popup(self, scores):
+    def show_metrics_popup(self, evaluation_result: EvaluationResult):
         self.set_ui_busy(False)
-
-        iou, dice_score = scores
+        if evaluation_result is None:
+            return
+        mean_iou = evaluation_result.mean_iou
+        mean_dice = evaluation_result.mean_dice
         dialog = QDialog()
         dialog.setWindowTitle("Model Evaluation Metrics")
         dialog.resize(400, 200)  # width, height
 
         layout = QVBoxLayout()
-        label = QLabel(f"<h3>Model IOU:</h3> {iou:.4f}<br><h3>Dice Score:</h3> {dice_score:.4f}")
+        label = QLabel(f"<h3>Model IOU:</h3> {mean_iou:.4f}<br><h3>Dice Score:</h3> {mean_dice:.4f}")
         label.setWordWrap(True)
 
         layout.addWidget(label)

@@ -10,8 +10,9 @@ from src.model.DataTools import get_dataloaders, get_dataloaders_kfold_already_s
 from src.model.DataAugmenter import DataAugmenter
 from src.model.ModelEvaluator import ModelEvaluator
 from src.shared.ModelConfig import ModelConfig
+from src.shared.EvaluationResult import EvaluationResult
 
-def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None, testing_callback = None):
+def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event = None, loss_callback = None, testing_callback = None) -> EvaluationResult:
     # Set parameters:
     train_subset_size = 0.6
     validation_subset_size = 0.2
@@ -42,8 +43,8 @@ def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event 
         loss_callback=loss_callback
         )
     
-    iou, dice_score = ModelEvaluator.evaluate_model(unet, test_dataloader, testing_callback)
-    return iou, dice_score
+    evaluation_result = ModelEvaluator.evaluate_model(unet, test_dataloader, testing_callback)
+    return evaluation_result
 
 def cv_kfold(images_path, masks_path):
     fold_results = []   

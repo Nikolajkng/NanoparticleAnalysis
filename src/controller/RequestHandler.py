@@ -1,6 +1,7 @@
 from PIL import Image
 import threading
 from src.model.PlottingTools import *
+
 class RequestHandler:
     def __init__(self, pre_loaded_model_name=None):
         self.unet = None
@@ -9,6 +10,10 @@ class RequestHandler:
 
     def load_model_async(self, model_name):
         def load():
+            # Ensure torch preloading is complete before importing UNet
+            from src.shared.torch_coordinator import ensure_torch_ready
+            ensure_torch_ready()
+            
             from src.model.UNet import UNet
             self.unet = UNet(pre_loaded_model_path=f"src/data/model/{model_name}")  # or UNet(pre_loaded_model_path=...)
             self.model_ready_event.set()
@@ -17,13 +22,16 @@ class RequestHandler:
         threading.Thread(target=load, daemon=True).start()
         
     def process_request_train(self, model_config, stop_training_event = None, loss_callback = None, test_callback = None):  
+        from src.shared.torch_coordinator import ensure_torch_ready
+        ensure_torch_ready()
+        
         from src.model.CrossValidation import cv_holdout
         from src.model.UNet import UNet
         self.model_ready_event.wait()
         self.unet = UNet()
-        iou, dice_score = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
-        print(f"Model IOU: {iou}\nModel Dice Score: {dice_score}")
-        return iou, dice_score
+        evaluation_result = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback)
+        print(f"Model IOU: {evaluation_result.mean_iou}\nModel Dice Score: {evaluation_result.mean_dice}")
+        return evaluation_result
 
     def process_request_segment(self, image, output_folder, return_stats=False):
         """
@@ -88,6 +96,9 @@ class RequestHandler:
         Returns:
             numpy array: Model predictions
         """
+        from src.shared.torch_coordinator import ensure_torch_ready
+        ensure_torch_ready()
+        
         import torch
         
         # Convert patches to tensor
@@ -121,6 +132,9 @@ class RequestHandler:
         return None
     
     def process_request_test_model(self, test_data_image_dir, test_data_mask_dir, testing_callback = None):
+        from src.shared.torch_coordinator import ensure_torch_ready
+        ensure_torch_ready()
+        
         from src.model.SegmentationDataset import SegmentationDataset
         from torch.utils.data import DataLoader
 
@@ -130,10 +144,8 @@ class RequestHandler:
         from src.model.ModelEvaluator import ModelEvaluator
 
         self.model_ready_event.wait()
-        iou, dice_score = ModelEvaluator.evaluate_model(self.unet, test_dataloader, testing_callback)
-        print(iou)
-        print(dice_score)
-        return iou, dice_score
+        evaluation_result = ModelEvaluator.evaluate_model(self.unet, test_dataloader, testing_callback)
+        return evaluation_result
         
     def process_request_segment_folder(self, input_folder, output_parent_folder):
         """
