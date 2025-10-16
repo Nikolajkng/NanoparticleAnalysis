@@ -281,6 +281,9 @@
        <property name="text">
         <string>Use data augmentation</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
     </layout>
@@ -351,7 +354,7 @@
      <item row="1" column="1">
       <widget class="QLineEdit" name="epochs_input">
        <property name="text">
-        <string>100</string>
+        <string>150</string>
        </property>
       </widget>
      </item>
@@ -371,7 +374,7 @@
      <item row="2" column="1">
       <widget class="QLineEdit" name="learning_rate_input">
        <property name="text">
-        <string>0.005</string>
+        <string>0.0001</string>
        </property>
       </widget>
      </item>
@@ -380,10 +383,26 @@
        <property name="text">
         <string>Use early stopping</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
     </layout>
    </widget>
+  </widget>
+  <widget class="QLabel" name="logging_label">
+   <property name="geometry">
+    <rect>
+     <x>210</x>
+     <y>370</y>
+     <width>361</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
   </widget>
  </widget>
  <resources/>

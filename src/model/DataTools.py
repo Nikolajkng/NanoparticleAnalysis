@@ -116,13 +116,59 @@ def process_and_slice(data_subset, input_size=(256, 256)):
     # Create list of (image, mask) tensors
     return SegmentationDataset.from_image_set(images, masks, filenames)
 
-def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int], with_data_augmentation: bool) -> tuple[DataLoader, DataLoader, DataLoader]:
+def log_data_split_info(dataset, train_data, val_data, test_data=None, log_file_path=None):
+    """
+    Log data split information including indices and filenames.
+    
+    Args:
+        dataset: The original dataset containing image_filenames
+        train_data: Training data subset
+        val_data: Validation data subset  
+        test_data: Test data subset (optional)
+        log_file_path: Optional path for file logging
+    """
+    if log_file_path is None:
+        return
+    train_filenames = sorted([dataset.image_filenames[i] for i in train_data.indices])
+    val_filenames = sorted([dataset.image_filenames[i] for i in val_data.indices])
+    test_filenames = sorted([dataset.image_filenames[i] for i in test_data.indices]) if test_data is not None else None
+
+
+    import os
+    log_dir = os.path.dirname(log_file_path) if os.path.dirname(log_file_path) else "data/logs"
+    os.makedirs(log_dir, exist_ok=True)
+    
+    suffix = "with_testset" if test_data is not None else "without_testset"
+    split_log_path = os.path.join(log_dir, f"data_splits_{suffix}.txt")
+    
+    with open(split_log_path, 'w', encoding='utf-8') as f:
+        title = "Data Split Information" + (" (With Test Set)" if test_data is not None else " (Without Test Set)")
+        f.write(f"{title}\n")
+        f.write("=" * 50 + "\n\n")
+        
+        f.write(f"Train files ({len(train_filenames)}):\n")
+        for filename in train_filenames:
+            f.write(f"  {filename}\n")
+        
+        f.write(f"\nValidation files ({len(val_filenames)}):\n")
+        for filename in val_filenames:
+            f.write(f"  {filename}\n")
+        
+        if test_filenames is not None:
+            f.write(f"\nTest files ({len(test_filenames)}):\n")
+            for filename in test_filenames:
+                f.write(f"  {filename}\n")
+    
+    print(f"Data split information logged to: {split_log_path}")
+
+def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_size: float, input_size: tuple[int, int], with_data_augmentation: bool, log_file_path = None) -> tuple[DataLoader, DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
     dataset = slice_dataset_in_four(dataset, input_size)
     train_data, val_data, test_data = random_split(dataset, [train_data_size, validation_data_size, 1-train_data_size-validation_data_size])
-    print(f"Train images: {train_data.indices}")
-    print(f"Validation images: {val_data.indices}")
-    print(f"Test images: {test_data.indices}")
+    
+    # Log data split information
+    log_data_split_info(dataset, train_data, val_data, test_data, log_file_path)
+    
     if with_data_augmentation:
         train_data = data_augmenter.augment_dataset(train_data, input_size)
     else:
@@ -139,10 +185,14 @@ def get_dataloaders(dataset: Dataset, train_data_size: float, validation_data_si
     return (train_dataloader, val_dataloader, test_dataloader)
 
 
-def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, input_size: tuple[int, int], with_data_augmentation: bool) -> tuple[DataLoader, DataLoader]:
+def get_dataloaders_without_testset(dataset: Dataset, train_data_size: float, input_size: tuple[int, int], with_data_augmentation: bool, log_file_path = None) -> tuple[DataLoader, DataLoader]:
     data_augmenter = DataAugmenter()
     dataset = slice_dataset_in_four(dataset, input_size)
     train_data, val_data = random_split(dataset, [train_data_size, 1-train_data_size])
+    
+    # Log data split information
+    log_data_split_info(dataset, train_data, val_data, None, log_file_path)
+    
     if with_data_augmentation:
         train_data = data_augmenter.augment_dataset(train_data, input_size)
     else:

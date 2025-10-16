@@ -8,7 +8,8 @@ from src.shared.ModelConfig import ModelConfig
 from src.shared.ModelTrainingStats import ModelTrainingStats
 from src.model.PlottingTools import plot_loss, plot_difference
 class TrainModelWindow(QMainWindow, Ui_TrainModel):
-    train_model_signal = QtCore.pyqtSignal(ModelConfig, Event)
+    train_model_signal = QtCore.pyqtSignal(ModelConfig, str, Event)
+    training_finished_signal = QtCore.pyqtSignal()
 
     def __init__(self, update_data_signal, show_testing_difference_signal):
         super().__init__()
@@ -24,6 +25,8 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         
         update_data_signal.connect(self.update_loss_values)
         show_testing_difference_signal.connect(self.show_testing_difference)
+        self.training_finished_signal.connect(self.on_training_finished)
+        
         self.training_images_button.clicked.connect(self.select_training_images_clicked)
         self.training_labels_button.clicked.connect(self.select_training_labels_clicked)
         self.test_images_button.clicked.connect(self.select_test_images_clicked)
@@ -64,6 +67,10 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
         if folder_path:
             self.test_labels_directory = folder_path
     
+    def toggle_training_buttons(self):
+        self.train_model_button.setEnabled(not self.train_model_button.isEnabled())
+        self.stop_training_button.setEnabled(not self.stop_training_button.isEnabled())
+
     def auto_test_set_checkbox_clicked(self):
         if self.auto_test_set_checkbox.isChecked():
             self.test_images_button.setEnabled(False)
@@ -73,6 +80,10 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
             self.test_labels_button.setEnabled(True)
 
     def train_model_clicked(self):
+        # Prevent starting if already training
+        if not self.train_model_button.isEnabled():
+            return
+            
         self.stop_training_button.setEnabled(True)
         self.train_model_button.setEnabled(False)
         model_config = ModelConfig(images_path=self.training_images_directory,
@@ -83,14 +94,23 @@ class TrainModelWindow(QMainWindow, Ui_TrainModel):
                     with_data_augmentation=self.data_augment_checkbox.isChecked(),
                     test_images_path=self.test_images_directory,
                     test_masks_path=self.test_labels_directory)
-        print(int(self.epochs_input.text()))
+        import datetime
+        log_dir = "data/logs/training_" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.logging_label.setText(f"Logging to {log_dir}")
         self.stop_training_event.clear()
-        self.train_model_signal.emit(model_config, self.stop_training_event)
+        self.train_model_signal.emit(model_config, log_dir, self.stop_training_event)
     
     def stop_training_clicked(self):
-        self.stop_training_button.setEnabled(False)
-        self.train_model_button.setEnabled(True)
+        self.logging_label.setText("Stopping training...")
         self.stop_training_event.set()
+        # Keep buttons disabled until training actually stops
+        self.stop_training_button.setEnabled(False)
+
+    def on_training_finished(self):
+        """Called when training completes (either finished or stopped)"""
+        self.logging_label.setText("")
+        self.train_model_button.setEnabled(True)
+        self.stop_training_button.setEnabled(False)
 
     
     def update_loss_values(self, stats: ModelTrainingStats):

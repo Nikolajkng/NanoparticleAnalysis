@@ -225,30 +225,18 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.train_model_window.show()
 
 
-    def train_model_custom_data(self, model_config: ModelConfig, stop_training_event: Event):
+    def train_model_custom_data(self, model_config: ModelConfig, log_dir: str, stop_training_event: Event):
         result = confirmTrainingMessageBox(self, "Training a new model may take a while, do you want to continue?")
         if result == QMessageBox.No:
                 return
-                    
-        
-        # self.train_thread = threading.Thread(
-        #     target=partial(
-        #         self.safe_request,
-        #         Command.RETRAIN, model_config, 
-        #         stop_training_event,
-        #         self.update_training_model_stats,
-        #         self.show_testing_difference,
-        #         on_error=lambda: self.train_model_window.stop_training_clicked()
-        #         ),
-        #     daemon=True)
-        # self.train_thread.start()
 
         self._start_segmentation_thread(Command.RETRAIN, self.show_metrics_popup, 
                 model_config,
+                log_dir,
                 stop_training_event,
                 self.update_training_model_stats,
                 self.show_testing_difference,
-                on_error=lambda: self.train_model_window.stop_training_clicked())
+                on_error=lambda: self.train_model_window.training_finished_signal.emit())
         self._seg_thread.start()  
 
 
@@ -315,6 +303,9 @@ class MainWindow(QMainWindow, Ui_MainWindow):
 
     def show_metrics_popup(self, evaluation_result: EvaluationResult):
         self.set_ui_busy(False)
+        if self.train_model_window is not None:
+            self.train_model_window.training_finished_signal.emit()
+            
         if evaluation_result is None:
             return
         mean_iou = evaluation_result.mean_iou
@@ -399,11 +390,23 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         """Try to clean up any existing segmentation QThread."""
         if getattr(self, '_seg_thread', None) is not None:
             try:
-                # ask the existing thread to quit and wait shortly
+                # Ask the existing thread to quit
                 self._seg_thread.quit()
-                self._seg_thread.wait(timeout=100)
-            except Exception:
-                pass
+                
+                # For training threads, we need to wait longer
+                # Check if thread is still running and wait appropriately
+                if self._seg_thread.isRunning():
+                    # Wait up to 5 seconds for thread to stop gracefully
+                    if not self._seg_thread.wait(timeout=5000):
+                        # If thread doesn't stop gracefully, terminate it
+                        print("Warning: Training thread did not stop gracefully, terminating...")
+                        self._seg_thread.terminate()
+                        # Give it a moment to terminate
+                        self._seg_thread.wait(timeout=1000)
+                        
+            except Exception as e:
+                print(f"Error during thread cleanup: {e}")
+                
         self._seg_thread = None
         self._seg_worker = None
         

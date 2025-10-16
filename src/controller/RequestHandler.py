@@ -17,7 +17,7 @@ class RequestHandler:
 
         threading.Thread(target=load, daemon=True).start()
         
-    def process_request_train(self, model_config, stop_training_event = None, loss_callback = None, test_callback = None, log_file_path = None):  
+    def process_request_train(self, model_config, log_dir, stop_training_event = None, loss_callback = None, test_callback = None):  
         from src.shared.torch_coordinator import ensure_torch_ready
         ensure_torch_ready()
         
@@ -25,16 +25,9 @@ class RequestHandler:
         from src.model.UNet import UNet
         self.model_ready_event.wait()
         self.unet = UNet()
-        
-        # Generate default log file path if not provided
-        if log_file_path is None:
-            import datetime
-            import os
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            # Create logs directory in current working directory
-            logs_dir = "data/logs"
-            os.makedirs(logs_dir, exist_ok=True)
-            log_file_path = os.path.join(logs_dir, f"training_evaluation_{timestamp}.txt")
+        import os
+        os.makedirs(log_dir, exist_ok=True)
+        log_file_path = os.path.join(log_dir, "training_evaluation.txt")
         
         evaluation_result = cv_holdout(self.unet, model_config, self.unet.preferred_input_size, stop_training_event, loss_callback, test_callback, log_file_path)
         print(f"Model IOU: {evaluation_result.mean_iou}\nModel Dice Score: {evaluation_result.mean_dice}")
@@ -125,7 +118,7 @@ class RequestHandler:
         # Run inference with appropriate precision
         with torch.inference_mode():
             if device.type == "cuda":
-                with torch.cuda.amp.autocast("cuda"):
+                with torch.autocast("cuda"):
                     output = scripted_unet(patches_tensor)
             else:
                 output = scripted_unet(patches_tensor)

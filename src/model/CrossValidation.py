@@ -1,4 +1,3 @@
-import copy
 import os
 import datetime
 from torch.utils.data import DataLoader, Subset
@@ -7,7 +6,6 @@ from torch.utils.data import DataLoader, random_split
 from src.model.SegmentationDataset import SegmentationDataset
 from src.model.PlottingTools import *
 from src.model.DataTools import get_dataloaders, get_dataloaders_kfold_already_split, get_dataloaders_without_testset, process_and_slice, slice_dataset_in_four, get_normalizer
-from src.model.DataAugmenter import DataAugmenter
 from src.model.ModelEvaluator import ModelEvaluator
 from src.shared.ModelConfig import ModelConfig
 from src.shared.EvaluationResult import EvaluationResult
@@ -26,7 +24,7 @@ def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event 
         test_dataset = SegmentationDataset(model_config.test_images_path, model_config.test_masks_path)
         test_dataloader = DataLoader(test_dataset, batch_size=1)
     else:
-        train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(dataset, train_subset_size, validation_subset_size, unet.preferred_input_size, model_config.with_data_augmentation)
+        train_dataloader, validation_dataloader, test_dataloader = get_dataloaders(dataset, train_subset_size, validation_subset_size, unet.preferred_input_size, model_config.with_data_augmentation, log_file_path)
     normalizer = get_normalizer(train_dataloader.dataset.dataset)
     unet.normalizer = normalizer
     unet.train_model(
@@ -38,19 +36,11 @@ def cv_holdout(unet, model_config: ModelConfig, input_size, stop_training_event 
         cross_validation="holdout",
         with_early_stopping=model_config.with_early_stopping,
         loss_function="combined",
-        scheduler_type=getattr(model_config, 'scheduler_type', 'plateau'),  # Default to plateau if not specified
+        scheduler_type=getattr(model_config, 'scheduler_type', 'none'),  # Default to none if not specified
         stop_training_event=stop_training_event,
         loss_callback=loss_callback
         )
-    
-    # Generate default log file path if not provided
-    if log_file_path is None:
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        # Create logs directory in current working directory
-        logs_dir = "data/logs"
-        os.makedirs(logs_dir, exist_ok=True)
-        log_file_path = os.path.join(logs_dir, f"evaluation_results_holdout_{timestamp}.txt")
-    
+        
     evaluation_result = ModelEvaluator.evaluate_model(unet, test_dataloader, testing_callback, log_file_path)
     return evaluation_result
 

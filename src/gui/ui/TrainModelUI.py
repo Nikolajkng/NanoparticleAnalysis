@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file '.\ui_designs\train_model.ui'
+# Form implementation generated from reading ui file 'train_model.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.10
 #
@@ -124,6 +124,7 @@ class Ui_TrainModel(object):
         self.auto_test_set_checkbox.setObjectName("auto_test_set_checkbox")
         self.gridLayout_2.addWidget(self.auto_test_set_checkbox, 3, 0, 1, 2)
         self.data_augment_checkbox = QtWidgets.QCheckBox(self.data_widget)
+        self.data_augment_checkbox.setChecked(True)
         self.data_augment_checkbox.setObjectName("data_augment_checkbox")
         self.gridLayout_2.addWidget(self.data_augment_checkbox, 4, 0, 1, 2)
         self.line_2 = QtWidgets.QFrame(self.splitter)
@@ -169,8 +170,13 @@ class Ui_TrainModel(object):
         self.learning_rate_input.setObjectName("learning_rate_input")
         self.gridLayout.addWidget(self.learning_rate_input, 2, 1, 1, 1)
         self.early_stopping_checkbox = QtWidgets.QCheckBox(self.model_widget)
+        self.early_stopping_checkbox.setChecked(True)
         self.early_stopping_checkbox.setObjectName("early_stopping_checkbox")
         self.gridLayout.addWidget(self.early_stopping_checkbox, 3, 0, 1, 2)
+        self.logging_label = QtWidgets.QLabel(TrainModel)
+        self.logging_label.setGeometry(QtCore.QRect(210, 370, 361, 31))
+        self.logging_label.setText("")
+        self.logging_label.setObjectName("logging_label")
 
         self.retranslateUi(TrainModel)
         QtCore.QMetaObject.connectSlotsByName(TrainModel)
@@ -195,7 +201,7 @@ class Ui_TrainModel(object):
         self.data_augment_checkbox.setText(_translate("TrainModel", "Use data augmentation"))
         self.model_title.setText(_translate("TrainModel", "Model"))
         self.epoch_input_label.setText(_translate("TrainModel", "Epochs"))
-        self.epochs_input.setText(_translate("TrainModel", "100"))
+        self.epochs_input.setText(_translate("TrainModel", "150"))
         self.learning_rate_input_label.setText(_translate("TrainModel", "Learning rate"))
-        self.learning_rate_input.setText(_translate("TrainModel", "0.005"))
+        self.learning_rate_input.setText(_translate("TrainModel", "0.0001"))
         self.early_stopping_checkbox.setText(_translate("TrainModel", "Use early stopping"))
