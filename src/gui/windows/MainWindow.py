@@ -62,7 +62,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         super().__init__()
         self.MainWindow = QMainWindow()
         self.setupUi(self.MainWindow)
-        preloaded_model_name = "UNet_best_06-06.pt"
+        preloaded_model_name = "UNet_best_16-10.pt"
         self.current_model_label.setText(f"{preloaded_model_name}")
         self.controller = Controller(preloaded_model_name)
         self.image_path = None

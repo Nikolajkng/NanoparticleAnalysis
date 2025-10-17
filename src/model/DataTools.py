@@ -285,7 +285,7 @@ def load_image_as_tensor(image_path: str):
         tensor = TF.resize(tensor, 1024)
     return tensor
 
-def binarize_segmentation_output(segmented_image, high_thresh=0.7, mean_prob_thresh=0.5):
+def binarize_segmentation_output(segmented_image, high_thresh=0.85, mean_prob_thresh=0.5):
     """
     Post-process U-Net probabilities by seeding on high-confidence pixels
     and growing into lower-confidence regions.

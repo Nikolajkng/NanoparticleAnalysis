@@ -107,11 +107,7 @@ class RequestHandler:
         # Optimize model for inference
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.unet.to(device, memory_format=torch.channels_last).eval()
-        
-        # Create optimized model for inference
-        scripted_unet = torch.jit.script(self.unet)
-        scripted_unet = torch.jit.optimize_for_inference(scripted_unet)
-        
+                
         # Prepare input tensor
         patches_tensor = patches_tensor.to(device, memory_format=torch.channels_last)
         
@@ -119,9 +115,9 @@ class RequestHandler:
         with torch.inference_mode():
             if device.type == "cuda":
                 with torch.autocast("cuda"):
-                    output = scripted_unet(patches_tensor)
+                    output = self.unet(patches_tensor)
             else:
-                output = scripted_unet(patches_tensor)
+                output = self.unet(patches_tensor)
         
         # Convert to numpy for post-processing
         return output.cpu().detach().numpy()   
